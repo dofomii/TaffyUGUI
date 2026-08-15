@@ -199,7 +199,11 @@ pub(crate) fn with_registered_context_mut<T>(
 
 fn next_generation(current: u32) -> u32 {
     let next = current.wrapping_add(1);
-    if next == 0 { 1 } else { next }
+    if next == 0 {
+        1
+    } else {
+        next
+    }
 }
 
 fn available_space(value: f32) -> AvailableSpace {

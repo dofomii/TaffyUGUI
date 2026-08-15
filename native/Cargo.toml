@@ -1,0 +1,22 @@
+[package]
+name = "taffy_ugui_native"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+description = "Native Taffy layout bridge for TaffyUGUI"
+repository = "https://github.com/dofomii/TaffyUGUI"
+publish = false
+
+[lib]
+name = "taffy_ugui"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+taffy = { version = "=0.12.2", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "content_size"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"

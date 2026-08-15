@@ -1,0 +1,13 @@
+{
+  "name": "com.dofomii.taffyugui",
+  "version": "0.1.0",
+  "displayName": "TaffyUGUI",
+  "description": "Responsive Flexbox and Grid layouts for Unity uGUI powered by Rust and Taffy.",
+  "unity": "2021.3",
+  "keywords": ["ugui", "layout", "flexbox", "grid", "taffy", "rust"],
+  "author": {
+    "name": "dofomii",
+    "url": "https://github.com/dofomii"
+  },
+  "license": "MIT"
+}

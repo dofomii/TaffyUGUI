@@ -32,8 +32,6 @@ fn decode_parts(raw: u64) -> Option<(u32, u32)> {
 pub(crate) struct ContextHandle(u64);
 
 impl ContextHandle {
-    pub(crate) const INVALID: Self = Self(0);
-
     pub(crate) fn from_parts(index: u32, generation: u32) -> Self {
         Self(encode_parts(index, generation))
     }
@@ -52,8 +50,6 @@ impl ContextHandle {
 pub(crate) struct NodeHandle(u64);
 
 impl NodeHandle {
-    pub(crate) const INVALID: Self = Self(0);
-
     pub(crate) const fn from_raw(raw: u64) -> Self {
         Self(raw)
     }
@@ -92,7 +88,7 @@ mod tests {
 
     #[test]
     fn zero_handles_are_invalid() {
-        assert_eq!(ContextHandle::INVALID.parts(), None);
-        assert_eq!(NodeHandle::INVALID.parts(), None);
+        assert_eq!(ContextHandle(0).parts(), None);
+        assert_eq!(NodeHandle::from_raw(0).parts(), None);
     }
 }

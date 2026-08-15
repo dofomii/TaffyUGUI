@@ -10,14 +10,17 @@ permissions:
 
 jobs:
   rust:
+    name: rust (${{ matrix.os }})
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.97.1
           components: rustfmt, clippy
       - name: Format
         if: matrix.os == 'ubuntu-latest'
@@ -28,3 +31,19 @@ jobs:
         run: cargo test --manifest-path native/Cargo.toml
       - name: Release build
         run: cargo build --manifest-path native/Cargo.toml --release
+      - name: Print generated lockfile for bootstrap
+        if: matrix.os == 'ubuntu-latest'
+        run: cat native/Cargo.lock
+
+  msrv:
+    name: rust (MSRV 1.82.0)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.82.0
+      - name: Check MSRV
+        run: cargo check --manifest-path native/Cargo.toml --all-targets
+      - name: Test MSRV
+        run: cargo test --manifest-path native/Cargo.toml

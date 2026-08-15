@@ -1,12 +1,12 @@
 //! Native context and persistent Taffy tree ownership.
 
 use std::collections::HashMap;
-use std::ffi::c_void;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use taffy::prelude::*;
 
 use crate::error::NativeError;
-use crate::handles::{BootstrapNodeHandle, FIRST_BOOTSTRAP_NODE_HANDLE};
+use crate::handles::{BootstrapNodeHandle, ContextHandle, FIRST_BOOTSTRAP_NODE_HANDLE};
 
 pub(crate) struct Context {
     tree: TaffyTree<()>,
@@ -20,34 +20,6 @@ impl Context {
             tree: TaffyTree::new(),
             nodes: HashMap::new(),
             next_id: FIRST_BOOTSTRAP_NODE_HANDLE,
-        }
-    }
-
-    pub(crate) fn into_opaque_ptr(self) -> *mut c_void {
-        Box::into_raw(Box::new(self)) as *mut c_void
-    }
-
-    /// Converts the bootstrap ABI context pointer back into its Rust context.
-    ///
-    /// # Safety
-    ///
-    /// `ptr` must be null or a live pointer created by [`Context::into_opaque_ptr`].
-    /// The caller must guarantee exclusive access for the returned mutable reference.
-    pub(crate) unsafe fn from_opaque_ptr<'a>(ptr: *mut c_void) -> Option<&'a mut Self> {
-        unsafe { (ptr as *mut Self).as_mut() }
-    }
-
-    /// Destroys a bootstrap ABI context pointer.
-    ///
-    /// # Safety
-    ///
-    /// `ptr` must be null or a live pointer created by [`Context::into_opaque_ptr`] that
-    /// has not previously been destroyed. It must not be used after this call.
-    pub(crate) unsafe fn destroy_opaque_ptr(ptr: *mut c_void) {
-        if !ptr.is_null() {
-            unsafe {
-                drop(Box::from_raw(ptr as *mut Self));
-            }
         }
     }
 
@@ -136,10 +108,152 @@ impl Context {
     }
 }
 
+struct ContextSlot {
+    generation: u32,
+    context: Option<Context>,
+}
+
+#[derive(Default)]
+struct ContextRegistry {
+    slots: Vec<ContextSlot>,
+    free: Vec<u32>,
+}
+
+impl ContextRegistry {
+    fn insert(&mut self, context: Context) -> Result<ContextHandle, NativeError> {
+        if let Some(index) = self.free.pop() {
+            let slot = self
+                .slots
+                .get_mut(index as usize)
+                .ok_or(NativeError::ContextNotFound)?;
+            debug_assert!(slot.context.is_none());
+            slot.context = Some(context);
+            return Ok(ContextHandle::from_parts(index, slot.generation));
+        }
+
+        let index = u32::try_from(self.slots.len()).map_err(|_| NativeError::Capacity)?;
+        const INITIAL_GENERATION: u32 = 1;
+        self.slots.push(ContextSlot {
+            generation: INITIAL_GENERATION,
+            context: Some(context),
+        });
+        Ok(ContextHandle::from_parts(index, INITIAL_GENERATION))
+    }
+
+    fn remove(&mut self, handle: ContextHandle) -> Result<(), NativeError> {
+        let (index, generation) = handle.parts().ok_or(NativeError::ContextNotFound)?;
+        let slot = self
+            .slots
+            .get_mut(index as usize)
+            .ok_or(NativeError::ContextNotFound)?;
+        if slot.generation != generation || slot.context.is_none() {
+            return Err(NativeError::ContextNotFound);
+        }
+
+        slot.context = None;
+        slot.generation = next_generation(slot.generation);
+        self.free.push(index);
+        Ok(())
+    }
+
+    fn get_mut(&mut self, handle: ContextHandle) -> Result<&mut Context, NativeError> {
+        let (index, generation) = handle.parts().ok_or(NativeError::ContextNotFound)?;
+        let slot = self
+            .slots
+            .get_mut(index as usize)
+            .ok_or(NativeError::ContextNotFound)?;
+        if slot.generation != generation {
+            return Err(NativeError::ContextNotFound);
+        }
+        slot.context.as_mut().ok_or(NativeError::ContextNotFound)
+    }
+}
+
+static CONTEXT_REGISTRY: OnceLock<Mutex<ContextRegistry>> = OnceLock::new();
+
+fn registry() -> &'static Mutex<ContextRegistry> {
+    CONTEXT_REGISTRY.get_or_init(|| Mutex::new(ContextRegistry::default()))
+}
+
+fn lock_registry() -> MutexGuard<'static, ContextRegistry> {
+    registry()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+pub(crate) fn create_registered_context() -> Result<ContextHandle, NativeError> {
+    lock_registry().insert(Context::new())
+}
+
+pub(crate) fn destroy_registered_context(handle: ContextHandle) -> Result<(), NativeError> {
+    lock_registry().remove(handle)
+}
+
+pub(crate) fn with_registered_context_mut<T>(
+    handle: ContextHandle,
+    operation: impl FnOnce(&mut Context) -> Result<T, NativeError>,
+) -> Result<T, NativeError> {
+    let mut registry = lock_registry();
+    operation(registry.get_mut(handle)?)
+}
+
+fn next_generation(current: u32) -> u32 {
+    let next = current.wrapping_add(1);
+    if next == 0 { 1 } else { next }
+}
+
 fn available_space(value: f32) -> AvailableSpace {
     if value.is_finite() {
         AvailableSpace::Definite(value.max(0.0))
     } else {
         AvailableSpace::MaxContent
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Context, ContextRegistry};
+    use crate::error::NativeError;
+
+    #[test]
+    fn registry_insert_and_remove_context() {
+        let mut registry = ContextRegistry::default();
+        let handle = registry.insert(Context::new()).unwrap();
+        assert!(registry.get_mut(handle).is_ok());
+        assert_eq!(registry.remove(handle), Ok(()));
+        assert!(matches!(
+            registry.get_mut(handle),
+            Err(NativeError::ContextNotFound)
+        ));
+    }
+
+    #[test]
+    fn reused_slot_changes_generation() {
+        let mut registry = ContextRegistry::default();
+        let first = registry.insert(Context::new()).unwrap();
+        let (first_index, first_generation) = first.parts().unwrap();
+        registry.remove(first).unwrap();
+
+        let second = registry.insert(Context::new()).unwrap();
+        let (second_index, second_generation) = second.parts().unwrap();
+
+        assert_eq!(first_index, second_index);
+        assert_ne!(first_generation, second_generation);
+        assert!(matches!(
+            registry.get_mut(first),
+            Err(NativeError::ContextNotFound)
+        ));
+        assert!(registry.get_mut(second).is_ok());
+    }
+
+    #[test]
+    fn contexts_are_isolated() {
+        let mut registry = ContextRegistry::default();
+        let first = registry.insert(Context::new()).unwrap();
+        let second = registry.insert(Context::new()).unwrap();
+
+        let first_ptr = registry.get_mut(first).unwrap() as *mut Context;
+        let second_ptr = registry.get_mut(second).unwrap() as *mut Context;
+        assert_ne!(first_ptr, second_ptr);
     }
 }

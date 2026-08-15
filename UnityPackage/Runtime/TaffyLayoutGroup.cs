@@ -70,9 +70,10 @@ namespace TaffyUGUI
         private void EnsureContext()
         {
             if (_context != IntPtr.Zero) return;
+            if (TaffyNative.taffy_ugui_api_version() != 0)
+                throw new InvalidOperationException("TaffyUGUI bootstrap native API version mismatch.");
             _context = TaffyNative.taffy_ugui_create_context();
             if (_context == IntPtr.Zero) throw new InvalidOperationException("Unable to create TaffyUGUI native context.");
-            if (TaffyNative.taffy_ugui_api_version() != 1) throw new InvalidOperationException("TaffyUGUI native API version mismatch.");
             _dirty = true;
         }
 

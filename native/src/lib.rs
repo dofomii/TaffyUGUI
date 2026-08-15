@@ -317,10 +317,7 @@ pub unsafe extern "C" fn taffy_ugui_mark_dirty(ptr: *mut c_void, id: u64) -> i32
     let Some(&node) = ctx.nodes.get(&id) else {
         return ERR_NODE;
     };
-    ctx.tree
-        .mark_dirty(node)
-        .map(|_| OK)
-        .unwrap_or(ERR_TAFFY)
+    ctx.tree.mark_dirty(node).map(|_| OK).unwrap_or(ERR_TAFFY)
 }
 
 /// Computes layout for a root node in a live context.

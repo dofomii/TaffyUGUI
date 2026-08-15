@@ -10,6 +10,7 @@ pub(crate) enum NativeError {
     ContextNotFound,
     NodeNotFound,
     Capacity,
+    RegistryBusy,
     Engine,
 }
 
@@ -20,7 +21,7 @@ impl NativeError {
             // existing behavior until the production status enum is introduced.
             Self::ContextNotFound => ERR_NULL,
             Self::NodeNotFound => ERR_NODE,
-            Self::Capacity | Self::Engine => ERR_TAFFY,
+            Self::Capacity | Self::RegistryBusy | Self::Engine => ERR_TAFFY,
         }
     }
 }

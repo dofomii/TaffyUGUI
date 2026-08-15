@@ -3,6 +3,8 @@
 //! ABI version 0 intentionally preserves the original pointer-shaped bootstrap surface.
 //! The pointer now identifies only a tiny token; real native state lives in the production
 //! context registry and is addressed by a generation-safe internal `ContextHandle`.
+//! Bootstrap node ids remain raw `u64` values, but internally they are generation-safe
+//! `NodeHandle` values.
 
 use std::ffi::c_void;
 use std::ptr;
@@ -11,7 +13,7 @@ use crate::context::{
     create_registered_context, destroy_registered_context, with_registered_context_mut,
 };
 use crate::error::{ERR_NULL, OK};
-use crate::handles::{BootstrapNodeHandle, ContextHandle};
+use crate::handles::{BootstrapNodeHandle, ContextHandle, NodeHandle};
 use crate::style::{to_taffy_style, TaffyUGUIStyle};
 use crate::version::BOOTSTRAP_API_VERSION;
 
@@ -110,8 +112,8 @@ pub unsafe extern "C" fn taffy_ugui_create_node(
     };
 
     match with_registered_context_mut(handle, |ctx| ctx.create_node(to_taffy_style(style))) {
-        Ok(id) => {
-            *out_id = id;
+        Ok(node_handle) => {
+            *out_id = node_handle.raw();
             OK
         }
         Err(error) => error.status_code(),
@@ -127,7 +129,7 @@ pub unsafe extern "C" fn taffy_ugui_create_node(
 #[no_mangle]
 pub unsafe extern "C" fn taffy_ugui_remove_node(ptr: *mut c_void, id: BootstrapNodeHandle) -> i32 {
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| ctx.remove_node(id))
+        with_registered_context_mut(handle, |ctx| ctx.remove_node(NodeHandle::from_raw(id)))
     })
 }
 
@@ -144,7 +146,9 @@ pub unsafe extern "C" fn taffy_ugui_set_style(
     style: TaffyUGUIStyle,
 ) -> i32 {
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| ctx.set_style(id, to_taffy_style(style)))
+        with_registered_context_mut(handle, |ctx| {
+            ctx.set_style(NodeHandle::from_raw(id), to_taffy_style(style))
+        })
     })
 }
 
@@ -171,9 +175,16 @@ pub unsafe extern "C" fn taffy_ugui_set_children(
     } else {
         unsafe { std::slice::from_raw_parts(child_ids, count) }
     };
+    let child_handles: Vec<NodeHandle> = child_ids
+        .iter()
+        .copied()
+        .map(NodeHandle::from_raw)
+        .collect();
 
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| ctx.set_children(id, child_ids))
+        with_registered_context_mut(handle, |ctx| {
+            ctx.set_children(NodeHandle::from_raw(id), &child_handles)
+        })
     })
 }
 
@@ -186,7 +197,7 @@ pub unsafe extern "C" fn taffy_ugui_set_children(
 #[no_mangle]
 pub unsafe extern "C" fn taffy_ugui_mark_dirty(ptr: *mut c_void, id: BootstrapNodeHandle) -> i32 {
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| ctx.mark_dirty(id))
+        with_registered_context_mut(handle, |ctx| ctx.mark_dirty(NodeHandle::from_raw(id)))
     })
 }
 
@@ -204,7 +215,9 @@ pub unsafe extern "C" fn taffy_ugui_compute_layout(
     height: f32,
 ) -> i32 {
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| ctx.compute_layout(root_id, width, height))
+        with_registered_context_mut(handle, |ctx| {
+            ctx.compute_layout(NodeHandle::from_raw(root_id), width, height)
+        })
     })
 }
 
@@ -229,7 +242,9 @@ pub unsafe extern "C" fn taffy_ugui_get_layout(
         return ERR_NULL;
     };
 
-    match with_registered_context_mut(handle, |ctx| ctx.layout_rect(id)) {
+    match with_registered_context_mut(handle, |ctx| {
+        ctx.layout_rect(NodeHandle::from_raw(id))
+    }) {
         Ok((x, y, width, height)) => {
             *out_layout = TaffyUGUILayout {
                 x,

@@ -2,55 +2,53 @@
 //!
 //! Taffy 0.13's compact style representation makes `TaffyTree` intentionally non-`Send`.
 //! Context state therefore stays in a thread-local arena, which matches Unity's main-thread
-//! layout ownership. Context-handle generations come from a process-wide atomic counter so a
-//! handle from one thread cannot accidentally resolve to an unrelated slot on another thread.
+//! layout ownership. Context and node generations come from process-wide atomic counters so
+//! stale or cross-owner handles cannot accidentally resolve to unrelated local slots.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use taffy::prelude::*;
 
 use crate::error::NativeError;
-use crate::handles::{BootstrapNodeHandle, ContextHandle, FIRST_BOOTSTRAP_NODE_HANDLE};
+use crate::handles::{ContextHandle, NodeHandle};
 
 pub(crate) struct Context {
     tree: TaffyTree<()>,
-    nodes: HashMap<BootstrapNodeHandle, NodeId>,
-    next_id: BootstrapNodeHandle,
+    nodes: NodeRegistry,
 }
 
 impl Context {
     pub(crate) fn new() -> Self {
         Self {
             tree: TaffyTree::new(),
-            nodes: HashMap::new(),
-            next_id: FIRST_BOOTSTRAP_NODE_HANDLE,
+            nodes: NodeRegistry::default(),
         }
     }
 
-    pub(crate) fn create_node(&mut self, style: Style) -> Result<BootstrapNodeHandle, NativeError> {
+    pub(crate) fn create_node(&mut self, style: Style) -> Result<NodeHandle, NativeError> {
         let node = self.tree.new_leaf(style).map_err(|_| NativeError::Engine)?;
-        let id = self.next_id;
-        self.next_id += 1;
-        self.nodes.insert(id, node);
-        Ok(id)
+        match self.nodes.insert(node) {
+            Ok(handle) => Ok(handle),
+            Err(error) => {
+                let _ = self.tree.remove(node);
+                Err(error)
+            }
+        }
     }
 
-    pub(crate) fn remove_node(&mut self, id: BootstrapNodeHandle) -> Result<(), NativeError> {
-        let node = self.nodes.remove(&id).ok_or(NativeError::NodeNotFound)?;
-        self.tree
-            .remove(node)
-            .map(|_| ())
-            .map_err(|_| NativeError::Engine)
+    pub(crate) fn remove_node(&mut self, handle: NodeHandle) -> Result<(), NativeError> {
+        let node = self.nodes.resolve(handle)?;
+        self.tree.remove(node).map_err(|_| NativeError::Engine)?;
+        self.nodes.remove(handle)
     }
 
     pub(crate) fn set_style(
         &mut self,
-        id: BootstrapNodeHandle,
+        handle: NodeHandle,
         style: Style,
     ) -> Result<(), NativeError> {
-        let node = *self.nodes.get(&id).ok_or(NativeError::NodeNotFound)?;
+        let node = self.nodes.resolve(handle)?;
         self.tree
             .set_style(node, style)
             .map(|_| ())
@@ -59,14 +57,13 @@ impl Context {
 
     pub(crate) fn set_children(
         &mut self,
-        id: BootstrapNodeHandle,
-        child_ids: &[BootstrapNodeHandle],
+        handle: NodeHandle,
+        child_handles: &[NodeHandle],
     ) -> Result<(), NativeError> {
-        let node = *self.nodes.get(&id).ok_or(NativeError::NodeNotFound)?;
-        let mut children = Vec::with_capacity(child_ids.len());
-        for child_id in child_ids {
-            let child = *self.nodes.get(child_id).ok_or(NativeError::NodeNotFound)?;
-            children.push(child);
+        let node = self.nodes.resolve(handle)?;
+        let mut children = Vec::with_capacity(child_handles.len());
+        for child_handle in child_handles {
+            children.push(self.nodes.resolve(*child_handle)?);
         }
         self.tree
             .set_children(node, &children)
@@ -74,8 +71,8 @@ impl Context {
             .map_err(|_| NativeError::Engine)
     }
 
-    pub(crate) fn mark_dirty(&mut self, id: BootstrapNodeHandle) -> Result<(), NativeError> {
-        let node = *self.nodes.get(&id).ok_or(NativeError::NodeNotFound)?;
+    pub(crate) fn mark_dirty(&mut self, handle: NodeHandle) -> Result<(), NativeError> {
+        let node = self.nodes.resolve(handle)?;
         self.tree
             .mark_dirty(node)
             .map(|_| ())
@@ -84,11 +81,11 @@ impl Context {
 
     pub(crate) fn compute_layout(
         &mut self,
-        root_id: BootstrapNodeHandle,
+        root_handle: NodeHandle,
         width: f32,
         height: f32,
     ) -> Result<(), NativeError> {
-        let root = *self.nodes.get(&root_id).ok_or(NativeError::NodeNotFound)?;
+        let root = self.nodes.resolve(root_handle)?;
         let available = Size {
             width: available_space(width),
             height: available_space(height),
@@ -101,9 +98,9 @@ impl Context {
 
     pub(crate) fn layout_rect(
         &self,
-        id: BootstrapNodeHandle,
+        handle: NodeHandle,
     ) -> Result<(f32, f32, f32, f32), NativeError> {
-        let node = *self.nodes.get(&id).ok_or(NativeError::NodeNotFound)?;
+        let node = self.nodes.resolve(handle)?;
         let layout = self.tree.layout(node).map_err(|_| NativeError::Engine)?;
         Ok((
             layout.location.x,
@@ -111,6 +108,68 @@ impl Context {
             layout.size.width,
             layout.size.height,
         ))
+    }
+}
+
+struct NodeSlot {
+    generation: u32,
+    node: Option<NodeId>,
+}
+
+#[derive(Default)]
+struct NodeRegistry {
+    slots: Vec<NodeSlot>,
+    free: Vec<u32>,
+}
+
+impl NodeRegistry {
+    fn insert(&mut self, node: NodeId) -> Result<NodeHandle, NativeError> {
+        let generation = next_node_generation();
+
+        if let Some(index) = self.free.pop() {
+            let slot = self
+                .slots
+                .get_mut(index as usize)
+                .ok_or(NativeError::NodeNotFound)?;
+            debug_assert!(slot.node.is_none());
+            slot.generation = generation;
+            slot.node = Some(node);
+            return Ok(NodeHandle::from_parts(index, generation));
+        }
+
+        let index = u32::try_from(self.slots.len()).map_err(|_| NativeError::Capacity)?;
+        self.slots.push(NodeSlot {
+            generation,
+            node: Some(node),
+        });
+        Ok(NodeHandle::from_parts(index, generation))
+    }
+
+    fn resolve(&self, handle: NodeHandle) -> Result<NodeId, NativeError> {
+        let (index, generation) = handle.parts().ok_or(NativeError::NodeNotFound)?;
+        let slot = self
+            .slots
+            .get(index as usize)
+            .ok_or(NativeError::NodeNotFound)?;
+        if slot.generation != generation {
+            return Err(NativeError::NodeNotFound);
+        }
+        slot.node.ok_or(NativeError::NodeNotFound)
+    }
+
+    fn remove(&mut self, handle: NodeHandle) -> Result<(), NativeError> {
+        let (index, generation) = handle.parts().ok_or(NativeError::NodeNotFound)?;
+        let slot = self
+            .slots
+            .get_mut(index as usize)
+            .ok_or(NativeError::NodeNotFound)?;
+        if slot.generation != generation || slot.node.is_none() {
+            return Err(NativeError::NodeNotFound);
+        }
+
+        slot.node = None;
+        self.free.push(index);
+        Ok(())
     }
 }
 
@@ -177,6 +236,7 @@ impl ContextRegistry {
 }
 
 static NEXT_CONTEXT_GENERATION: AtomicU32 = AtomicU32::new(1);
+static NEXT_NODE_GENERATION: AtomicU32 = AtomicU32::new(1);
 
 thread_local! {
     static CONTEXT_REGISTRY: RefCell<ContextRegistry> = RefCell::new(ContextRegistry::default());
@@ -209,8 +269,16 @@ fn with_registry_mut<T>(
 }
 
 fn next_context_generation() -> u32 {
+    next_generation(&NEXT_CONTEXT_GENERATION)
+}
+
+fn next_node_generation() -> u32 {
+    next_generation(&NEXT_NODE_GENERATION)
+}
+
+fn next_generation(counter: &AtomicU32) -> u32 {
     loop {
-        let generation = NEXT_CONTEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+        let generation = counter.fetch_add(1, Ordering::Relaxed);
         if generation != 0 {
             return generation;
         }
@@ -228,6 +296,8 @@ fn available_space(value: f32) -> AvailableSpace {
 #[cfg(test)]
 mod tests {
     use std::thread;
+
+    use taffy::prelude::Style;
 
     use super::{
         create_registered_context, destroy_registered_context, with_registered_context_mut,
@@ -248,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn reused_slot_changes_generation() {
+    fn reused_context_slot_changes_generation() {
         let mut registry = ContextRegistry::default();
         let first = registry.insert(Context::new()).unwrap();
         let (first_index, first_generation) = first.parts().unwrap();
@@ -285,5 +355,40 @@ mod tests {
 
         assert_eq!(other_thread.join().unwrap(), NativeError::ContextNotFound);
         assert_eq!(destroy_registered_context(handle), Ok(()));
+    }
+
+    #[test]
+    fn removed_node_handle_stays_stale_after_slot_reuse() {
+        let mut context = Context::new();
+        let first = context.create_node(Style::default()).unwrap();
+        let (first_index, first_generation) = first.parts().unwrap();
+        context.remove_node(first).unwrap();
+
+        let second = context.create_node(Style::default()).unwrap();
+        let (second_index, second_generation) = second.parts().unwrap();
+
+        assert_eq!(first_index, second_index);
+        assert_ne!(first_generation, second_generation);
+        assert!(matches!(
+            context.set_style(first, Style::default()),
+            Err(NativeError::NodeNotFound)
+        ));
+        assert!(context.set_style(second, Style::default()).is_ok());
+    }
+
+    #[test]
+    fn node_handle_from_one_context_is_rejected_by_another() {
+        let mut first_context = Context::new();
+        let mut second_context = Context::new();
+        let first_node = first_context.create_node(Style::default()).unwrap();
+        let second_node = second_context.create_node(Style::default()).unwrap();
+
+        assert!(matches!(
+            second_context.set_style(first_node, Style::default()),
+            Err(NativeError::NodeNotFound)
+        ));
+        assert!(second_context
+            .set_style(second_node, Style::default())
+            .is_ok());
     }
 }

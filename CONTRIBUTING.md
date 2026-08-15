@@ -9,22 +9,24 @@ Before starting work, read:
 1. [docs/PROJECT_DECISIONS.md](docs/PROJECT_DECISIONS.md) — normative engineering decisions.
 2. [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md) — current phase and next task.
 3. [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) — end-to-end implementation plan.
+4. [docs/NATIVE_DEVELOPMENT.md](docs/NATIVE_DEVELOPMENT.md) — clean-clone native setup and daily workflow.
 
 Do not bypass phase gates or introduce a competing ABI/build strategy without explicitly updating the normative decisions.
 
 ## Native development
 
 1. Fork or branch from `main`.
-2. Install Rustup; the repository `rust-toolchain.toml` selects the normal Rust toolchain automatically.
-3. Run the canonical quality command:
+2. Install Rustup and Python 3; the repository `rust-toolchain.toml` selects the normal Rust toolchain automatically.
+3. Follow the clean-clone/setup instructions in [docs/NATIVE_DEVELOPMENT.md](docs/NATIVE_DEVELOPMENT.md).
+4. Run the canonical quality command:
 
    ```bash
    python build/build.py quality
    ```
 
-4. Keep `native/Cargo.lock` synchronized and use locked dependency resolution.
-5. Add deterministic tests/verification with new native behavior.
-6. Keep changes focused and update `docs/TASK_TRACKER.md` when completing tracked tasks.
+5. Keep `native/Cargo.lock` synchronized and use locked dependency resolution.
+6. Add deterministic tests/verification with new native behavior.
+7. Keep changes focused and update `docs/TASK_TRACKER.md` when completing tracked tasks.
 
 The project MSRV is Rust 1.82.0 and CI validates it separately from the pinned normal/release toolchain.
 

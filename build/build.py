@@ -32,20 +32,20 @@ def require(executable: str) -> None:
         )
 
 
-def cargo(*args: str) -> None:
+def cargo_command(command: str, *args: str) -> None:
     require("cargo")
-    run("cargo", *args, "--manifest-path", str(MANIFEST))
+    run("cargo", command, "--manifest-path", str(MANIFEST), *args)
 
 
 def quality() -> None:
-    cargo("fmt", "--all", "--", "--check")
-    cargo("clippy", "--all-targets", "--", "-D", "warnings")
-    cargo("test")
-    cargo("build", "--release")
+    cargo_command("fmt", "--all", "--", "--check")
+    cargo_command("clippy", "--locked", "--all-targets", "--", "-D", "warnings")
+    cargo_command("test", "--locked")
+    cargo_command("build", "--locked", "--release")
 
 
 def host() -> None:
-    cargo("build", "--release")
+    cargo_command("build", "--locked", "--release")
 
 
 def header() -> None:

@@ -81,14 +81,14 @@ No user-facing Unity layout feature work begins before Phase 6 freezes ABI v1 an
 
 # 3. Current state
 
-**Current phase:** Phase 0 — Rust Project and Toolchain Foundation  
+**Current phase:** Phase 1 — Complete Rust/Taffy 0.13 Engine  
 **Phase state:** IN PROGRESS  
 **Current dependency baseline:** Taffy `0.13.0` exact pin  
 **Project MSRV:** Rust `1.82.0`  
 **Pinned normal/release toolchain:** Rust `1.97.1`  
 **Bootstrap ABI:** `0` (explicitly unstable)  
 **Unity feature development:** PAUSED  
-**NEXT TASK:** **P0.8 — split the bootstrap native crate into the production module structure.**
+**NEXT TASK:** **P1.1 — implement the production context registry/arena.**
 
 ### Pre-development decisions now closed
 
@@ -120,8 +120,8 @@ There are currently **no unresolved architecture decisions that block implementa
 
 | Phase | Name | Stable outcome | State |
 |---|---|---|---|
-| 0 | Rust Project and Toolchain Foundation | Clean reproducible Rust project with fixed dependency/toolchain policy | **IN PROGRESS** |
-| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | NOT STARTED |
+| 0 | Rust Project and Toolchain Foundation | Clean reproducible Rust project with fixed dependency/toolchain policy | **COMPLETE** |
+| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | **IN PROGRESS** |
 | 2 | Production C ABI Candidate | Safe fixed-width C ABI exposes the complete native engine | NOT STARTED |
 | 3 | Native Verification + ABI RC | Golden/safety/header/smoke tests prove an ABI release candidate | NOT STARTED |
 | 4 | Cross-Platform Native Compilation | ABI RC builds for Windows/macOS/Android/iOS/WebGL | NOT STARTED |
@@ -140,7 +140,7 @@ There are currently **no unresolved architecture decisions that block implementa
 
 # Phase 0 — Rust Project and Toolchain Foundation
 
-**State:** IN PROGRESS
+**State:** COMPLETE
 
 - [x] **P0.1** Create `native/` Rust crate.
 - [x] **P0.2** Configure `cdylib` + `staticlib` outputs.
@@ -149,12 +149,12 @@ There are currently **no unresolved architecture decisions that block implementa
 - [x] **P0.5** Fix rustfmt/Clippy failures and document current unsafe bootstrap exports.
 - [x] **P0.6** Pass host CI on Linux, Windows, macOS and Rust 1.82 MSRV.
 - [x] **P0.7** Commit `native/Cargo.lock` and move CI to `--locked` dependency use.
-- [ ] **P0.8 — NEXT TASK** Split native code into clear production modules: `ffi`, `context`, `handles`, `style`, `grid`, `measurement`, `error`, `version`.
+- [x] **P0.8** Split native code into clear production modules: `ffi`, `context`, `handles`, `style`, `grid`, `measurement`, `error`, `version`.
 - [x] **P0.9** Establish canonical build entry point `build/build.py` and make legacy shell tooling non-authoritative.
-- [ ] **P0.10** Add CI/script verification for `python build/build.py quality` behavior where practical.
-- [ ] **P0.11** Add repository-level native developer documentation for clean-clone setup.
+- [x] **P0.10** Verify `python build/build.py quality` directly in CI while retaining independent Windows/macOS and MSRV lanes.
+- [x] **P0.11** Add repository-level clean-clone native developer documentation in `docs/NATIVE_DEVELOPMENT.md`.
 
-### Phase 0 gate
+### Phase 0 gate — PASSED
 
 - `cargo fmt --check` green.
 - Clippy green with warnings denied.
@@ -169,11 +169,11 @@ There are currently **no unresolved architecture decisions that block implementa
 
 # Phase 1 — Complete Rust/Taffy 0.13 Engine
 
-**State:** NOT STARTED
+**State:** IN PROGRESS
 
 ## Context/tree/handles
 
-- [ ] **P1.1** Production context registry/arena.
+- [ ] **P1.1 — NEXT TASK** Production context registry/arena.
 - [ ] **P1.2** Generation-safe opaque `uint64` context handles.
 - [ ] **P1.3** Generation-safe opaque `uint64` node/resource handles.
 - [ ] **P1.4** Persistent `TaffyTree` topology: create/remove/clear/set children.

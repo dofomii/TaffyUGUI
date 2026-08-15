@@ -82,6 +82,22 @@ Array counts use `uint32_t` unless a concrete need for a 64-bit count is demonst
 
 All exported functions use the C ABI (`extern "C"`). Managed desktop/Android calls use `CallingConvention.Cdecl`. iOS and WebGL use static/internal linkage while keeping the same C signatures.
 
+### Thread ownership and native context registry
+
+Taffy 0.13's selected compact style representation makes `TaffyTree` **non-`Send`**. TaffyUGUI must respect that property instead of adding an unsafe `Send`/`Sync` implementation.
+
+The production native context model is therefore:
+
+- each `Context` and its `TaffyTree` live in a **thread-local registry/arena**;
+- a context is created, used, and destroyed on its owning thread;
+- Unity's normal main-thread layout lifecycle is the intended production owner;
+- opaque context handles remain fixed-width `uint64_t` values and use generation protection;
+- context generations are allocated from a process-wide atomic sequence, so a handle created on one thread cannot accidentally resolve to a different thread's slot with the same local index;
+- using a context handle from a non-owning thread fails deterministically rather than moving the `TaffyTree` across threads;
+- the production ABI/status layer will expose an explicit invalid/wrong-thread diagnostic as part of Phase 2.
+
+The bootstrap ABI-0 pointer is only a temporary token that refers to the generation-safe internal context handle. It does not own the `TaffyTree`. ABI 0 remains transitional and is not used to define the final threading/error contract.
+
 ---
 
 ## 3. Authoritative C header

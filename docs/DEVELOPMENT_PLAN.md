@@ -1,163 +1,132 @@
-# TaffyUGUI — End-to-End Development Plan
+# TaffyUGUI — Rust-First End-to-End Production Development Plan
 
-**Status:** Active development plan  
+**Document type:** Master implementation and release plan  
 **Repository:** `dofomii/TaffyUGUI`  
-**Package:** `com.dofomii.taffyugui`  
-**Target:** Production-quality responsive layout for existing Unity uGUI using Rust + Taffy  
-**Primary rule:** Unity owns rendering and interaction; Taffy owns geometry only.
+**Installable package:** `UnityPackage/` / `com.dofomii.taffyugui`  
+**Native crate:** `native/` / `taffy_ugui_native`  
+**Operational tracker:** [TASK_TRACKER.md](TASK_TRACKER.md)  
+**Native build contract:** [NATIVE_LIBRARY_BUILD_PLAN.md](NATIVE_LIBRARY_BUILD_PLAN.md)
 
 ---
 
-## 1. Final Product Outcome
+# 1. Final Product Definition
 
-The final TaffyUGUI package will let a Unity developer take an existing uGUI hierarchy and replace Unity's layout calculation layer without replacing the rest of the UI.
+TaffyUGUI is a **Rust native layout engine integration plus a Unity uGUI package**.
 
-The desired end-user workflow is:
+It is not a C# layout library that happens to depend on Rust, and it is not a Unity-only project.
+
+The final product contains two first-class deliverables:
 
 ```text
-Existing Canvas / prefab
-    |
-Existing panel using HorizontalLayoutGroup / VerticalLayoutGroup / GridLayoutGroup
-    |
-Replace or migrate that layout component to TaffyLayoutGroup
-    |
-Keep existing Button / Image / TMP / ScrollRect / Animator / EventSystem / scripts
-    |
-Configure Flexbox / Grid / Block / responsive sizing in the Inspector
-    |
-Taffy computes x / y / width / height
-    |
-Unity applies the result to RectTransform
-    |
-Unity renders and handles input exactly as before
+TaffyUGUI repository
+│
+├── Rust/Taffy native engine
+│   ├── persistent Taffy trees
+│   ├── full v1 layout/style mapping
+│   ├── stable C ABI
+│   ├── native tests
+│   ├── platform build system
+│   └── compiled native artifacts
+│
+└── Unity UPM package
+    ├── managed runtime API
+    ├── TaffyLayoutGroup / TaffyLayoutItem
+    ├── uGUI/TMP/ScrollRect integration
+    ├── Editor tooling and migration
+    ├── tests/samples/docs
+    └── Plugins/ containing the compiled Rust artifacts
 ```
 
-The finished package must support the following without requiring UI Toolkit or recreation of old prefabs:
+The final user experience is:
 
-- Flexbox layout.
-- CSS Grid layout.
-- Block layout where it maps cleanly to uGUI.
-- Row/column direction and wrapping.
-- Percentage sizing.
-- Auto/intrinsic sizing.
-- Min/max sizing.
-- Margin, padding and gap.
-- Flex grow/shrink/basis.
-- Relative and absolute positioning.
-- Aspect ratio.
-- Grid templates, tracks, placement and auto flow.
-- Alignment and justification.
-- Existing `LayoutElement` data.
-- Unity `Text` intrinsic measurement.
-- TextMeshPro intrinsic/wrapped text measurement through an optional adapter assembly.
-- Image/RawImage intrinsic measurement.
-- Nested Taffy layout groups.
-- `ScrollRect` integration.
-- Canvas Scaler-compatible logical sizing.
-- Safe-area support.
-- Responsive/container breakpoint extensions.
-- Edit Mode and Prefab Mode preview.
-- Runtime style changes.
-- Migration tools for existing uGUI layout groups.
-- Diagnostics and conflict detection.
-- Windows, macOS, Android, iOS and Unity Web/WebGL native builds.
-- Automated testing and reproducible release packaging.
-
-TaffyUGUI will **not** render UI, replace the Canvas renderer, replace EventSystem, replace TMP, implement fonts, implement clipping, implement scrollbars, replace animation, or require a new UI hierarchy.
+```text
+Existing Unity Canvas / prefab
+        ↓
+Existing panel using uGUI components
+        ↓
+Replace/migrate Unity LayoutGroup with TaffyLayoutGroup
+        ↓
+Keep Button / Image / TMP / ScrollRect / Animator / EventSystem / scripts
+        ↓
+Configure Flexbox / Grid / Block / responsive sizing
+        ↓
+C# uploads styles + measurements through stable C ABI
+        ↓
+Compiled Rust library runs Taffy
+        ↓
+Rust returns x / y / width / height
+        ↓
+Unity applies results to RectTransform
+        ↓
+Normal Unity rendering, input and interaction continue unchanged
+```
 
 ---
 
-## 2. Current Verified Baseline
+# 2. Non-Negotiable Development Strategy
 
-### 2.1 Taffy version
+Development is strictly **native-first**.
 
-The helper specification referenced Taffy `0.13.0`, but the currently published Taffy documentation exposes `0.12.2` as the latest release. The repository is already correctly pinned to:
-
-```toml
-taffy = { version = "=0.12.2", ... }
-```
-
-Development will remain on the exact pinned release until a newer published release is deliberately evaluated. Upgrading Taffy will be a controlled task with ABI/style regression tests; it will never be done by changing to a floating branch.
-
-Current native feature baseline:
+The sequence is:
 
 ```text
-std
-taffy_tree
-flexbox
-grid
-block_layout
-content_size
+A. Rust project foundation
+B. Taffy integration and complete native feature engine
+C. production C ABI and native safety
+D. native verification and ABI freeze
+E. cross-platform native compilation
+F. Unity-ready native artifact staging
+---------------- Native Milestone Gate ----------------
+G. Unity managed/native bridge
+H. minimal working uGUI product
+I. full uGUI feature/measurement compatibility
+J. Grid/responsive/editor/integration tooling
+K. real Unity player validation per platform
+L. performance/reliability hardening
+M. final UPM release
 ```
 
-Features not verified in the currently pinned release will not be promised as v1 features merely because they are mentioned by a future or draft Taffy API.
+The existing C# files in the repository are considered bootstrap scaffolding until the **Native Milestone Gate** passes.
 
-### 2.2 Unity compatibility
-
-The current UPM manifest declares:
-
-```json
-"unity": "2021.3"
-```
-
-The architecture will avoid newer APIs where possible so we can attempt a Unity 2019.4 LTS compatibility lane later. We will **not lower the manifest minimum to 2019.4 until the complete Runtime assembly and core Edit Mode tests actually compile and pass there**.
-
-Planned compatibility validation tiers:
-
-```text
-Tier A: Unity 2021.3 LTS — primary initial baseline
-Tier B: Unity 2022.3 LTS — continuous compatibility
-Tier C: Unity 6 current LTS/release — forward compatibility
-Tier D: Unity 2019.4 LTS — backward-compatibility validation target
-```
-
-No UI Toolkit dependency will be introduced.
-
-### 2.3 Existing repository baseline
-
-The repository already contains:
-
-```text
-native/               Rust native wrapper foundation
-UnityPackage/         UPM package foundation
-docs/                 architecture documentation
-scripts/              native build helpers
-.github/workflows/     CI foundation
-```
-
-The existing `UnityPackage/` boundary will be retained. This keeps native source/build infrastructure outside the installable Unity package and allows Git-based UPM installation using a package subdirectory.
+This order exists to avoid designing Unity components around an unstable or incomplete native ABI.
 
 ---
 
-## 3. Non-Negotiable Architecture Rules
+# 3. Product Boundary
 
-These rules must remain true through development unless a measured compatibility problem proves a change is necessary.
+## Unity owns
 
-1. **Unity owns rendering and interaction.**
-2. **Taffy owns geometry only.**
-3. `TaffyLayoutGroup` derives from `UnityEngine.UI.LayoutGroup`.
-4. `TaffyLayoutItem` is optional for simple children.
-5. Existing `LayoutElement` values are reused where possible.
-6. Child `RectTransform`s are controlled through Unity layout APIs, not a parallel rendering system.
-7. The Rust/Taffy tree is persistent and dirty-driven.
-8. The managed public API does not expose Rust/Taffy internal types.
-9. The native C ABI does not expose Rust pointers, `Vec`, `String`, Rust enums or Taffy node IDs.
-10. Native calls are batched for steady-state layout.
-11. Rust does not callback into C# once per text node during layout.
-12. Text/image measurement is gathered in managed code and supplied to the native tree.
-13. Layout is not recomputed from `Update()` every frame.
-14. A live Taffy context is main-thread-owned in v1.
-15. Editor native resources have explicit lifetime management.
-16. Platform binaries are produced by CI and packaged automatically.
-17. Unity Web/WebGL is treated as its own Emscripten integration target.
-18. Migration tools are non-destructive and Undo-aware.
-19. No feature is marked production-ready until it has automated tests and at least one Unity integration validation case.
+- GameObjects and hierarchy.
+- Canvas and Canvas Scaler.
+- RectTransform serialization/application.
+- Image/RawImage rendering.
+- Button/Toggle/Slider and EventSystem.
+- TextMeshPro and Unity Text rendering.
+- masks/clipping.
+- ScrollRect and scrollbar rendering.
+- Animator and input.
+- prefabs/scenes.
+
+## Rust/Taffy owns
+
+- layout tree.
+- layout styles.
+- intrinsic measurement records supplied by Unity.
+- Flexbox computation.
+- Grid computation.
+- Block computation.
+- box geometry.
+- x/y/width/height results.
+
+## TaffyUGUI C ABI owns the compatibility boundary
+
+Unity never directly depends on Taffy Rust types. Rust never directly depends on Unity types.
 
 ---
 
-## 4. Target Repository Structure
+# 4. Source and Package Structure
 
-The current repository will evolve toward the following structure while keeping `UnityPackage/` as the installable package root:
+The repository evolves toward:
 
 ```text
 TaffyUGUI/
@@ -182,180 +151,350 @@ TaffyUGUI/
 │       ├── error.rs
 │       └── version.rs
 │
+├── tests/
+│   ├── native/
+│   ├── golden/
+│   └── abi/
+│
+├── build/
+│   ├── build.py
+│   ├── targets.py
+│   ├── verify.py
+│   ├── package_native.py
+│   └── package_unity.py
+│
+├── dist/
+│   └── native/              # generated, normally not source-controlled
+│
 ├── UnityPackage/
 │   ├── package.json
-│   ├── CHANGELOG.md
-│   ├── LICENSE.md
-│   ├── Third Party Notices.md
-│   │
 │   ├── Runtime/
-│   │   ├── TaffyUGUI.Runtime.asmdef
 │   │   ├── Core/
 │   │   ├── Styles/
-│   │   ├── Measurement/
 │   │   ├── Native/
+│   │   ├── Measurement/
 │   │   ├── Responsive/
 │   │   ├── Integration/
 │   │   └── Diagnostics/
-│   │
 │   ├── Runtime.TMP/
-│   │   └── TaffyUGUI.TMP.asmdef
-│   │
 │   ├── Editor/
-│   │   ├── TaffyUGUI.Editor.asmdef
-│   │   ├── Inspectors/
-│   │   ├── Drawers/
-│   │   ├── Windows/
-│   │   ├── SceneView/
-│   │   ├── Migration/
-│   │   ├── Validation/
-│   │   └── Build/
-│   │
 │   ├── Plugins/
 │   │   ├── Windows/
 │   │   ├── macOS/
 │   │   ├── Android/
 │   │   ├── iOS/
 │   │   └── WebGL/
-│   │
 │   ├── Tests/
-│   │   ├── Runtime/
-│   │   └── Editor/
-│   │
 │   ├── Samples~/
 │   └── Documentation~/
 │
-├── tests/
-│   ├── native/
-│   ├── golden/
-│   └── abi/
-│
-├── scripts/
-│   ├── build.py
-│   ├── build-windows.ps1
-│   ├── build-android.py
-│   ├── build-apple.sh
-│   ├── build-web.py
-│   └── package.py
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── DEVELOPMENT_PLAN.md
-│   ├── ABI.md
-│   ├── PLATFORM_SUPPORT.md
-│   └── PERFORMANCE.md
-│
 └── .github/workflows/
+    ├── native-quality.yml
+    ├── native-platforms.yml
+    ├── unity-tests.yml
+    └── release.yml
 ```
 
-The structure may be introduced gradually; package behavior takes priority over cosmetic reorganization.
+`native/` is canonical source. `UnityPackage/Plugins/` is the shipped compiled payload.
 
 ---
 
-# 5. Development Phases
+# 5. Rust/Taffy Baseline and Dependency Policy
 
-Each phase has a specific deliverable and an exit gate. Work should not expand into the next major feature until the current vertical slice is stable.
+The repository currently pins an exact Taffy version. That exact pin remains until an explicit dependency-upgrade task changes it.
 
----
+Before the native ABI is frozen:
 
-## Phase 0 — Repository and Contract Hardening
+1. verify the chosen Taffy release exposes the required Flexbox/Grid/Block/style APIs.
+2. verify required features compile on all target families.
+3. commit `Cargo.lock`.
+4. document feature flags.
+5. record the embedded Taffy version through the native version API.
 
-### Goal
+Production rules:
 
-Turn the bootstrap repository into a development base whose public contracts, versioning and package boundaries are explicit.
+- never track a floating Git branch.
+- never let a Taffy update silently change the Unity-facing ABI.
+- upgrade Taffy only with full native golden/ABI regression tests.
 
-### Work
+The current crate remains configured for both:
 
-- Normalize the current native source into modules instead of keeping all FFI behavior in one file.
-- Add `Cargo.lock` and make dependency pinning mandatory.
-- Define package SemVer and native ABI version as independent numbers.
-- Add:
-  - `CHANGELOG.md`
-  - `SECURITY.md`
-  - `THIRD_PARTY_NOTICES.md`
-  - package-side license/notice files.
-- Document supported/experimental platform status.
-- Add a clear API stability policy:
-  - `0.x`: public API can evolve, but intentional breaking changes are documented.
-  - `1.x`: managed API and ABI compatibility follow SemVer/ABI rules.
-- Introduce central constants for:
-  - managed package version
-  - native build version
-  - ABI version
-  - Taffy version
-  - native capability flags.
-- Ensure the AI-generated-code disclaimer remains visible in the README and does not replace the legal MIT license disclaimer.
+```toml
+crate-type = ["cdylib", "staticlib"]
+```
 
-### Deliverable
-
-A repository where a managed/native mismatch can be diagnosed before any layout operation is attempted.
-
-### Exit criteria
-
-- Native library exports its ABI/Taffy/build version.
-- C# loader validates ABI before creating layout state.
-- Third-party dependency/version is documented.
-- CI builds the native host library and runs native tests.
+Dynamic libraries are used where Unity loads shared plugins; static output supports iOS/WebGL-style linkage.
 
 ---
 
-## Phase 1 — Stable Native C ABI and Context Lifetime
+# 6. Phase 0 — Rust Project and Toolchain Foundation
 
-### Goal
+## Objective
 
-Create the production native boundary before adding more Unity-facing features.
+Make the native crate clean, deterministic and reproducible before adding more feature surface.
 
-### Native API
+## Work
 
-The first stable family of functions will cover:
+- repair `rustfmt` and Clippy failures.
+- keep warnings denied in CI.
+- verify tests/release builds on Linux, Windows and macOS hosts.
+- commit `Cargo.lock`.
+- establish module boundaries.
+- define Rust toolchain/MSRV policy.
+- add local developer scripts equivalent to CI.
+- verify clean-clone build.
+
+## Required commands/gates
+
+```text
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+cargo build --release
+```
+
+## Exit result
+
+A trustworthy Rust project foundation that can be expanded without build ambiguity.
+
+---
+
+# 7. Phase 1 — Build the Full Rust/Taffy Layout Engine
+
+This phase finishes the native feature engine **before Unity relies on it**.
+
+## 7.1 Context and tree model
+
+Each native context owns:
+
+```text
+TaffyTree<NodeContext>
+handle arena / generations
+style cache
+measurement cache
+temporary upload/result buffers
+last error state
+version/capability data
+```
+
+Required operations:
+
+```text
+context create/destroy/clear
+node create/remove
+set children
+set style
+set measurement
+mark dirty
+compute layout
+read layout(s)
+```
+
+The tree is persistent. It is not recreated every frame.
+
+## 7.2 Handle model
+
+Unity-visible node/context values are opaque numeric handles.
+
+Requirements:
+
+- stale handle detection.
+- generation protection.
+- deterministic destruction.
+- no raw Taffy `NodeId` exposure.
+- invalid handles return errors, never undefined behavior.
+
+## 7.3 Complete v1 style mapping
+
+Implement the native representations/conversions needed for:
+
+### Core
+
+```text
+display
+box sizing
+direction
+overflow X/Y
+scrollbar reservation
+position
+insets
+size
+min size
+max size
+aspect ratio
+margin
+padding
+layout border
+```
+
+### Flexbox
+
+```text
+flex direction
+flex wrap
+flex basis
+flex grow
+flex shrink
+align items
+align self
+align content
+justify content
+gap
+```
+
+### Block
+
+- Block display/flow behavior exposed by the selected Taffy baseline.
+
+### Grid
+
+```text
+template columns/rows
+auto columns/rows
+auto flow
+placement/spans
+gap
+alignment
+fixed tracks
+percent tracks
+auto tracks
+fraction tracks
+minmax/repeat where supported
+```
+
+Grid variable-length state must not be embedded as arbitrary Rust vectors in fixed FFI structs. Use explicit resources or serialized bulk descriptions with clear lifetime rules.
+
+## 7.4 Unit model
+
+Managed/native representation supports the meaningful Taffy variants:
+
+```text
+Auto
+Length / Point logical unit
+Percent
+future Calc only if deliberately enabled
+```
+
+Percent values cross the ABI in normalized form.
+
+One native logical length unit corresponds to one Unity local RectTransform layout unit once Unity integration begins. Device pixels remain a Canvas Scaler concern.
+
+## 7.5 Measurement model
+
+Rust must be able to compute layouts using cached measurement data supplied by Unity later.
+
+The native API therefore supports records describing:
+
+- known width/height.
+- available width/height behavior.
+- intrinsic preferred sizes.
+- replaced-element/intrinsic ratio information where applicable.
+
+Critical rule:
+
+> Rust does not call back into C# for every measurement request.
+
+Unity/TMP measurement is a later managed responsibility; the native engine already provides the input mechanism now.
+
+## 7.6 Bulk steady-state design
+
+Before native completion, support coarse-grained operations needed for production:
+
+```text
+bulk create/remove where justified
+bulk child/topology updates where useful
+bulk style updates
+bulk measurement updates
+compute once
+bulk layout result readback
+```
+
+## Exit result
+
+The complete intended v1 layout engine works through Rust/native tests without Unity.
+
+---
+
+# 8. Phase 2 — Production C ABI and Safety
+
+The ABI is a product API, not an incidental `extern C` layer.
+
+## 8.1 Version/capability handshake
+
+Required conceptual exports:
 
 ```text
 tu_get_abi_version()
-tu_get_taffy_version(...)
-tu_get_build_version(...)
+tu_get_taffy_version()
+tu_get_build_version()
 tu_get_capabilities()
-
-tu_context_create()
-tu_context_destroy()
-tu_context_clear()
-
-tu_node_create()
-tu_nodes_create_bulk()
-tu_node_remove()
-tu_nodes_remove_bulk()
-
-tu_node_set_children()
-tu_nodes_set_children_bulk()
-
-tu_node_set_style()
-tu_nodes_set_styles_bulk()
-
-tu_node_set_measurement()
-tu_nodes_set_measurements_bulk()
-
-tu_node_mark_dirty()
-
-tu_compute_layout()
-tu_get_layout()
-tu_get_layouts_bulk()
-
-tu_get_last_error_code()
-tu_get_last_error_message(...)
 ```
 
-Names may be adjusted once, before the ABI is declared stable, but the responsibilities will remain.
+ABI version is independent of package SemVer.
 
-### Handle model
+Example conceptual release metadata:
 
-- Contexts and nodes use opaque 64-bit handles.
-- Native handles are generation-aware so stale handles are rejected.
-- No raw Rust pointer becomes a public C# value.
-- Removing a node invalidates its generation.
-- Destroying a context invalidates all nodes owned by it.
+```text
+Package: 1.0.0
+Native:  1.0.0
+ABI:     1
+Taffy:   exact pinned version
+Commit:  source SHA
+Target:  target triple
+```
 
-### Error model
+## 8.2 Context/node API
 
-Define numeric errors such as:
+Conceptual ABI:
+
+```text
+tu_context_create
+tu_context_destroy
+tu_context_clear
+
+tu_node_create
+tu_nodes_create_bulk
+tu_node_remove
+tu_nodes_remove_bulk
+tu_node_set_children
+tu_node_set_children_bulk
+tu_node_set_style
+tu_nodes_set_styles_bulk
+tu_node_set_measurement
+tu_nodes_set_measurements_bulk
+tu_node_mark_dirty
+
+tu_compute_layout
+tu_get_layout
+tu_get_layouts_bulk
+```
+
+Exact names/signatures are frozen only after tests prove the design.
+
+## 8.3 FFI rules
+
+All Rust structs crossing FFI:
+
+```rust
+#[repr(C)]
+```
+
+Managed side later mirrors them with sequential layout.
+
+Rules:
+
+- fixed-width integers.
+- `f32`/float.
+- no Rust `bool` in ABI.
+- no Rust enum layout dependency.
+- no Rust `Vec`/`String`/slice/reference ownership crossing ABI.
+- explicit numeric enums.
+- pointer+count only for temporary caller-owned buffers.
+- no unwind across FFI.
+
+## 8.4 Error model
+
+Stable numeric errors, conceptually:
 
 ```text
 TU_OK
@@ -364,173 +503,446 @@ TU_INVALID_NODE
 TU_INVALID_ARGUMENT
 TU_ABI_MISMATCH
 TU_TAFFY_ERROR
-TU_UNSUPPORTED
 TU_OUT_OF_MEMORY
 TU_PANIC
+TU_UNSUPPORTED
 ```
 
-FFI functions must validate NaN/invalid enum/range inputs before translating them into Taffy types.
+Provide last-error diagnostics for development/support paths.
 
-### Panic safety
+## 8.5 Panic and safety
 
-No Rust unwind may cross FFI. Release behavior will use explicit validation and an agreed panic strategy. Error context will include the failing operation and enough node/context information for diagnostics.
+Every unsafe export gets a documented `# Safety` contract.
 
-### C# wrapper
+FFI validation covers:
 
-Create:
+- null pointers.
+- invalid counts.
+- invalid enums.
+- NaN/infinite values where invalid.
+- stale handles.
+- context mismatch.
+- unsupported capabilities.
 
-```text
-TaffyNative
-TaffyNativeTypes
-TaffyNativeContext : IDisposable
-TaffyNativeException
-TaffyNativeVersion
-TaffyNativeCapabilities
-```
+No Rust panic may unwind across the C boundary.
 
-`TaffyNative` remains internal P/Invoke only. User code never invokes native functions directly.
+## Exit result
 
-### Exit criteria
-
-- Create/destroy 10,000 contexts/nodes in native tests without invalid access.
-- Stale node handles are rejected.
-- ABI mismatch produces a clear managed exception/error before layout begins.
-- Bulk result retrieval works for a multi-node tree.
-- Context lifetime is deterministic.
+The entire Phase 1 native engine is exposed through a stable, safe binary interface.
 
 ---
 
-## Phase 2 — Unity Flexbox Vertical Slice
+# 9. Phase 3 — Native Verification and ABI Freeze
 
-### Goal
+Before cross-compiling, prove the host library independently.
 
-Prove the complete path from an existing uGUI hierarchy to Taffy and back to `RectTransform`.
+## 9.1 Unit tests
 
-### Core components
+Cover:
 
-Implement/refactor:
+- contexts.
+- generation handles.
+- stale handles.
+- style conversion.
+- dimensions/percent.
+- Flex enums/layout.
+- Grid resources/layout.
+- Block layout.
+- measurement cache.
+- error codes/messages.
+- version/capabilities.
 
-```text
-TaffyLayoutGroup : LayoutGroup
-TaffyLayoutItem
-TaffyLayoutContext
-TaffyLayoutNode
-TaffyLayoutScheduler
-TaffyLayoutResult
-TaffyDirtyFlags
-```
+## 9.2 Golden geometry tests
 
-### Initial property set
-
-Parent/group:
-
-```text
-Display = Flex
-FlexDirection = Row / Column / reverse variants
-FlexWrap = NoWrap / Wrap / WrapReverse
-Padding
-Gap X / Gap Y
-AlignItems
-AlignContent
-JustifyContent
-PixelRounding
-```
-
-Child/item:
+Known trees/styles assert epsilon-tolerant:
 
 ```text
-Width / Height
-MinWidth / MinHeight
-MaxWidth / MaxHeight
-FlexBasis
-FlexGrow
-FlexShrink
-AlignSelf
+x
+y
+width
+height
 ```
 
-Units:
+Cases:
+
+- flex row/column/reverse.
+- wrap.
+- grow/shrink/basis.
+- percent/min/max.
+- margin/padding/gap.
+- absolute/relative.
+- aspect ratio.
+- Block.
+- Grid explicit/implicit/auto-flow.
+- intrinsic measurement.
+
+## 9.3 Independent ABI smoke harness
+
+A tiny C/C++ or equivalent binary loads the compiled host artifact and performs:
 
 ```text
-Auto
-Point/Unit
-Percent
+read version/capabilities
+create context
+create root + children
+upload styles
+set children
+compute known layout
+bulk-read results
+assert geometry
+destroy context
 ```
 
-### Unity lifecycle implementation
+It verifies the **compiled artifact**, not only Rust source behavior.
 
-`TaffyLayoutGroup` will integrate with the uGUI Auto Layout lifecycle:
+## 9.4 ABI contract tests
+
+- struct size/alignment.
+- numeric enum values.
+- version handshake.
+- invalid input.
+- repeated create/destroy.
+- stress topology mutation.
+
+## 9.5 ABI freeze
+
+Only after all tests pass, assign ABI v1.
+
+After that, incompatible binary changes require a deliberate ABI increment.
+
+---
+
+# 10. Phase 4 — Cross-Platform Native Build System
+
+Now compile the complete, verified ABI v1 library for every planned Unity platform family.
+
+This happens **before Unity feature development**.
+
+## 10.1 Authoritative build entry point
+
+Converge on commands conceptually like:
 
 ```text
-CalculateLayoutInputHorizontal()
-SetLayoutHorizontal()
-CalculateLayoutInputVertical()
-SetLayoutVertical()
+python build/build.py native host
+python build/build.py native windows-x64
+python build/build.py native macos
+python build/build.py native android-arm64
+python build/build.py native ios
+python build/build.py native webgl
+python build/build.py native all
+python build/build.py stage-unity
 ```
 
-Relevant invalidation hooks:
+Responsibilities:
+
+1. verify prerequisites.
+2. choose Rust target/toolchain.
+3. build locked release crate.
+4. verify output exists and matches architecture.
+5. verify symbols/ABI where possible.
+6. execute smoke harness when target is host-runnable.
+7. stage deterministic artifact path.
+8. emit target/version manifest.
+
+## 10.2 Target matrix
+
+### Windows
+
+Primary:
 
 ```text
-OnEnable()
-OnDisable()
-OnValidate()
-OnRectTransformDimensionsChange()
-OnTransformChildrenChanged()
-OnDidApplyAnimationProperties()
-OnTransformParentChanged() where safe
-OnCanvasHierarchyChanged() where safe
+x86_64-pc-windows-msvc → taffy_ugui.dll
 ```
 
-### RectTransform application
+Additional ARM64 is included only when supported/advertised by the selected Unity compatibility matrix.
 
-Results are applied using `LayoutGroup` layout methods such as `SetChildAlongAxis(...)` rather than creating an independent positioning system.
+### macOS
 
-Only values changed beyond a small epsilon are written to children.
+```text
+aarch64-apple-darwin → libtaffy_ugui.dylib
+x86_64-apple-darwin  → libtaffy_ugui.dylib where supported
+```
 
-### First validation prefab
+A universal binary may be assembled after both slices validate.
+
+### Android
+
+Required primary:
+
+```text
+aarch64-linux-android → libtaffy_ugui.so → arm64-v8a
+```
+
+Additional ABI lanes such as ARMv7/x86_64 are added only when part of the compatibility/test matrix.
+
+The NDK must match supported Unity toolchain requirements rather than simply using the newest installed NDK.
+
+### iOS
+
+```text
+aarch64-apple-ios → libtaffy_ugui.a
+```
+
+Simulator slices/XCFramework packaging are added according to the Unity/Xcode validation matrix.
+
+### Unity Web/WebGL
+
+WebGL is treated as a dedicated Emscripten linkage target.
+
+Do not claim compatibility from a generic WASM build. The build must use the Emscripten toolchain compatible with the Unity lane being validated.
+
+## 10.3 Cross-platform checks
+
+For every artifact:
+
+- file format.
+- architecture.
+- expected symbols.
+- ABI version contract.
+- build/Taffy version metadata.
+- checksum.
+- smoke execution where runnable.
+- static/link validation where not runnable.
+
+## Exit result
+
+A reproducible `dist/native/...` set exists for every planned platform family.
+
+---
+
+# 11. Phase 5 — Unity-Ready Native Artifact Staging
+
+The compiled Rust binaries now become part of the future UPM package.
+
+Target structure:
+
+```text
+UnityPackage/Plugins/
+├── Windows/
+│   ├── x86_64/taffy_ugui.dll
+│   └── ARM64/taffy_ugui.dll        # only if supported
+├── macOS/
+│   └── libtaffy_ugui.dylib
+├── Android/
+│   ├── arm64-v8a/libtaffy_ugui.so
+│   ├── armeabi-v7a/...             # optional matrix
+│   └── x86_64/...                  # optional matrix
+├── iOS/
+│   └── static/XCFramework assets
+└── WebGL/
+    └── Emscripten-compatible linkage assets
+```
+
+## Required staging work
+
+- deterministic copy/stage script.
+- Unity library naming consistent with P/Invoke.
+- plugin importer `.meta` configuration committed.
+- artifact manifest with checksum/version/ABI/target metadata.
+- no hand-copied binary dependency.
+- clean-clone native build can regenerate the package payload.
+
+## Native Milestone Gate
+
+No Unity feature phase begins until:
+
+1. full native engine complete.
+2. full intended v1 C ABI complete.
+3. ABI tests/golden/smoke tests green.
+4. ABI v1 frozen.
+5. required platform-family artifacts compiled.
+6. artifacts staged in final UPM plugin layout.
+7. plugin importer metadata prepared.
+8. artifact manifest/checksums generated.
+9. process reproducible from clean source.
+
+---
+
+# 12. Phase 6 — Unity Managed/Native Foundation
+
+Only now do we treat Unity development as active.
+
+## 12.1 Runtime native wrapper
+
+Organize:
+
+```text
+Runtime/Native/
+├── TaffyNative.cs
+├── TaffyNativeTypes.cs
+├── TaffyNativeContext.cs
+├── TaffyNativeException.cs
+├── TaffyNativeVersion.cs
+└── TaffyNativeCapabilities.cs
+```
+
+`TaffyNative` contains internal P/Invoke only.
+
+Platform selection:
+
+```text
+Windows/macOS/Android: DllImport("taffy_ugui")
+iOS:                  DllImport("__Internal")
+WebGL:                 DllImport("__Internal")
+```
+
+Exact compile symbols are centralized.
+
+## 12.2 Safe managed context
+
+`TaffyNativeContext : IDisposable`:
+
+- checks ABI/capabilities.
+- creates/destroys context.
+- guards use-after-dispose.
+- records owner thread.
+- translates errors.
+- manages reusable buffers.
+- cleans up on Unity/editor lifecycle changes.
+
+Do not depend on finalizers alone.
+
+## 12.3 Managed/native contract tests
+
+Verify:
+
+- struct size/layout.
+- enum values.
+- ABI version.
+- capabilities.
+- native load.
+- context lifecycle.
+
+## Exit result
+
+Unity can safely load and call the completed native engine.
+
+---
+
+# 13. Phase 7 — Minimal Working Unity uGUI Product
+
+The first user-facing vertical slice deliberately stays small.
+
+## TaffyLayoutGroup
+
+Base:
+
+```text
+UnityEngine.UI.LayoutGroup
+```
+
+Initial responsibilities:
+
+- call `base.CalculateLayoutInputHorizontal()`.
+- collect direct `rectChildren`.
+- maintain persistent native nodes.
+- support Row/Column.
+- support simple Auto/Point size.
+- padding/gap.
+- compute through native ABI.
+- read results.
+- apply with Unity layout APIs.
+
+Initial lifecycle:
+
+```text
+CalculateLayoutInputHorizontal
+CalculateLayoutInputVertical
+SetLayoutHorizontal
+SetLayoutVertical
+OnEnable/Disable
+OnValidate
+OnRectTransformDimensionsChange
+OnTransformChildrenChanged
+```
+
+Edit/Play Mode must work without continuous `Update()` layout.
+
+## Exit validation prefab
 
 ```text
 Canvas
-└── Panel + TaffyLayoutGroup
+└── panel + TaffyLayoutGroup
     ├── Button
     ├── Image
-    ├── TMP text
-    └── Nested panel
+    ├── Text/TMP object
+    └── nested panel
 ```
 
-It must resize correctly at representative logical sizes:
-
-```text
-320x568
-375x812
-768x1024
-1366x768
-1920x1080
-```
-
-### Exit criteria
-
-- Can replace a HorizontalLayoutGroup with Flex Row without recreating children.
-- Can replace a VerticalLayoutGroup with Flex Column.
-- Wrap/gap/grow/shrink/min/max work.
-- Nested Taffy groups work for a basic case.
-- Edit Mode and Play Mode produce matching geometry.
-- No layout call occurs every frame while nothing is dirty.
-- No managed allocations occur in unchanged steady-state from TaffyUGUI code after warmup.
+Only the layout controller changes. Rendering and input remain standard uGUI.
 
 ---
 
-## Phase 3 — Dirty State, Scheduling and Rebuild Safety
+# 14. Phase 8 — Production Flexbox, Box Model and Measurement
 
-### Goal
+## 14.1 TaffyLayoutItem
 
-Make the vertical slice safe inside Unity's multi-stage layout system before adding text and Grid complexity.
+Optional child component for explicit overrides beyond inferred values.
 
-### Dirty flags
-
-Implement:
+Sections:
 
 ```text
-None
+participation
+position/insets
+size/min/max/aspect
+margin/padding/border geometry
+flex basis/grow/shrink/align self
+grid placement later
+advanced overflow/direction/replaced behavior
+```
+
+A child does not require it for basic layouts.
+
+## 14.2 Existing LayoutElement compatibility
+
+Default precedence:
+
+```text
+explicit TaffyLayoutItem override
+    > LayoutElement
+    > intrinsic measurement
+    > Taffy default
+```
+
+Map relevant min/preferred/flexible data without requiring prefab recreation.
+
+## 14.3 Text/Image measurement
+
+### Unity Text
+
+Use available uGUI preferred-size APIs within supported Unity range.
+
+### TMP
+
+Separate assembly:
+
+```text
+TaffyUGUI.TMP
+```
+
+Flow:
+
+1. provisional width constraint.
+2. `GetPreferredValues` or appropriate TMP measurement.
+3. upload measurement record.
+4. compute native layout.
+5. if wrapping width materially changes, perform one bounded second measurement/layout pass.
+6. stop at strict iteration limit.
+
+Default maximum: 2 production iterations.
+
+### Image/RawImage
+
+Use intrinsic sprite/texture dimensions where requested and preserve aspect semantics.
+
+### Custom
+
+Public `ITaffyMeasureProvider` extension point.
+
+## 14.4 Dirty architecture
+
+Flags:
+
+```text
 Hierarchy
 Style
 Responsive
@@ -538,215 +950,33 @@ Measurement
 AvailableSize
 Transform
 NativeTree
-All
 ```
 
-### Change detection
+No layout every frame by default.
 
-Cache compact state for:
+Cache component references, style hashes, measurements, native handles and available size.
 
-- child order/participation
-- Taffy style
-- resolved responsive style
-- LayoutElement inputs
-- intrinsic measurement
-- available parent size
-- last applied layout rectangle.
+## 14.5 Unity layout lifecycle bridge
 
-Do not upload style/children/measurements if their version/hash did not change.
+Taffy computes both axes, while uGUI splits horizontal/vertical passes.
 
-### Rebuild guards
+Bounded model:
 
-Implement:
+- horizontal calculation collects hierarchy/style.
+- horizontal set computes provisional widths.
+- vertical calculation updates width-dependent measurement.
+- vertical set applies final height/position.
+- if another rebuild is required, schedule it rather than recursively forcing immediate rebuild.
 
-```text
-layoutGeneration
-isRebuilding
-rebuildScheduled
-measurementIteration
-maxIterations
-epsilon
-```
-
-Never recursively call `LayoutRebuilder.ForceRebuildLayoutImmediate` from inside the active layout pass.
-
-If a width-dependent measurement changes final horizontal geometry, schedule one bounded rebuild instead of immediate recursion.
-
-### Exit criteria
-
-- Add/remove/reorder/enable/disable child correctly dirties topology.
-- Parent size change dirties available size only.
-- Scroll position change alone does not trigger layout.
-- Rebuild stress tests do not recurse indefinitely.
-- Unchanged layout does not issue native compute calls.
+Use generation/reentrancy/epsilon protections.
 
 ---
 
-## Phase 4 — LayoutElement and Intrinsic Measurement
+# 15. Phase 9 — CSS Grid Unity Authoring
 
-### Goal
+The native Grid engine already exists from Phase 1; this phase builds Unity serialization/authoring around it.
 
-Make existing old uGUI prefabs work without adding `TaffyLayoutItem` to every child.
-
-### Precedence model
-
-```text
-Explicit TaffyLayoutItem override
-    >
-LayoutElement
-    >
-Intrinsic measurement
-    >
-Taffy default
-```
-
-### LayoutElement mapping
-
-Use existing values where semantically valid:
-
-```text
-minWidth/minHeight       -> Taffy min size
-preferredWidth/Height   -> intrinsic/preferred sizing or basis
-flexibleWidth/Height    -> relevant flexibility/grow behavior
-ignoreLayout             -> participation filtering
-```
-
-The exact flex interpretation of Unity's separate horizontal/vertical flexibility will be documented because Flexbox has a main/cross-axis model rather than two fully independent flex-grow axes.
-
-### Measurement abstraction
-
-Public/internal contracts:
-
-```text
-ITaffyMeasureProvider
-TaffyMeasureInput
-TaffyMeasureResult
-TaffyMeasurementMode
-```
-
-Providers:
-
-```text
-TaffyLayoutElementMeasure
-TaffyUnityTextMeasure
-TaffyImageMeasure
-TaffyCustomMeasure
-```
-
-### Images
-
-Support Image/RawImage intrinsic size when Auto/intrinsic mode requests it. Preserve logical Canvas units; do not feed physical screen pixels into Taffy.
-
-### Exit criteria
-
-- Common Button/Image/LayoutElement children lay out without `TaffyLayoutItem`.
-- Explicit Taffy overrides beat LayoutElement predictably.
-- Inspector/diagnostics can report the source of a resolved value.
-
----
-
-## Phase 5 — TextMeshPro and Width-Dependent Measurement
-
-### Goal
-
-Make wrapped text stable without Rust-to-C# measurement callbacks.
-
-### Assembly boundary
-
-TMP support lives in:
-
-```text
-UnityPackage/Runtime.TMP/TaffyUGUI.TMP.asmdef
-```
-
-The core Runtime assembly must not fail to compile in a project where the TMP adapter is absent/disabled.
-
-### Measurement algorithm
-
-For wrapped text:
-
-```text
-1. Resolve provisional available width.
-2. Ask TMP for preferred size at that width.
-3. Upload measurement to native tree.
-4. Compute layout.
-5. If final width changes wrapping materially, measure once more.
-6. Compute final layout.
-7. Stop at strict iteration limit.
-```
-
-Default maximum: **2 normal iterations**.
-
-No unbounded measurement loop is permitted.
-
-### Test cases
-
-- single-line text
-- wrapped paragraph
-- explicit width + auto height
-- percentage width + auto height
-- dynamically changing text
-- nested text in flex wrap
-- TMP autosizing interaction documented/validated
-- locale strings with very different lengths
-
-### Exit criteria
-
-- Wrapped TMP height is stable at responsive widths.
-- Text change dirties measurement, not the entire application.
-- No per-text native-to-managed callback exists.
-- No recursive Unity rebuild loop occurs in pathological wrapping tests.
-
----
-
-## Phase 6 — Complete Core Box and Positioning Surface
-
-### Goal
-
-Move from Flex MVP to the important general Taffy style surface needed by production UI.
-
-### Add
-
-```text
-Margin
-Padding
-Border layout thickness (geometry only)
-Box sizing
-Position: relative / absolute
-Inset: left/right/top/bottom
-Aspect ratio
-Direction
-Overflow X / Y layout semantics
-Scrollbar width/reservation where supported
-Display = Block
-```
-
-### Unity-specific rules
-
-- Taffy border values affect geometry only; they never draw a Unity border.
-- Taffy overflow affects layout only; clipping still needs `Mask` or `RectMask2D`.
-- Taffy direction does not replace TMP text shaping/direction settings.
-- Absolute-positioned children remain normal Unity GameObjects and raycast targets.
-
-### Exit criteria
-
-- Absolute positioning golden tests match native Taffy.
-- Block sample works with intrinsic children.
-- Aspect-ratio sample works without `AspectRatioFitter`.
-- Conflicting `AspectRatioFitter` is detected.
-- Overflow-without-mask warning is available.
-
----
-
-## Phase 7 — CSS Grid as a First-Class Feature
-
-### Goal
-
-Implement Grid only after the native ABI, measurement and Unity lifecycle are stable.
-
-### Managed authoring types
-
-Create serializable types such as:
+Managed types:
 
 ```text
 TaffyGridTrack
@@ -756,524 +986,309 @@ TaffyGridNamedArea
 TaffyGridTemplate
 ```
 
-Common authoring must make these cases straightforward:
+Normal Inspector should make common patterns easy:
 
 ```text
 1fr 1fr 1fr
-200 units + 1fr
-auto + 1fr + auto
-repeat(N, 1fr)
-minmax(120 units, 1fr)
+200px 1fr
+auto 1fr auto
+repeat(3, 1fr)
+minmax(120px, 1fr)
 ```
 
-### Native grid ABI
+Do not expose only raw nested arrays.
 
-Variable-length grid data will not be embedded in a monolithic fixed-size style struct. We will use dedicated bulk/template resources or compact serialized native descriptions.
-
-No parsing of human-readable Grid strings will occur every frame.
-
-### Features
-
-- template columns/rows
-- auto columns/rows
-- auto flow
-- row/column gap
-- explicit placement
-- implicit tracks
-- alignment
-- named lines/areas only after the core numeric model is stable.
-
-### Migration target
-
-Unity `GridLayoutGroup` can be converted to an explicit Taffy Grid template for deterministic uniform-cell cases.
-
-### Exit criteria
-
-- Basic Grid geometry matches native golden tests.
-- Responsive card Grid works from narrow phone width to desktop width.
-- Explicit and auto placement tests pass.
-- Grid inside ScrollRect works.
-- Every exposed Grid style has managed/native conversion tests.
+Grid template native resources must be disposed/reused correctly.
 
 ---
 
-## Phase 8 — Responsive and Runtime Override Layer
+# 16. Phase 10 — Responsive Extensions and Unity Integration Hardening
 
-### Goal
+## Responsive system
 
-Add optional breakpoint-style behavior on top of Taffy's intrinsic responsive capabilities.
+Intrinsic responsiveness remains Taffy-based:
 
-Most responsive UI should first use:
-
-- percentages
-- wrap
-- grow/shrink
-- min/max
-- Grid tracks
-- auto placement
-- gap
+- percent.
+- flex wrap.
+- min/max.
+- Grid tracks.
+- grow/shrink.
 - aspect ratio.
 
-Breakpoints are an extension, not the primary layout mechanism.
-
-### Types
+Optional Unity extension adds container-based rules:
 
 ```text
-TaffyResponsiveProfile : ScriptableObject
-TaffyResponsiveRule
-TaffyBreakpoint
-TaffyResponsiveResolver
-TaffyStyleOverride
-```
-
-### Conditions
-
-```text
-min/max container width
-min/max container height
+min/max width
+min/max height
 orientation
-aspect ratio/range
+aspect range
 ```
 
-Default behavior is **container-based**, so reusable panels respond to the space assigned to them rather than only global screen dimensions.
-
-### Resolution order
+Resolution precedence:
 
 ```text
-serialized base style
--> shared profile rules in declared order
--> local responsive rules
--> runtime overrides
+serialized base
+→ responsive profile
+→ local responsive overrides
+→ runtime overrides
 ```
 
-### Runtime style API
+## Runtime override API
 
-Support setters and non-serialized overrides:
+Allow non-serialized state-driven changes without modifying prefab defaults.
 
-```text
-item.SetWidth(...)
-item.SetHeight(...)
-item.SetFlexGrow(...)
-item.SetDisplay(...)
-item.SetGridPlacement(...)
-group.MarkLayoutDirty()
+## ScrollRect
 
-item.RuntimeStyle...
-item.ClearRuntimeOverrides()
-```
+`TaffyScrollRectBridge`:
 
-Setters compare old/new values, set the minimum dirty flags and request the appropriate Unity rebuild automatically.
+- viewport size dirties content layout.
+- scrollbar reservation can affect native layout.
+- ScrollRect remains responsible for scrolling/clipping/rendering.
+- content position movement while scrolling must not cause relayout.
 
-### Exit criteria
+## Canvas Scaler
 
-- One responsive prefab works from 320 logical units to desktop without prefab duplication.
-- Runtime style changes do not mutate asset defaults unless explicitly serialized by Unity/editor operations.
-- Resolved style source is inspectable.
+Taffy receives RectTransform-local logical dimensions, not raw device pixels.
+
+## Safe Area
+
+Optional helper maps `Screen.safeArea` into Canvas-local padding/offset behavior.
+
+## Animation conflicts
+
+Warn when an Animator/tween directly drives child RectTransform properties that Taffy also owns.
 
 ---
 
-## Phase 9 — ScrollRect, Safe Area, Canvas Scaling and Integration Bridges
+# 17. Phase 11 — Editor Tooling and Migration
 
-### Goal
+## Inspectors
 
-Make TaffyUGUI behave correctly with the uGUI systems most production projects already use.
+### TaffyLayoutGroupEditor
 
-### `TaffyScrollRectBridge`
+- contextual Flex/Grid/Block sections.
+- native version/status.
+- current allocated size.
+- node count/timing.
+- dirty reason.
+- inline warnings.
+- normalize anchors action.
+- copy/migrate old LayoutGroup values.
+- responsive width preview.
 
-Responsibilities:
+### TaffyLayoutItemEditor
 
-- observe viewport size changes
-- reserve scrollbar thickness when requested
-- dirty layout when scrollbar visibility changes geometry
-- avoid dirtying layout from ordinary content scrolling
-- validate Mask/RectMask2D expectations
-- preserve ScrollRect's ownership of content movement.
+- per-property override toggles.
+- resolved values and source.
+- contextual Flex/Grid fields.
+- measurement debug data.
 
-Test:
+## Property drawers
 
-```text
-vertical
-horizontal
-both axes
-dynamic content
-auto-hide scrollbar
-nested ScrollRect
-Grid content
-Flex-wrap content
-```
+- Dimension/Length.
+- Rect.
+- Grid tracks/placement.
+- responsive rules.
 
-### `TaffySafeArea`
-
-- reads `Screen.safeArea`
-- converts to Canvas/local logical coordinates
-- exposes safe-area insets as Taffy padding or controlled offsets
-- updates only when the safe area actually changes.
-
-### Canvas Scaler
-
-The invariant is:
-
-```text
-device pixels
--> Canvas Scaler
--> RectTransform logical size
--> Taffy
-```
-
-Taffy never receives raw device resolution when local `RectTransform` dimensions are the real available space.
-
-### Animation conflicts
-
-Animator/tween changes to Taffy style properties are supported.
-
-Animator clips that directly animate layout-owned child position/size while Taffy controls those same values will produce a warning.
-
-### Exit criteria
-
-- Scroll position alone causes zero Taffy recomputation.
-- Canvas Scaler tests produce consistent logical layout.
-- Safe area updates on orientation/resolution simulation.
-- Common ownership conflicts are diagnosable.
-
----
-
-## Phase 10 — Production Editor Experience
-
-### Goal
-
-Make the package usable without reading native code or manually calculating Taffy structs.
-
-### Inspectors
-
-`TaffyLayoutGroupEditor`:
-
-- General / Box / Flex / Grid / Sizing sections
-- context-sensitive properties
-- native status
-- node count
-- last layout timing
-- dirty reason
-- current available size
-- inline conflict warnings
-- force refresh
-- normalize anchors action
-- copy/migrate from existing Unity layout group.
-
-`TaffyLayoutItemEditor`:
-
-- per-property override toggles
-- resolved value and source
-- Flex fields only when appropriate
-- Grid fields only under Grid parent
-- absolute fields only in absolute mode
-- Advanced foldout
-- measurement information
-- responsive/runtime state information.
-
-### Property drawers
-
-Create compact authoring for:
-
-```text
-TaffyDimension
-TaffyLength
-TaffyRect
-TaffyGridTrack
-TaffyGridPlacement
-TaffyResponsiveRule
-```
-
-### Scene visualization
-
-Editor-only visualization for:
-
-- content/padding/border/margin boxes
-- main/cross flex axes
-- wrap lines
-- gaps
-- Grid tracks/cells
-- absolute items
-- overflow boundary.
-
-### Layout Debugger
+## Debugger
 
 `Window > TaffyUGUI > Layout Debugger`
 
-Shows:
+Show:
 
-- Unity hierarchy node
-- native handle
-- resolved style
-- measurement
-- final layout rectangle
-- Grid placement
-- responsive rule
-- dirty flags
-- compute timing
-- warnings/errors.
+- Unity object.
+- native handle.
+- resolved styles.
+- measurements.
+- computed geometry.
+- Grid/Flex metadata.
+- responsive rule.
+- dirty flags.
+- compute timing.
 
-### Diagnostics window
+## Diagnostics
 
 `Window > TaffyUGUI > Diagnostics`
 
-Checks:
+Categories:
 
 ```text
-native plugin availability
-ABI match
-Taffy/native versions
-platform architecture
-layout conflicts
-TMP adapter
-measurement issues
-package version
-performance warnings
+Native plugin/ABI
+Hierarchy
+Conflicts
+Measurement
+Performance
+Platform
+Package version
 ```
 
-Add **Copy Diagnostic Report** for support/issues.
+## Migration Wizard
 
-### Exit criteria
+Safely convert:
 
-- Common misconfiguration is understandable from the Inspector.
-- A developer can see why a child got its width/height.
-- Native status and ABI mismatch are visible without opening logs.
-- Editor tools do not allocate heavily on every SceneView repaint.
+```text
+HorizontalLayoutGroup → Flex Row
+VerticalLayoutGroup   → Flex Column
+GridLayoutGroup       → explicit Taffy Grid where mapping is deterministic
+```
+
+Requirements:
+
+- Undo.
+- preview.
+- preserve source values before removing old component.
+- explicit unmappable-property report.
+- prefab-safe behavior.
+- no mass-save without explicit action.
 
 ---
 
-## Phase 11 — Migration Wizard for Existing uGUI
+# 18. Phase 12 — Unity Cross-Platform Player Validation
 
-### Goal
+Native artifacts were already built before Unity implementation. Now prove them inside Unity.
 
-Make the package useful for old projects without forcing prefab reconstruction.
+## Windows
 
-### Entry point
+- Editor native load.
+- player build.
+- ABI handshake.
+- core Flex/Grid/TMP smoke/regression.
 
-```text
-Tools > TaffyUGUI > Migration Wizard
-```
+## macOS
 
-### Analyze
+- correct architecture/universal selection.
+- Editor/player load.
+- same ABI/layout tests.
 
-- selected GameObject hierarchy
-- prefab/prefab stage
-- scene
-- later: selected project assets.
+## Android
 
-### HorizontalLayoutGroup
+- ARM64 required primary device/player lane.
+- native load through Unity plugin importer.
+- ABI/layout smoke.
+- representative runtime regression.
 
-Convert to:
+## iOS
 
-```text
-Display = Flex
-Direction = Row
-```
+- static linkage through Unity/Xcode pipeline.
+- `__Internal` calls resolve.
+- device runtime smoke.
 
-Map as closely as possible:
+## WebGL
 
-```text
-spacing
-padding
-childAlignment
-childControlWidth/Height
-childForceExpandWidth/Height
-reverseArrangement
-```
+- Unity-compatible Emscripten link.
+- `__Internal` linkage.
+- browser runtime smoke.
 
-### VerticalLayoutGroup
-
-Convert to Flex Column with equivalent mappings.
-
-### GridLayoutGroup
-
-Convert deterministic uniform-cell layouts to explicit Taffy Grid templates. Any property without exact semantic equivalence is called out in the migration report.
-
-### Safety rules
-
-- full Unity Undo support
-- capture source values before changing anything
-- preview before apply
-- analyze-only mode
-- duplicate/convert-copy option
-- no silent anchor rewriting
-- no scene/prefab mass-save without explicit user action
-- migration report with exact/non-exact mappings.
-
-### Exit criteria
-
-- Representative old Horizontal and Vertical prefabs can be migrated and visually/geometry compared.
-- Undo restores original components/configuration.
-- Grid migration flags non-equivalent cases instead of silently guessing.
+A platform becomes documented as supported only after this phase validates it.
 
 ---
 
-## Phase 12 — Cross-Platform Native Builds
+# 19. Performance and Allocation Architecture
 
-### Goal
+Initial targets are budgets to validate, not marketing promises.
 
-Ship correctly imported native artifacts without requiring the package user to build Rust.
-
-### Windows
-
-Initial required:
+Measure separately:
 
 ```text
-x86_64-pc-windows-msvc -> taffy_ugui.dll
+C# hierarchy scan
+style resolution
+measurement
+marshalling/upload
+Rust/Taffy compute
+result copy
+RectTransform apply
+Unity Canvas rebuild consequences
 ```
 
-Optional/validated later:
+Steady-state goals:
+
+- no native layout call when unchanged.
+- no per-frame managed allocation from TaffyUGUI after warmup in validated idle case.
+- reuse arrays/buffers.
+- no LINQ/reflection in hot path.
+- no repeated GetComponent scans during every layout.
+
+Benchmarks:
 
 ```text
-aarch64-pc-windows-msvc
+100 nodes
+1,000 nodes
+5,000 nodes
+10,000 stress case
+Flex
+Grid
+nested groups
+dynamic text
+single-node dirty
+50% dirty
+resolution resize
 ```
 
-### Android
-
-Required:
-
-```text
-aarch64-linux-android -> arm64-v8a/libtaffy_ugui.so
-```
-
-Compatibility/optional depending on supported Unity/player needs:
-
-```text
-armv7-linux-androideabi
-x86_64-linux-android
-```
-
-Use a Unity-compatible Android NDK for actual Unity validation.
-
-### macOS
-
-Build:
-
-```text
-aarch64-apple-darwin
-x86_64-apple-darwin
-```
-
-Package as the format that works reliably across the supported Unity versions, using a universal dylib where appropriate.
-
-### iOS
-
-Build device ARM64 and required simulator slices. Prefer an XCFramework when supported by the chosen Unity compatibility baseline; retain a static `.a` path where older Unity compatibility requires it.
-
-Managed calls use `DllImport("__Internal")` for iOS player linkage.
-
-### Web/WebGL
-
-Build using:
-
-```text
-wasm32-unknown-emscripten
-```
-
-The build must use the Emscripten toolchain compatible with the exact Unity version used for the Web build, not blindly the newest global emsdk.
-
-Web is considered complete only after a Unity Web player actually links and runs a layout smoke test.
-
-### Plugin import metadata
-
-Commit `.meta` files/configuration so users do not manually configure platform/CPU import settings after package installation.
-
-### Native smoke test per artifact
-
-Before packaging, every artifact must prove:
-
-```text
-ABI query
-context create/destroy
-3-node flex tree
-compute
-bulk layout read
-```
-
-### Exit criteria
-
-- Windows player smoke test passes.
-- macOS player smoke test passes.
-- Android ARM64 device/emulator test passes.
-- iOS device build links and runs.
-- Unity Web build links and executes layout.
-- No manual plugin copying/importer setup is required after installing a release package.
+Do not report only Taffy's compute time.
 
 ---
 
-## Phase 13 — Automated Unity Test Project and Regression Suite
+# 20. Native and Unity Test Architecture
 
-### Goal
+## Native Rust tests
 
-Make layout correctness reproducible rather than dependent on visual inspection.
+- style conversion.
+- dimensions/percent.
+- Flex/Grid/Block.
+- handles.
+- errors.
+- context lifecycle.
+- measurement cache.
+- bulk operations.
 
-### Rust tests
+## ABI tests
 
-Cover:
+- layout/alignment of structs.
+- numeric enum mapping.
+- compiled artifact loading.
+- version/capabilities.
+- invalid/stale handles.
 
-- style conversion
-- dimension conversion
-- enum mappings
-- percentages
-- flex properties
-- Grid resources/conversion
-- generation handles
-- stale handles
-- invalid input
-- context lifetime
-- measurement cache
-- bulk APIs
-- error paths.
+## Golden layout tests
 
-### Golden geometry tests
+Deterministic geometry cases for all exposed layout features.
 
-Known input trees assert `x/y/width/height` within epsilon for:
+## Unity Edit Mode
 
-```text
-FlexRow
-FlexColumn
-FlexWrap
-GrowShrink
-Percentage
-MinMax
-MarginPaddingGap
-AbsolutePosition
-AspectRatio
-GridBasics
-GridAutoFlow
-IntrinsicMeasure
-```
+- serialization.
+- hierarchy changes.
+- layout callbacks.
+- LayoutElement mapping.
+- native lifecycle.
+- prefab mode.
+- Canvas scaling.
+- migration data.
 
-### Unity Edit Mode tests
+## Unity Play Mode
 
-Cover:
+- runtime add/remove.
+- runtime style changes.
+- text changes.
+- resolution/orientation.
+- nested groups.
+- ScrollRect.
+- responsive rules.
 
-- serialization
-- layout callbacks
-- child order
-- enable/disable
-- hierarchy mutations
-- LayoutElement precedence
-- Canvas local sizing
-- Edit Mode refresh
-- prefab behavior
-- native cleanup around assembly/playmode lifecycle as testable.
+## Platform tests
 
-### Unity Play Mode tests
+- Windows.
+- macOS.
+- Android ARM64.
+- iOS ARM64.
+- WebGL.
 
-Cover:
+Where CI cannot fully execute a device lane, keep reproducible build/link checks and documented manual/device validation evidence.
 
-- dynamic child add/remove
-- runtime style changes
-- dynamic text
-- parent resolution/size changes
-- nested groups
-- responsive rules
-- ScrollRect
-- safe area simulation utilities where feasible.
+---
 
-### Regression scenes/prefabs
+# 21. Regression Scenes/Samples
 
-Create:
+Stable geometry cases:
 
 ```text
 FlexBasics
@@ -1282,6 +1297,7 @@ FlexNested
 PercentageSizing
 MinMax
 AbsolutePosition
+BlockBasics
 GridBasics
 GridAutoFlow
 GridResponsiveCards
@@ -1294,579 +1310,291 @@ MixedLayoutElement
 MigrationParity
 ```
 
-Geometry assertions are primary; screenshots may supplement them but will not be the sole correctness signal because TaffyUGUI does not own rendering.
-
-### Exit criteria
-
-- Every exposed managed style has at least one conversion/layout test.
-- A bug fix that affects layout adds a regression case before release.
-- Core tests run in CI.
+Prefer geometry assertions over screenshot-only tests because TaffyUGUI does not own rendering.
 
 ---
 
-## Phase 14 — Performance and Allocation Hardening
+# 22. CI/CD Architecture
 
-### Goal
+## Native quality workflow
 
-Ensure the bridge is fast enough that Unity Canvas/RectTransform work, not FFI overhead, is usually the dominant cost.
-
-### Work
-
-- bulk style upload
-- bulk measurement upload
-- bulk layout result retrieval
-- persistent arrays/buffers
-- reusable child/component caches
-- incremental topology updates
-- avoid LINQ/reflection in hot paths
-- avoid repeated `GetComponent` on every rebuild
-- apply RectTransform values only when changed
-- separate timings for managed preparation, native compute and Unity application.
-
-### Benchmarks
+Every relevant change:
 
 ```text
-100 Flex nodes
-1,000 Flex nodes
-5,000 Flex nodes
-100 Grid nodes
-1,000 Grid nodes
-nested groups
-dynamic text
-single-node style dirtied
-50% styles dirtied
-container resize
+fmt
+clippy
+tests
+host release build
+golden/ABI tests
 ```
 
-### Initial targets
+## Native platform workflow
 
-Targets are goals, not marketing promises, until measured on specified hardware:
+Build complete native artifact matrix from clean checkout.
 
-```text
-unchanged frame: zero native compute and effectively zero TaffyUGUI managed allocation
-100-node dirty layout: target < 0.1 ms native/bridge portion where practical
-1,000-node dirty layout: target < 1 ms native/bridge portion where practical
-```
+Outputs:
 
-Always report separately:
+- binaries/static libraries.
+- manifest.
+- checksums.
+- symbol/architecture verification.
 
-```text
-hierarchy/style preparation
-measurement
-marshalling/native upload
-Taffy compute
-layout result copy
-RectTransform application
-Unity Canvas consequences
-```
+## Unity workflow
 
-### Exit criteria
+Once Native Milestone is complete:
 
-- No per-frame TaffyUGUI allocation while unchanged after warmup.
-- No per-node temporary managed objects per layout pass.
-- Performance report is committed with hardware/Unity version/context.
-- Known expensive Unity Canvas rebuild costs are not incorrectly attributed to Taffy compute.
+- install staged native payload.
+- Unity Edit Mode tests.
+- Play Mode tests.
+- package validation.
+
+## Platform Unity workflow
+
+- target player build.
+- smoke/regression execution where possible.
+
+## Release workflow
+
+1. native quality green.
+2. rebuild all native target artifacts.
+3. verify/stage Plugins.
+4. run Unity regressions.
+5. run platform validation matrix.
+6. package UPM payload.
+7. generate checksums/version manifest.
+8. publish release only when all required gates pass.
 
 ---
 
-## Phase 15 — Build Validation and Release Packaging
+# 23. Build Validation Inside Unity
 
-### Goal
+Implement pre-build validation that checks:
 
-Make installation and release boring and reproducible.
+- native plugin for selected target exists.
+- correct ABI/version metadata.
+- supported architecture.
+- runtime assembly does not reference Editor assembly.
+- required TMP adapter state when TMP measurement is used.
+- known fatal layout/plugin conflicts.
 
-### Unity build preprocessor
-
-Before player builds:
-
-- verify required native plugin exists for active target
-- verify architecture
-- verify managed/native ABI metadata
-- ensure runtime assemblies do not reference Editor-only code
-- report unsupported targets
-- validate TMP adapter state when relevant
-- detect fatal native linkage conditions.
-
-Warnings, not build failures, are used for non-fatal style/hierarchy concerns.
-
-### CI jobs
-
-#### Native core
-
-- rustfmt
-- clippy
-- Rust tests
-- host builds
-- ABI smoke tests.
-
-#### Windows
-
-- x64 native artifact
-- Unity Edit Mode tests
-- Unity Play Mode tests
-- sample Windows player smoke test when CI licensing/environment permits.
-
-#### macOS/iOS
-
-- macOS artifacts
-- iOS static/XCFramework artifacts
-- Unity macOS tests
-- iOS link validation.
-
-#### Android
-
-- ARM64 native build
-- Unity Android sample build
-- symbol/ABI validation.
-
-#### Web
-
-- Unity-compatible Emscripten native build
-- Unity Web build
-- browser smoke test where CI environment permits.
-
-#### Release
-
-- collect artifacts
-- verify version/ABI consistency
-- verify notices/licenses
-- generate checksums
-- produce UPM package archive/tarball
-- produce Git-tag-installable package.
-
-### Installation modes
-
-Support:
-
-1. Git URL with package path.
-2. UPM release archive/tarball.
-3. Local/embedded package for old projects.
-
-### Exit criteria
-
-- Clean Unity project can install a tagged release and immediately load the correct native plugin.
-- Existing uGUI project can install without manual Plugin Inspector setup.
-- Release contains docs, samples, native binaries, license and third-party notices.
+Fatal errors are limited to conditions that will definitely break the player.
 
 ---
 
-# 6. Public Runtime API Design
+# 24. Documentation and Samples Required for Release
 
-The public API will be Unity-friendly and must not expose C ABI details.
-
-Conceptual usage:
-
-```text
-TaffyLayoutGroup
-    Display
-    FlexDirection
-    FlexWrap
-    Gap
-    Padding
-    GridTemplate...
-    MarkLayoutDirty()
-
-TaffyLayoutItem
-    Width
-    Height
-    Min/Max
-    FlexGrow
-    FlexShrink
-    FlexBasis
-    AlignSelf
-    GridPlacement
-    Position
-    Insets
-    RuntimeStyle
-```
-
-Changing a property must:
-
-```text
-compare old/new
--> update the managed value
--> mark minimum required dirty flags
--> request Unity layout rebuild
-```
-
-No separate user-facing `Apply()` call is required.
-
----
-
-# 7. Unity Layout Lifecycle Contract
-
-Because Taffy computes both axes together while Unity Auto Layout separates horizontal and vertical stages, the bridge will follow a bounded staged model.
-
-## Stage A — Calculate horizontal inputs
-
-```text
-base.CalculateLayoutInputHorizontal()
-refresh rectChildren
-resolve participation
-resolve style/LayoutElement/responsive values
-update topology/style cache
-collect width-independent measurement
-calculate horizontal layout input for parent
-```
-
-## Stage B — Set horizontal layout
-
-```text
-read actual available width
-perform provisional Taffy layout if required
-apply x/width
-cache child widths
-identify width-dependent measurement changes
-```
-
-## Stage C — Calculate vertical inputs
-
-```text
-measure TMP/Text/content using resolved width constraints
-upload changed measurements
-recompute if needed
-calculate vertical min/preferred/flexible inputs
-```
-
-## Stage D — Set vertical layout
-
-```text
-apply y/height
-if measurement produced a material horizontal change:
-    schedule one bounded rebuild
-never recursively force rebuild in the active pass
-```
-
-This lifecycle will be treated as a core test surface, not incidental implementation detail.
-
----
-
-# 8. Context Ownership and Nested Groups
-
-The default v1 ownership model is one persistent native context per independent `TaffyLayoutGroup` subtree root.
-
-A nested Taffy group participates as a node in its parent's layout while owning/using its own child layout context as required by the implementation.
-
-The exact nesting coordination will be validated against Unity's parent-first layout cycle. The important guarantees are:
-
-- no global singleton tree requirement
-- deterministic native cleanup
-- enabling/disabling one prefab cannot corrupt another layout root
-- Prefab Mode can own its own native state
-- public API does not depend on the final pooling strategy.
-
-If profiling later shows a clear advantage, native contexts may be pooled internally without changing user-facing components.
-
----
-
-# 9. Conflict Detection Rules
-
-The package will actively detect configurations where two systems try to own the same geometry.
-
-### Competing layout groups
-
-Warn/error for combinations such as:
-
-```text
-TaffyLayoutGroup + HorizontalLayoutGroup
-TaffyLayoutGroup + VerticalLayoutGroup
-TaffyLayoutGroup + GridLayoutGroup
-```
-
-when they control the same children.
-
-### ContentSizeFitter
-
-Classify usage as:
-
-```text
-supported
-supported with constraints
-likely cyclic
-unsupported
-```
-
-Do not issue a blanket warning when a valid preferred-size configuration exists.
-
-### AspectRatioFitter
-
-Prefer Taffy's `aspect_ratio` for children under Taffy control. Warn if both systems own the same size.
-
-### Anchors
-
-Do not silently normalize user anchors. Provide an explicit Undo-capable **Normalize Anchors** action.
-
-### Overflow
-
-If overflow layout says Hidden but no Unity clipping component exists, explain that geometry and visual clipping are separate responsibilities.
-
----
-
-# 10. Editor and Domain Reload Safety
-
-Edit Mode is a release requirement, not a later convenience.
-
-The package must:
-
-- update after Inspector style changes
-- update when parent RectTransform is resized
-- update after child add/remove/reorder
-- work in Prefab Mode
-- avoid scene dirty spam caused only by preview computation
-- dispose native contexts before assembly reload/playmode transition where required
-- avoid creating/destroying native trees on every Editor repaint
-- keep layout preview deterministic.
-
-`[ExecuteAlways]` will only be used where its lifetime behavior is understood and covered by tests.
-
----
-
-# 11. Samples and Documentation to Ship
-
-## Samples
-
-1. **Flexbox Basics** — row, column, alignment, gap, grow/shrink.
-2. **Responsive Cards** — 4/2/1-style responsive behavior primarily through wrapping/min sizes.
-3. **Grid** — sidebar/content/header/footer and auto-placement.
-4. **ScrollRect** — large dynamic content.
-5. **Text Measurement** — TMP wrapped text and auto height.
-6. **Responsive Breakpoints** — container rules.
-7. **Migration** — original Unity layout next to Taffy migration.
-
-## Documentation
+Required documentation:
 
 ```text
 Getting Started
+Architecture
+Native Build from Source
+Native ABI/versioning
 Flexbox
 Grid
-Block and Positioning
-Sizing and Units
-LayoutElement Compatibility
-Text/TMP Measurement
-Responsive Profiles
+Block/box model
+LayoutElement
+Text/TMP measurement
+Responsive system
 ScrollRect
-Safe Area / Canvas Scaler
 Migration
-Platform Support
+Platform support
 Performance
 Troubleshooting
-Native ABI / Versioning
 ```
 
-Troubleshooting must cover at least:
+Troubleshooting includes:
 
 ```text
 DllNotFoundException
 EntryPointNotFoundException
 ABI mismatch
-Android architecture mismatch
-iOS __Internal linkage
-Web/Emscripten link errors
-TMP wrap instability
+wrong native architecture
+Android ABI mismatch
+iOS __Internal/link errors
+WebGL/Emscripten link errors
+TMP wrap mismatch
 ContentSizeFitter cycles
-competing layout controllers
 ```
+
+Required samples:
+
+1. Flexbox basics.
+2. Responsive cards.
+3. Grid.
+4. ScrollRect.
+5. Text/TMP measurement.
+6. Breakpoints.
+7. Migration parity.
 
 ---
 
-# 12. Release Gates
+# 25. Release Packaging
 
-Features move through these states:
+Supported delivery forms:
 
-```text
-Experimental
--> Implemented
--> Native-tested
--> Unity-tested
--> Platform-validated
--> Documented
--> Production-ready
-```
+- Git URL using `?path=/UnityPackage` or equivalent correct package path.
+- UPM tarball/release archive.
+- embedded/local package for older projects.
 
-A feature is not called production-ready because it compiles or because Taffy supports it upstream.
+The release package contains prebuilt native binaries. End users should not need Rust installed for ordinary package use.
+
+Developers building from source use the documented native build pipeline.
+
+`package.json` must accurately include:
+
+- package name/display name/version.
+- tested minimum Unity version.
+- description/license/author/keywords.
+- samples/documentation/repository references.
 
 ---
 
-# 13. Definition of Done for v1.0
+# 26. v1.0 Definition of Done
 
-TaffyUGUI v1.0 is complete only when all of the following are true:
+TaffyUGUI v1.0 is ready only when both halves are complete.
 
-### Core
+## Native half
 
+- Rust source maintained in repository.
+- reproducible Cargo dependency graph.
+- full intended v1 Flex/Grid/Block/core style behavior implemented.
+- stable C ABI v1.
+- stable error/version/capability contract.
+- golden/ABI/safety/smoke tests green.
+- required Windows artifact(s) compiled.
+- required macOS artifact(s) compiled.
+- Android ARM64 compiled.
+- iOS ARM64 compiled.
+- Unity Web/WebGL artifact compiled using appropriate Emscripten strategy.
+- target artifacts generated by automation/CI.
+- artifacts staged in Unity package with metadata/checksums.
+
+## Unity half
+
+- existing uGUI rendering/input unchanged.
 - Flexbox production-ready.
 - Grid production-ready.
-- Block layout supported for documented uGUI cases.
-- Auto, percent, min/max and aspect sizing work.
-- Margin/padding/gap work.
-- Relative/absolute positioning works.
-- Nested groups work.
-- Core exposed style mappings have tests.
+- Block/core box model documented and stable.
+- percent/auto/min/max/aspect/absolute sizing works.
+- LayoutElement compatibility works.
+- Unity Text/TMP/image intrinsic measurement works as documented.
+- nested Taffy groups work.
+- ScrollRect path works.
+- responsive/runtime overrides work.
+- Edit/Prefab Mode preview works.
+- migration tools work safely.
+- diagnostics identify common problems.
+- Windows/macOS/Android/iOS/WebGL Unity player paths validated.
+- no continuous unchanged-frame Taffy recomputation by default.
+- package native/plugin configuration requires no manual user setup.
 
-### Existing Unity compatibility
+## Release half
 
-- Existing Button/Image/TMP/ScrollRect/EventSystem remain normal Unity components.
-- `LayoutElement` compatibility is documented and tested.
-- TMP wrapping is stable.
-- Canvas Scaler behavior is correct in logical coordinates.
-- ScrollRect integration path is documented and tested.
-- Common competing-layout conflicts are diagnosed.
-
-### Responsive/editor
-
-- Responsive overrides work.
-- Runtime overrides work.
-- Edit Mode preview works.
-- Prefab Mode works.
-- Layout debugger exists.
-- Diagnostics exists.
-- Migration from Horizontal/Vertical/GridLayoutGroup is available for supported mappings.
-
-### Native/platform
-
-- ABI mismatch is detected safely.
-- Windows works.
-- macOS works.
-- Android ARM64 works.
-- iOS works.
-- Unity Web/WebGL works.
-- Native binaries are generated by CI.
-- Plugin import settings ship with the package.
-
-### Performance/quality
-
-- No continual layout compute when nothing changes.
-- No TaffyUGUI steady-state managed allocation after warmup when unchanged.
-- Batched native APIs are used on normal layout paths.
-- Regression suite covers exposed layout features.
-- Platform smoke tests exist.
-
-### Distribution
-
-- Git UPM installation works.
-- Release package/archive works.
-- Samples and user documentation are included.
-- MIT license and third-party notices are included.
-- AI-generated-code disclaimer remains clearly visible.
+- documentation and samples complete.
+- MIT license and third-party notices correct.
+- AI-generated-code/use-at-own-risk disclaimer retained.
+- security/support limitations documented.
+- clean Unity project install validated.
+- representative existing uGUI project install/migration validated.
+- full final matrix green.
 
 ---
 
-# 14. Implementation Order — What Will Be Worked On First
+# 27. Main Engineering Risks and Mitigations
 
-The immediate work order is intentionally narrower than the complete feature list.
+## Rust/Taffy API drift
 
-## Sprint 1 — Make the current native/Unity Flex path trustworthy
+Mitigation:
 
-1. Run/fix Rust compile, clippy and unit tests against pinned Taffy.
-2. Split native implementation into maintainable modules.
-3. Finalize ABI/version/error contracts.
-4. Add generation-safe native handles.
-5. Add bulk style/layout operations.
-6. Refactor C# P/Invoke into `TaffyNativeContext`.
-7. Validate context cleanup and ABI mismatch handling.
+- exact dependency pin.
+- Cargo.lock.
+- ABI isolation.
+- golden tests before upgrades.
 
-**Gate:** native 3-node Flex smoke test and managed loader are reliable.
+## FFI safety/ABI drift
 
-## Sprint 2 — Production Flex `LayoutGroup`
+Mitigation:
 
-1. Refactor `TaffyLayoutGroup` into proper Unity layout lifecycle stages.
-2. Implement dirty flags and caches.
-3. Implement `TaffyDimension`/style types.
-4. Support row/column/wrap/gap/padding/grow/shrink/basis/min/max/percent.
-5. Apply results using `SetChildAlongAxis`.
-6. Add nested group test.
-7. Add Edit Mode preview.
+- POD structs.
+- explicit enum numbers.
+- version handshake.
+- struct-size tests.
+- stale-handle tests.
+- no unwind.
 
-**Gate:** real existing prefab can replace Horizontal/Vertical layout group without rebuilding children.
+## Cross-platform toolchain mismatch
 
-## Sprint 3 — Existing content compatibility
+Mitigation:
 
-1. `LayoutElement` precedence.
-2. Image intrinsic measurement.
-3. Unity Text measurement.
-4. Optional TMP assembly.
-5. bounded two-pass text measurement.
-6. ContentSizeFitter/conflict tests.
+- build target-specific artifacts early, before Unity feature work.
+- record exact toolchain prerequisites.
+- Unity-compatible NDK/Emscripten paths.
+- clean CI builds.
 
-**Gate:** production-style menus/forms/cards with text lay out stably.
+## Unity layout rebuild loops
 
-## Sprint 4 — General layout + Grid
+Mitigation:
 
-1. margin/box/absolute/aspect/overflow semantics.
-2. Block layout.
-3. Grid native resource model.
-4. Grid managed authoring types.
-5. Grid Inspector basics.
-6. Grid golden tests.
+- dirty scheduling.
+- bounded text iterations.
+- no recursive `ForceRebuildLayoutImmediate` inside active pass.
+- reentrancy/generation guards.
 
-**Gate:** responsive Grid sample and native/Unity geometry agree.
+## TMP wrapping mismatch
 
-## Sprint 5 — Responsive, ScrollRect and tooling
+Mitigation:
 
-1. responsive profiles/runtime overrides.
-2. ScrollRect bridge.
-3. safe area.
-4. polished inspectors.
-5. diagnostics/debugger.
-6. migration wizard.
+- width-constrained TMP adapter.
+- bounded two-pass layout.
+- wrapped-text regression cases.
 
-**Gate:** old uGUI project can adopt and debug TaffyUGUI without inspecting source.
+## Old prefab conflicts
 
-## Sprint 6 — Platform/release hardening
+Mitigation:
 
-1. Windows release artifact.
-2. Android ARM64.
-3. macOS.
-4. iOS.
-5. WebGL/Emscripten.
-6. Unity platform smoke tests.
-7. package/release CI.
-8. performance pass.
-9. docs/samples.
+- LayoutElement reuse.
+- optional TaffyLayoutItem.
+- conflict validator.
+- Undo-aware migration.
 
-**Gate:** v1 release candidate can be installed into a clean and an existing Unity project without manual native setup.
+## Canvas rebuild cost dominating native speed
+
+Mitigation:
+
+- apply RectTransform only when geometry changed.
+- dirty-driven native work.
+- profile managed/native/application costs separately.
+
+## Editor native leaks
+
+Mitigation:
+
+- IDisposable context ownership.
+- assembly/play-mode cleanup hooks.
+- diagnostics for live context count.
 
 ---
 
-# 15. Main Technical Risks and Required Mitigations
+# 28. Immediate Execution Order
 
-| Risk | Required mitigation |
-|---|---|
-| Unity layout recursion | Generation/reentrancy guards, bounded passes, no recursive forced rebuild |
-| TMP width/height feedback | Width-constrained pre-measurement, max two normal iterations |
-| Native ABI drift | Explicit ABI number, POD structs, exact enum values, smoke tests |
-| Stale node/context handles | Generation-aware handles and ownership validation |
-| Old prefab layout conflicts | Validator, LayoutElement reuse, migration preview, no destructive automation |
-| Canvas rebuild dominates performance | Dirty-driven layout, epsilon writeback, separate profiling stages |
-| WebGL toolchain mismatch | Unity-matched Emscripten and actual Unity Web player smoke test |
-| Editor native leaks | `IDisposable`, reload/playmode cleanup, diagnostic context count |
-| Grid authoring becomes unusable | Managed track abstractions, presets, property drawers, advanced mode |
-| Too much inspector complexity | Context-sensitive common fields + Advanced foldout |
-| Unsupported future Taffy API assumptions | Pin published release and validate each exposed feature against it |
+The repository is currently in **Phase 0**.
 
----
-
-# 16. Final Acceptance Scenario
-
-The project will be considered successful when this scenario works end to end:
+The immediate sequence is:
 
 ```text
-1. Developer installs TaffyUGUI from a Git tag/UPM package.
-2. No Rust toolchain is required on the developer's machine.
-3. Native plugin is selected automatically for the current Unity target.
-4. Developer opens an old uGUI prefab.
-5. Existing Button/Image/TMP/ScrollRect/scripts remain untouched.
-6. Migration Wizard analyzes the hierarchy.
-7. Developer replaces HorizontalLayoutGroup/VerticalLayoutGroup/GridLayoutGroup with TaffyLayoutGroup.
-8. Existing LayoutElement data is reused.
-9. Flex/Grid settings are edited in normal Unity Inspectors.
-10. Layout updates immediately in Edit Mode.
-11. The same prefab adapts across phone/tablet/desktop container sizes.
-12. TMP text wraps and auto-sizes correctly.
-13. ScrollRect continues scrolling normally.
-14. Runtime changes mark only required layout state dirty.
-15. Unity renders and receives input normally.
-16. Diagnostics clearly identify any unsupported/conflicting configuration.
-17. Windows/macOS/Android/iOS/Web builds use the same managed API and layout behavior.
+1. fix rustfmt/Clippy failures
+2. get host CI fully green
+3. commit/validate Cargo.lock
+4. organize native modules
+5. implement full Rust/Taffy v1 feature engine
+6. implement/freeze production C ABI
+7. build golden/ABI/smoke suites
+8. freeze ABI v1
+9. build Windows/macOS/Android/iOS/WebGL native artifacts
+10. stage them into UnityPackage/Plugins
+11. pass Native Milestone Gate
+12. begin active Unity package feature development
 ```
 
-That is the product boundary for TaffyUGUI: **modern responsive geometry for existing Unity uGUI without replacing Unity's UI rendering and interaction stack.**
+That sequence is the controlling implementation order for the project.

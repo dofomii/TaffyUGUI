@@ -1,7 +1,13 @@
 //! Native context and persistent Taffy tree ownership.
+//!
+//! Taffy 0.13's compact style representation makes `TaffyTree` intentionally non-`Send`.
+//! Context state therefore stays in a thread-local arena, which matches Unity's main-thread
+//! layout ownership. Context-handle generations come from a process-wide atomic counter so a
+//! handle from one thread cannot accidentally resolve to an unrelated slot on another thread.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use taffy::prelude::*;
 
@@ -121,23 +127,25 @@ struct ContextRegistry {
 
 impl ContextRegistry {
     fn insert(&mut self, context: Context) -> Result<ContextHandle, NativeError> {
+        let generation = next_context_generation();
+
         if let Some(index) = self.free.pop() {
             let slot = self
                 .slots
                 .get_mut(index as usize)
                 .ok_or(NativeError::ContextNotFound)?;
             debug_assert!(slot.context.is_none());
+            slot.generation = generation;
             slot.context = Some(context);
-            return Ok(ContextHandle::from_parts(index, slot.generation));
+            return Ok(ContextHandle::from_parts(index, generation));
         }
 
         let index = u32::try_from(self.slots.len()).map_err(|_| NativeError::Capacity)?;
-        const INITIAL_GENERATION: u32 = 1;
         self.slots.push(ContextSlot {
-            generation: INITIAL_GENERATION,
+            generation,
             context: Some(context),
         });
-        Ok(ContextHandle::from_parts(index, INITIAL_GENERATION))
+        Ok(ContextHandle::from_parts(index, generation))
     }
 
     fn remove(&mut self, handle: ContextHandle) -> Result<(), NativeError> {
@@ -151,7 +159,6 @@ impl ContextRegistry {
         }
 
         slot.context = None;
-        slot.generation = next_generation(slot.generation);
         self.free.push(index);
         Ok(())
     }
@@ -169,40 +176,44 @@ impl ContextRegistry {
     }
 }
 
-static CONTEXT_REGISTRY: OnceLock<Mutex<ContextRegistry>> = OnceLock::new();
+static NEXT_CONTEXT_GENERATION: AtomicU32 = AtomicU32::new(1);
 
-fn registry() -> &'static Mutex<ContextRegistry> {
-    CONTEXT_REGISTRY.get_or_init(|| Mutex::new(ContextRegistry::default()))
-}
-
-fn lock_registry() -> MutexGuard<'static, ContextRegistry> {
-    registry()
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+thread_local! {
+    static CONTEXT_REGISTRY: RefCell<ContextRegistry> = RefCell::new(ContextRegistry::default());
 }
 
 pub(crate) fn create_registered_context() -> Result<ContextHandle, NativeError> {
-    lock_registry().insert(Context::new())
+    with_registry_mut(|registry| registry.insert(Context::new()))
 }
 
 pub(crate) fn destroy_registered_context(handle: ContextHandle) -> Result<(), NativeError> {
-    lock_registry().remove(handle)
+    with_registry_mut(|registry| registry.remove(handle))
 }
 
 pub(crate) fn with_registered_context_mut<T>(
     handle: ContextHandle,
     operation: impl FnOnce(&mut Context) -> Result<T, NativeError>,
 ) -> Result<T, NativeError> {
-    let mut registry = lock_registry();
-    operation(registry.get_mut(handle)?)
+    with_registry_mut(|registry| operation(registry.get_mut(handle)?))
 }
 
-fn next_generation(current: u32) -> u32 {
-    let next = current.wrapping_add(1);
-    if next == 0 {
-        1
-    } else {
-        next
+fn with_registry_mut<T>(
+    operation: impl FnOnce(&mut ContextRegistry) -> Result<T, NativeError>,
+) -> Result<T, NativeError> {
+    CONTEXT_REGISTRY.with(|registry| {
+        let mut registry = registry
+            .try_borrow_mut()
+            .map_err(|_| NativeError::RegistryBusy)?;
+        operation(&mut registry)
+    })
+}
+
+fn next_context_generation() -> u32 {
+    loop {
+        let generation = NEXT_CONTEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+        if generation != 0 {
+            return generation;
+        }
     }
 }
 
@@ -216,7 +227,12 @@ fn available_space(value: f32) -> AvailableSpace {
 
 #[cfg(test)]
 mod tests {
-    use super::{Context, ContextRegistry};
+    use std::thread;
+
+    use super::{
+        create_registered_context, destroy_registered_context, with_registered_context_mut,
+        Context, ContextRegistry,
+    };
     use crate::error::NativeError;
 
     #[test]
@@ -259,5 +275,16 @@ mod tests {
         let first_ptr = registry.get_mut(first).unwrap() as *mut Context;
         let second_ptr = registry.get_mut(second).unwrap() as *mut Context;
         assert_ne!(first_ptr, second_ptr);
+    }
+
+    #[test]
+    fn registered_context_does_not_resolve_on_another_thread() {
+        let handle = create_registered_context().unwrap();
+        let other_thread = thread::spawn(move || {
+            with_registered_context_mut(handle, |_| Ok(())).unwrap_err()
+        });
+
+        assert_eq!(other_thread.join().unwrap(), NativeError::ContextNotFound);
+        assert_eq!(destroy_registered_context(handle), Ok(()));
     }
 }

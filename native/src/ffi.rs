@@ -204,9 +204,7 @@ pub unsafe extern "C" fn taffy_ugui_compute_layout(
     height: f32,
 ) -> i32 {
     with_context_status(ptr, |handle| {
-        with_registered_context_mut(handle, |ctx| {
-            ctx.compute_layout(root_id, width, height)
-        })
+        with_registered_context_mut(handle, |ctx| ctx.compute_layout(root_id, width, height))
     })
 }
 

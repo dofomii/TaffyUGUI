@@ -280,9 +280,8 @@ mod tests {
     #[test]
     fn registered_context_does_not_resolve_on_another_thread() {
         let handle = create_registered_context().unwrap();
-        let other_thread = thread::spawn(move || {
-            with_registered_context_mut(handle, |_| Ok(())).unwrap_err()
-        });
+        let other_thread =
+            thread::spawn(move || with_registered_context_mut(handle, |_| Ok(())).unwrap_err());
 
         assert_eq!(other_thread.join().unwrap(), NativeError::ContextNotFound);
         assert_eq!(destroy_registered_context(handle), Ok(()));

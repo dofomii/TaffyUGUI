@@ -14,16 +14,16 @@ This software is provided **"AS IS", without warranty or guarantee of any kind**
 
 ## Status
 
-Early development. The repository currently provides the native Rust bridge, Unity package scaffolding, Flexbox-facing runtime components, CI, and cross-platform build scripts. Grid and release binaries will be added after the Flexbox ABI is validated across supported Unity targets.
+Early development. The project is now following a **native-first development plan**: the Rust/Taffy engine, production C ABI, native verification suite, and required Windows/macOS/Android/iOS/WebGL artifacts are completed and staged first. Active Unity feature development begins only after that Native Milestone Gate passes.
+
+Existing Unity runtime files are currently bootstrap scaffolding and are not considered the completed product path yet.
 
 TaffyUGUI is developed as **two first-class deliverables**:
 
 1. a compiled **Rust/Taffy native layout library** with a stable TaffyUGUI-owned C ABI;
 2. a **Unity UPM package** containing the managed uGUI integration plus the verified platform-specific Rust binaries under `UnityPackage/Plugins/`.
 
-A phase is not considered complete when only the C# side works or only the Rust source compiles. The required native library for that phase must compile, pass its native verification, and execute through the Unity managed/native boundary.
-
-The complete implementation sequence, acceptance gates, Unity integration architecture, testing strategy, editor tooling, migration workflow, platform build matrix, and v1.0 definition of done are documented in **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)**.
+The complete native-first implementation sequence, acceptance gates, Unity integration architecture, testing strategy, editor tooling, migration workflow, platform build matrix, and v1.0 definition of done are documented in **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)**.
 
 The Rust compilation, ABI, platform artifact, native smoke-test, and Unity binary-packaging contract is defined in **[docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md)**.
 
@@ -65,7 +65,7 @@ Rust never renders UI. It computes layout rectangles; Unity applies and renders 
 ```text
 native/               Rust cdylib/staticlib wrapper around Taffy
 UnityPackage/         Unity Package Manager package and packaged native binaries
-scripts/              Cross-platform native build/package helpers
+build/ / scripts/     Cross-platform native build/package helpers
 docs/                 Architecture, development, task and native build plans
 .github/workflows/     CI
 ```
@@ -104,20 +104,7 @@ The production pipeline will build each supported target, verify its ABI with a 
 
 ## Initial Unity API
 
-Use `TaffyLayoutGroup` on a parent `RectTransform` and optionally `TaffyLayoutItem` on children.
-
-Initial layout properties include:
-
-- Row / Column
-- NoWrap / Wrap / WrapReverse
-- gap
-- padding
-- grow / shrink / basis
-- width / height
-- min / max
-- justify-content
-- align-items
-- align-self
+After the Native Milestone Gate, the managed integration will center on `TaffyLayoutGroup` on a parent `RectTransform` and optional `TaffyLayoutItem` overrides on children.
 
 The implementation is intentionally independent from Taffy's Rust types at the C# boundary.
 

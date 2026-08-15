@@ -58,6 +58,38 @@ The current bootstrap interface is ABI version `0` and is intentionally unstable
 
 ---
 
+## Native thread ownership and context registry
+
+Taffy 0.13's selected compact style representation makes `TaffyTree` non-`Send`. TaffyUGUI therefore **does not** force `Send`/`Sync` with unsafe implementations.
+
+Native runtime ownership is intentionally main-thread friendly:
+
+```text
+Unity layout thread (normally main thread)
+        ↓
+thread-local ContextRegistry
+        ↓
+generation-safe ContextHandle
+        ↓
+Context
+        ↓
+persistent TaffyTree
+```
+
+Rules:
+
+- each `Context` and `TaffyTree` remains on the thread that created it;
+- the registry/arena itself is thread-local;
+- context handles use a process-wide generation sequence in addition to a local slot index;
+- a context handle from another thread cannot accidentally resolve to an unrelated context occupying the same local slot;
+- cross-thread context use fails rather than moving the Taffy tree;
+- production Unity integration creates, uses, and disposes the native context from the Unity layout/main thread;
+- Phase 2 turns wrong-thread use into an explicit production status/diagnostic.
+
+ABI 0 currently keeps a pointer-shaped compatibility token so the bootstrap Unity code does not define the production ABI. The token only contains the generation-safe context handle; it does not contain the Taffy tree itself.
+
+---
+
 ## ABI lifecycle
 
 The project deliberately separates **ABI release-candidate lock** from **final ABI v1 freeze**:

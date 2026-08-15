@@ -14,7 +14,7 @@ This software is provided **"AS IS", without warranty or guarantee of any kind**
 
 ## Status
 
-**Ready for active native development.** The pre-development architecture and toolchain decisions are finalized. The project is currently in **Phase 0 — Rust Project and Toolchain Foundation**; user-facing Unity feature development remains intentionally gated until the complete native engine, cross-platform ABI release candidate, managed ABI conformance, final ABI v1 freeze, and native artifact rebuild are complete.
+**Active native engine development.** Phase 0 — Rust Project and Toolchain Foundation is complete. The project is now in **Phase 1 — Complete Rust/Taffy 0.13 Engine**; user-facing Unity feature development remains intentionally gated until the complete native engine, cross-platform ABI release candidate, managed ABI conformance, final ABI v1 freeze, and native artifact rebuild are complete.
 
 Current fixed baseline:
 
@@ -88,9 +88,9 @@ scripts/                 temporary/bootstrap compatibility helpers only
 
 ## Native development
 
-The normal repository toolchain is pinned automatically through `rust-toolchain.toml`.
+The normal repository toolchain is pinned automatically through `rust-toolchain.toml`. See [docs/NATIVE_DEVELOPMENT.md](docs/NATIVE_DEVELOPMENT.md) for clean-clone setup, module ownership, lockfile rules, and the native development workflow.
 
-Run the complete local Phase 0 quality gate with:
+Run the complete local native quality gate with:
 
 ```bash
 python build/build.py quality
@@ -138,6 +138,7 @@ Taffy is a separate MIT-licensed dependency. Applicable third-party notices will
 
 - [Engineering decisions](docs/PROJECT_DECISIONS.md) — normative contract.
 - [Task tracker](docs/TASK_TRACKER.md) — current phase and single next task.
+- [Native development guide](docs/NATIVE_DEVELOPMENT.md) — clean-clone setup and daily native workflow.
 - [End-to-end development plan](docs/DEVELOPMENT_PLAN.md).
 - [Native library build plan](docs/NATIVE_LIBRARY_BUILD_PLAN.md).
 - [Architecture](docs/ARCHITECTURE.md).

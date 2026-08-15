@@ -16,7 +16,16 @@ This software is provided **"AS IS", without warranty or guarantee of any kind**
 
 Early development. The repository currently provides the native Rust bridge, Unity package scaffolding, Flexbox-facing runtime components, CI, and cross-platform build scripts. Grid and release binaries will be added after the Flexbox ABI is validated across supported Unity targets.
 
+TaffyUGUI is developed as **two first-class deliverables**:
+
+1. a compiled **Rust/Taffy native layout library** with a stable TaffyUGUI-owned C ABI;
+2. a **Unity UPM package** containing the managed uGUI integration plus the verified platform-specific Rust binaries under `UnityPackage/Plugins/`.
+
+A phase is not considered complete when only the C# side works or only the Rust source compiles. The required native library for that phase must compile, pass its native verification, and execute through the Unity managed/native boundary.
+
 The complete implementation sequence, acceptance gates, Unity integration architecture, testing strategy, editor tooling, migration workflow, platform build matrix, and v1.0 definition of done are documented in **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)**.
+
+The Rust compilation, ABI, platform artifact, native smoke-test, and Unity binary-packaging contract is defined in **[docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md)**.
 
 **Live development progress, the active phase, blockers, stability gates, and the single next task are tracked in [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).**
 
@@ -32,28 +41,32 @@ The complete implementation sequence, acceptance gates, Unity integration archit
 ## Architecture
 
 ```text
-Unity uGUI / RectTransform
+Rust source + Taffy
         |
-TaffyLayoutGroup + TaffyLayoutItem
+compile/test native library
+        |
+platform DLL / dylib / SO / static library
+        |
+UnityPackage/Plugins
         |
       C ABI
         |
-Rust wrapper -> TaffyTree
+TaffyLayoutGroup + TaffyLayoutItem
         |
- x / y / width / height
+Unity uGUI / RectTransform
         |
-RectTransform
+normal Unity rendering and interaction
 ```
 
-Rust never renders UI. It only computes layout rectangles.
+Rust never renders UI. It computes layout rectangles; Unity applies and renders them.
 
 ## Repository layout
 
 ```text
 native/               Rust cdylib/staticlib wrapper around Taffy
-UnityPackage/         Unity Package Manager package
-scripts/              Cross-platform native build helpers
-docs/                 Architecture and platform notes
+UnityPackage/         Unity Package Manager package and packaged native binaries
+scripts/              Cross-platform native build/package helpers
+docs/                 Architecture, development, task and native build plans
 .github/workflows/     CI
 ```
 
@@ -87,6 +100,8 @@ Run Rust tests:
 cargo test --manifest-path native/Cargo.toml
 ```
 
+The production pipeline will build each supported target, verify its ABI with a native smoke test or target-equivalent validation, then package the artifact under `UnityPackage/Plugins/<platform>/`. See [docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md).
+
 ## Initial Unity API
 
 Use `TaffyLayoutGroup` on a parent `RectTransform` and optionally `TaffyLayoutItem` on children.
@@ -114,4 +129,4 @@ Taffy is a separate dependency and is also available under permissive licensing;
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md), and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md), [docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md), and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).

@@ -87,10 +87,7 @@ impl Context {
         let node = *self.nodes.get(&id).ok_or(NativeError::NodeNotFound)?;
         let mut children = Vec::with_capacity(child_ids.len());
         for child_id in child_ids {
-            let child = *self
-                .nodes
-                .get(child_id)
-                .ok_or(NativeError::NodeNotFound)?;
+            let child = *self.nodes.get(child_id).ok_or(NativeError::NodeNotFound)?;
             children.push(child);
         }
         self.tree
@@ -113,10 +110,7 @@ impl Context {
         width: f32,
         height: f32,
     ) -> Result<(), NativeError> {
-        let root = *self
-            .nodes
-            .get(&root_id)
-            .ok_or(NativeError::NodeNotFound)?;
+        let root = *self.nodes.get(&root_id).ok_or(NativeError::NodeNotFound)?;
         let available = Size {
             width: available_space(width),
             height: available_space(height),

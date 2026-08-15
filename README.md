@@ -1,6 +1,6 @@
 # TaffyUGUI
 
-Responsive Flexbox and Grid layout engine for Unity uGUI, powered by Rust and [Taffy](https://github.com/DioxusLabs/taffy), while Unity keeps rendering, interaction, prefabs, TextMeshPro, ScrollRect, and EventSystem.
+Responsive Flexbox, Grid, Block, and related layout geometry for Unity uGUI, powered by Rust and [Taffy](https://github.com/DioxusLabs/taffy), while Unity keeps rendering, interaction, prefabs, TextMeshPro, ScrollRect, Canvas, and EventSystem.
 
 ## ⚠️ AI-Generated Project Disclaimer
 
@@ -14,106 +14,132 @@ This software is provided **"AS IS", without warranty or guarantee of any kind**
 
 ## Status
 
-Early development. The project is now following a **native-first development plan**: the Rust/Taffy engine, production C ABI, native verification suite, and required Windows/macOS/Android/iOS/WebGL artifacts are completed and staged first. Active Unity feature development begins only after that Native Milestone Gate passes.
+**Ready for active native development.** The pre-development architecture and toolchain decisions are finalized. The project is currently in **Phase 0 — Rust Project and Toolchain Foundation**; user-facing Unity feature development remains intentionally gated until the complete native engine, cross-platform ABI release candidate, managed ABI conformance, final ABI v1 freeze, and native artifact rebuild are complete.
 
-Existing Unity runtime files are currently bootstrap scaffolding and are not considered the completed product path yet.
+Current fixed baseline:
 
-TaffyUGUI is developed as **two first-class deliverables**:
+- Taffy `0.13.0`, exact-pinned.
+- Rust MSRV `1.82.0`.
+- pinned normal/release Rust toolchain `1.97.1`.
+- primary Unity baseline `2021.3 LTS`.
+- Android primary ABI `arm64-v8a`, using Unity 2021.3-compatible NDK r21d.
+- Unity 2021.3 WebGL toolchain baseline: bundled/matched Emscripten 2.0.19.
+- bootstrap ABI version `0`; final ABI v1 is frozen only after managed conformance testing.
 
-1. a compiled **Rust/Taffy native layout library** with a stable TaffyUGUI-owned C ABI;
-2. a **Unity UPM package** containing the managed uGUI integration plus the verified platform-specific Rust binaries under `UnityPackage/Plugins/`.
+The normative engineering decisions are in **[docs/PROJECT_DECISIONS.md](docs/PROJECT_DECISIONS.md)**. If another planning document ever appears to conflict with that file, `PROJECT_DECISIONS.md` is the controlling contract until the conflict is corrected.
 
-The complete native-first implementation sequence, acceptance gates, Unity integration architecture, testing strategy, editor tooling, migration workflow, platform build matrix, and v1.0 definition of done are documented in **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)**.
+TaffyUGUI is developed as two first-class deliverables:
 
-The Rust compilation, ABI, platform artifact, native smoke-test, and Unity binary-packaging contract is defined in **[docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md)**.
+1. a compiled **Rust/Taffy native layout library** with a TaffyUGUI-owned C ABI;
+2. a **Unity UPM package** containing the managed uGUI integration plus verified native binaries under `UnityPackage/Plugins/`.
 
-**Live development progress, the active phase, blockers, stability gates, and the single next task are tracked in [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).**
+The implementation sequence is documented in [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md), native build rules in [docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md), and live progress/next task in [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).
 
 ## Why TaffyUGUI
 
 - Keep existing Unity uGUI instead of migrating to UI Toolkit.
 - Use Taffy only for layout computation.
-- Preserve Button, Image, TMP, ScrollRect, Canvas, EventSystem, and normal Unity rendering.
-- Use a stable C ABI between C# and Rust.
-- Keep the native layout tree persistent and only recompute dirty layouts.
-- Target Windows, macOS, Android, iOS, and WebGL.
+- Preserve Button, Image, TMP, ScrollRect, Canvas, EventSystem, and normal Unity rendering/input.
+- Keep Rust/Taffy implementation details behind a stable fixed-width C ABI.
+- Maintain a persistent native layout tree and use dirty-driven recomputation.
+- Ship prebuilt native artifacts so ordinary Unity users do not need Rust installed.
+- Target validated Windows, macOS, Android, iOS, and WebGL Unity player paths.
 
 ## Architecture
 
 ```text
-Rust source + Taffy
+Rust source + Taffy 0.13
         |
-compile/test native library
+quality / golden / ABI tests
         |
-platform DLL / dylib / SO / static library
+ABI release candidate
+        |
+cross-platform native compilation
+        |
+minimal managed ABI conformance
+        |
+freeze ABI v1 + rebuild native artifacts
         |
 UnityPackage/Plugins
         |
-      C ABI
+managed C# wrapper
         |
-TaffyLayoutGroup + TaffyLayoutItem
+TaffyLayoutGroup + optional TaffyLayoutItem
         |
-Unity uGUI / RectTransform
+RectTransform
         |
-normal Unity rendering and interaction
+normal Unity uGUI rendering and interaction
 ```
 
-Rust never renders UI. It computes layout rectangles; Unity applies and renders them.
+Rust never renders Unity UI. It computes geometry and layout metadata; Unity owns GameObjects, rendering, input, text rendering, scrolling, clipping, prefabs, and scenes.
 
 ## Repository layout
 
 ```text
-native/               Rust cdylib/staticlib wrapper around Taffy
-UnityPackage/         Unity Package Manager package and packaged native binaries
-build/ / scripts/     Cross-platform native build/package helpers
-docs/                 Architecture, development, task and native build plans
-.github/workflows/     CI
+native/                 canonical Rust/Taffy implementation
+include/                generated public C API header location
+build/build.py          authoritative build entry point
+dist/                   generated build output (ignored)
+UnityPackage/           installable UPM package / committed release plugin payload
+docs/                   normative decisions, architecture, plans, tracker, audits
+.github/workflows/       CI
+scripts/                 temporary/bootstrap compatibility helpers only
 ```
-
-## Unity installation
-
-During development, install from a local checkout using Unity Package Manager:
-
-```text
-<repo>/UnityPackage
-```
-
-Once tagged releases are available, Git URL installation will be documented here.
 
 ## Native development
 
-Requirements:
+The normal repository toolchain is pinned automatically through `rust-toolchain.toml`.
 
-- Rust stable
-- Cargo
-- Target platform toolchains (MSVC/Xcode/Android NDK/Emscripten as applicable)
-
-Build the host library:
+Run the complete local Phase 0 quality gate with:
 
 ```bash
-cargo build --manifest-path native/Cargo.toml --release
+python build/build.py quality
 ```
 
-Run Rust tests:
+Build the host release library with:
 
 ```bash
-cargo test --manifest-path native/Cargo.toml
+python build/build.py native host
 ```
 
-The production pipeline will build each supported target, verify its ABI with a native smoke test or target-equivalent validation, then package the artifact under `UnityPackage/Plugins/<platform>/`. See [docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md).
+The committed `native/Cargo.lock` is used for reproducible dependency resolution. Platform build commands remain behind the same `build/build.py` interface and are implemented as their development phase begins.
 
-## Initial Unity API
+The production public C header will be generated with cbindgen at:
 
-After the Native Milestone Gate, the managed integration will center on `TaffyLayoutGroup` on a parent `RectTransform` and optional `TaffyLayoutItem` overrides on children.
+```text
+include/taffy_ugui.h
+```
 
-The implementation is intentionally independent from Taffy's Rust types at the C# boundary.
+using:
+
+```bash
+python build/build.py header
+```
+
+## Unity package
+
+Package name:
+
+```text
+com.dofomii.taffyugui
+```
+
+The primary package baseline is Unity 2021.3 LTS and the package explicitly depends on Unity uGUI (`com.unity.ugui`). TMP integration remains optional through a separate adapter assembly later in development.
+
+Release tags will contain verified native binaries and Unity importer metadata inside `UnityPackage/Plugins/`, allowing normal Git-URL UPM installation without requiring Rust or access to CI artifacts.
 
 ## License
 
 TaffyUGUI is licensed under the [MIT License](LICENSE). It may be used, modified, distributed, sublicensed, and sold, including in commercial and closed-source projects, subject to the license notice requirements.
 
-Taffy is a separate dependency and is also available under permissive licensing; downstream users remain responsible for preserving applicable third-party notices.
+Taffy is a separate MIT-licensed dependency. Applicable third-party notices will be included in the release package.
 
-## Contributing
+## Project documents
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md), [docs/NATIVE_LIBRARY_BUILD_PLAN.md](docs/NATIVE_LIBRARY_BUILD_PLAN.md), and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).
+- [Engineering decisions](docs/PROJECT_DECISIONS.md) — normative contract.
+- [Task tracker](docs/TASK_TRACKER.md) — current phase and single next task.
+- [End-to-end development plan](docs/DEVELOPMENT_PLAN.md).
+- [Native library build plan](docs/NATIVE_LIBRARY_BUILD_PLAN.md).
+- [Architecture](docs/ARCHITECTURE.md).
+- [Project readiness audit](docs/PROJECT_READINESS_AUDIT.md).
+- [Contributing](CONTRIBUTING.md).

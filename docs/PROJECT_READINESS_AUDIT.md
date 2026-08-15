@@ -15,18 +15,16 @@ TaffyUGUI has a coherent architecture and a strong phase-based development model
 
 It **is ready to begin Phase 0 stabilization immediately**.
 
-Before the project is considered fully unambiguous, Phase 0 must resolve a small set of important baseline decisions and existing build failures described in this report.
+Before the project is considered fully unambiguous, Phase 0 must resolve the baseline decisions and build failures listed in this report.
 
-The repository is not suffering from a fundamental architectural mistake. The main issues are:
+There is no fundamental architecture failure. The main issues are:
 
-1. the Taffy dependency baseline is already stale relative to the current official release;
-2. current native CI is red;
-3. `Cargo.lock` is absent;
-4. ABI freeze timing is too early in the roadmap;
-5. the exact Unity/toolchain compatibility baseline required for Android/WebGL/iOS native builds is not defined early enough;
-6. a few ABI, Grid, Unity LayoutGroup, packaging, and build-system decisions are still ambiguous.
-
-These should be fixed before the project calls its architecture frozen.
+1. Taffy baseline needs to be finalized before the full wrapper is implemented.
+2. Native CI is currently red.
+3. `Cargo.lock` is absent.
+4. Permanent ABI v1 freeze is scheduled too early.
+5. The Unity/toolchain compatibility baseline needed for Android/WebGL/iOS native builds is not defined early enough.
+6. A few ABI, Grid, Unity LayoutGroup, packaging, and build-system details are still ambiguous.
 
 ---
 
@@ -58,24 +56,22 @@ docs/NATIVE_LIBRARY_BUILD_PLAN.md
 docs/TASK_TRACKER.md
 ```
 
-The original production planning document was also used as the target product boundary.
-
-External dependency verification was performed against the official `DioxusLabs/taffy` repository and release metadata.
+The original production planning document was used as the target product boundary. Official Taffy repository/release metadata was checked for dependency facts.
 
 ---
 
-# 3. What Is Already Correct
+# 3. Areas Already in Good Shape
 
-## 3.1 Product architecture — PASS
+## Product architecture — PASS
 
-The core architecture is correct:
+The core boundary is correct:
 
 ```text
-Rust/Taffy owns geometry
+Rust/Taffy geometry engine
         ↓
-stable TaffyUGUI C ABI
+TaffyUGUI-owned C ABI
         ↓
-Unity managed wrapper
+managed Unity wrapper
         ↓
 TaffyLayoutGroup / TaffyLayoutItem
         ↓
@@ -84,109 +80,74 @@ RectTransform
 normal Unity rendering/input
 ```
 
-The project correctly avoids replacing:
+Unity remains responsible for Canvas rendering, EventSystem, TMP rendering, Button/Image/ScrollRect behavior, animation, prefabs, and scenes.
 
-- Canvas rendering;
-- EventSystem;
-- TextMeshPro rendering;
-- Button/Image/ScrollRect behavior;
-- prefabs and existing uGUI hierarchies.
+## Native/source/package separation — PASS
 
-The native-first direction is now consistently reflected in the master plan, native build plan, task tracker, and README.
-
-## 3.2 Native source/package separation — PASS
-
-The intended ownership boundary is clear:
+The intended ownership is clear:
 
 ```text
 native/                 canonical Rust source
-build/ or dist/         generated native output
-UnityPackage/Plugins/   binaries shipped with the UPM package
+dist/native/            generated native outputs
+UnityPackage/Plugins/   native binaries shipped to users
 UnityPackage/Runtime/   managed Unity integration
 ```
 
-That is the correct long-term repository model.
+## Licensing — PASS
 
-## 3.3 License model — PASS
+The project uses MIT and contains the standard no-warranty language. Taffy is also MIT licensed. Third-party/transitive notices still need release-time verification, which is already part of the release goal.
 
-The repository uses the MIT License and explicitly includes the standard no-warranty terms.
+## AI disclaimer — PASS
 
-Taffy is also MIT licensed.
+The README clearly identifies the project as AI-generated and states that testing does not imply warranty or production safety.
 
-The current license model therefore supports commercial, private, modified, redistributed, sublicensed, and sold usage subject to preservation of license notices.
+## Phase gating — PASS
 
-Third-party notices still need to be generated before release, which is already planned.
-
-## 3.4 AI-generated-code disclaimer — PASS
-
-The README clearly states that the project is AI-generated, may contain defects, is provided without guarantee, and must be independently reviewed/tested.
-
-## 3.5 Phase gating — PASS
-
-The task tracker correctly establishes:
-
-- one active phase at a time;
-- explicit phase exit gates;
-- regression obligations from completed phases;
-- a single `NEXT TASK`;
-- native milestone completion before active Unity feature work;
-- platform support only after actual Unity player validation.
-
-This is a strong development-control model.
+The tracker correctly enforces one active phase, phase exit gates, regression obligations, a single `NEXT TASK`, a Native Milestone before Unity feature development, and actual player validation before a platform is advertised.
 
 ---
 
-# 4. Blocking / High-Priority Findings
+# 4. High-Priority Findings
 
-## R1 — Taffy baseline must be decided before Phase 1
+## R1 — Taffy baseline must be finalized before Phase 1
 
-**Severity:** HIGH  
-**Current state:** unresolved
+**Severity:** HIGH
 
-The repository currently pins:
+The source currently pins:
 
 ```toml
 taffy = "=0.12.2"
 ```
 
-However the official Taffy repository released **v0.13.0 on 2026-08-08**.
-
-Taffy 0.13.0 includes significant fixes in Flexbox, Grid, Block, replaced-element behavior, content sizing, and absolute/Grid behavior, and changes parts of the Grid API such as `grid_template_areas`.
-
-The project's original production planning document also targeted Taffy 0.13.0.
+The official Taffy project released **v0.13.0 on 2026-08-08**. It includes many Flexbox/Grid/Block fixes and changes Grid API details such as `grid_template_areas`. The original production plan also referenced 0.13.0.
 
 ### Required decision
 
-Before implementing the full native wrapper, explicitly choose one of:
+Before implementing the complete native wrapper:
 
 ```text
-A. Upgrade/pin Taffy 0.13.0 now — recommended.
-B. Intentionally remain on 0.12.2 and document the compatibility reason.
+A. evaluate and pin 0.13.0 — recommended; or
+B. intentionally remain on 0.12.2 and document the reason.
 ```
 
-Do **not** build the complete ABI around 0.12.2 accidentally and then upgrade after Grid/measurement ABI work.
+Do not build the entire Grid/measurement ABI accidentally around 0.12.2 and upgrade afterward.
 
-Taffy 0.13.0 declares Rust MSRV 1.71, so the current project `rust-version = 1.82` is sufficient.
+Taffy 0.13.0 declares Rust MSRV 1.71, so the project's current `rust-version = 1.82` satisfies it.
 
 ---
 
-## R2 — Native CI is currently red
+## R2 — Native CI is red
 
-**Severity:** HIGH  
-**Current state:** known and correctly tracked
+**Severity:** HIGH
 
-The latest `native-ci` run fails before full tests/release builds finish.
+The current workflow fails before the full test/release pipeline completes.
 
-Current failures:
+Known failures:
 
-- `native/src/lib.rs` is not canonical `rustfmt` output;
-- Clippy rejects the exported `unsafe extern "C"` functions because they lack `# Safety` documentation.
+- `native/src/lib.rs` is not canonical `rustfmt` output.
+- Clippy requires `# Safety` documentation on exported unsafe FFI functions.
 
-The crate reached compilation during Clippy, so there is no evidence of a basic Taffy API compile failure in that run, but the full native quality gate has not passed.
-
-### Required action
-
-Phase 0 must not complete until:
+Phase 0 must not complete until all of these are green:
 
 ```text
 cargo fmt --check
@@ -195,367 +156,272 @@ cargo test
 cargo build --release
 ```
 
-are green on the intended host matrix.
-
 ---
 
 ## R3 — `Cargo.lock` is missing
 
-**Severity:** HIGH  
-**Current state:** planned but not implemented
+**Severity:** HIGH
 
-The repository tree currently contains no `native/Cargo.lock`.
-
-For a binary/native-plugin product, release dependency resolution must be reproducible.
-
-This is already in the tracker and should remain a Phase 0 gate.
+No `native/Cargo.lock` exists in the current tree. A binary/native-plugin product needs a reproducible dependency graph. This is correctly planned as a Phase 0 task and must remain a gate.
 
 ---
 
-## R4 — ABI v1 should not be permanently frozen before the first managed ABI proof
+## R4 — Permanent ABI v1 freeze is scheduled too early
 
-**Severity:** HIGH  
-**Current state:** roadmap design risk
+**Severity:** HIGH
 
-The current plan freezes ABI v1 in native Phase 3, then cross-compiles every platform, and only afterward begins the C# managed/native bridge.
+The roadmap currently freezes ABI v1 before the first managed C# contract proof, then cross-compiles all platforms.
 
-That sequence can freeze mistakes such as:
+That can prematurely freeze mistakes involving:
 
-- struct packing assumptions;
-- count-width mismatches;
-- P/Invoke marshalling issues;
-- iOS/WebGL linkage-specific signature constraints;
-- managed buffer ownership mistakes.
+- P/Invoke struct packing;
+- fixed-width count types;
+- managed buffer ownership;
+- iOS/WebGL linkage signatures;
+- enum marshalling.
 
 ### Recommended correction
 
-Keep the native-first strategy, but distinguish:
+Keep native-first development, but use:
 
 ```text
-Phase 3: ABI candidate / release-candidate contract locked for cross-platform compilation
-Phase 6: ABI v1 final freeze after managed struct/enum/PInvoke contract tests and one real Unity native smoke flow
+Phase 3: ABI candidate/RC lock for cross-platform builds
+Phase 6: final ABI v1 freeze after managed ABI tests and one actual Unity/native smoke flow
 ```
 
-This does **not** require delaying native platform compilation. It only avoids calling an unproven interface permanently frozen too early.
+Native libraries can still be cross-compiled before Unity feature development; only the word/finality of the ABI freeze changes.
 
 ---
 
-## R5 — Unity/toolchain compatibility baseline must be defined before Phase 4
+## R5 — Unity/toolchain baseline must be established before native platform compilation
 
-**Severity:** HIGH  
-**Current state:** missing sequencing decision
+**Severity:** HIGH
 
-`UnityPackage/package.json` currently declares:
+`UnityPackage/package.json` declares:
 
 ```json
 "unity": "2021.3"
 ```
 
-but the rewritten master plan no longer contains a concrete initial Unity compatibility/toolchain matrix before the native platform-build phase.
+but the new native-first plan does not establish the initial Unity/toolchain matrix early enough.
 
-This matters because "Unity-compatible" native compilation depends on the selected Unity lane, especially:
+This is required because "Unity-compatible" cross-compilation depends on:
 
-- Android NDK version/toolchain;
-- WebGL Emscripten version;
+- Unity-compatible Android NDK;
+- Unity-compatible WebGL Emscripten;
 - Apple/Xcode requirements;
-- architecture support.
+- supported CPU architectures.
 
 ### Required action
 
-Before Phase 4, define an initial matrix such as:
+Before Phase 4, define the primary baseline and record the exact toolchains used. A sensible starting policy is:
 
 ```text
-Primary: Unity 2021.3 LTS
-Compatibility validation: Unity 2022.3 LTS / selected Unity 6 lane
-Optional backward validation: Unity 2019.4 only after tests prove it
+Primary baseline: Unity 2021.3 LTS
+Compatibility lanes: Unity 2022.3 LTS and selected Unity 6 version
+Backward validation: Unity 2019.4 only after the complete package proves compatible
 ```
 
-For Android/WebGL, record the exact NDK/Emscripten toolchain used by the selected Unity installation/build lane.
-
-Without this, "fully Unity-compatible native binary" is ambiguous.
+The exact validated matrix should be updated from actual test results, not assumptions.
 
 ---
 
-# 5. Important Architecture Clarifications
+# 5. ABI and Native Architecture Clarifications
 
-## R6 — Context handle contract is still ambiguous
+## R6 — Final context handle type is ambiguous
 
 **Severity:** MEDIUM-HIGH
 
-The original production plan requires opaque 64-bit context handles.
+The bootstrap ABI uses `*mut c_void` / managed `IntPtr`, while the original production plan calls for opaque 64-bit handles.
 
-The current bootstrap ABI exposes a raw pointer:
-
-```rust
-*mut c_void
-```
-
-and managed code stores it as `IntPtr`.
-
-The tracker says raw/public pointers should be replaced with opaque context handles "where required", which leaves the final contract ambiguous.
-
-### Recommended decision
-
-Make the final ABI explicit:
+The final contract should be explicit. Recommended:
 
 ```text
-TaffyUGUI context handle = opaque uint64 handle
-TaffyUGUI node handle    = opaque uint64 generation-safe handle
+context handle = opaque uint64 generation-safe handle
+node handle    = opaque uint64 generation-safe handle
 ```
 
-Use a controlled registry/arena with owner-thread validation rather than accepting arbitrary raw pointers as public ABI state.
+Use a controlled registry/arena and owner-thread validation rather than exposing arbitrary raw pointers as the final public ABI.
 
 ---
 
-## R7 — The C ABI needs an authoritative C header generation task
+## R7 — Authoritative C header is missing from the task list
 
 **Severity:** MEDIUM-HIGH
 
-The Phase 2 gate mentions a generated or maintained header, and Phase 3 requires a C/C++ smoke harness, but there is no explicit task that creates the authoritative header.
+The Phase 2 gate refers to a generated/maintained header and Phase 3 requires a C/C++ smoke harness, but no task explicitly creates the authoritative header.
 
-Add a task to produce a deterministic C header, manually generated from one source of truth or using a tool such as `cbindgen` after evaluation.
-
-The C smoke harness should compile against that same header.
+Add a task to generate or deterministically maintain the C header from a single source of truth. The native smoke harness must compile against that same header.
 
 ---
 
-## R8 — Panic policy is not fully resolved
+## R8 — Panic policy is unresolved
 
 **Severity:** MEDIUM-HIGH
 
-Current `Cargo.toml` contains:
+Current release profile:
 
 ```toml
 panic = "abort"
 ```
 
-while the design also contemplates a `TU_PANIC` error and panic boundaries.
+The architecture also contemplates panic boundaries / `TU_PANIC` behavior. With abort semantics, a panic normally terminates the process and cannot be converted to a normal error code.
 
-With abort semantics, a Rust panic terminates the process; it cannot generally be converted into a normal `TU_PANIC` result.
+Before ABI freeze, define the real policy per target:
 
-### Required decision
-
-Before ABI freeze, explicitly choose/document target policy:
-
-```text
-- validate inputs so expected failures never panic;
-- define whether supported targets use catch_unwind + unwind builds;
-- define which targets must use abort semantics;
-- make TU_PANIC capability/behavior match reality.
-```
-
-Do not document recoverable panic behavior that the release profile cannot provide.
+- validate expected invalid inputs instead of panicking;
+- decide whether any supported targets use unwind + `catch_unwind`;
+- define targets where abort is mandatory;
+- make `TU_PANIC` semantics match what is actually possible.
 
 ---
 
-## R9 — Grid feature checklist is slightly incomplete relative to the target document
+## R9 — Grid feature scope is slightly underspecified
 
 **Severity:** MEDIUM
 
-The original product plan explicitly includes:
+The original target document explicitly includes `justify_items`, `justify_self`, and advanced named Grid areas/lines/templates. The rewritten tracker uses broad "Grid alignment" wording and does not explicitly track named lines/areas.
 
-- `justify_items`;
-- `justify_self`;
-- named Grid areas/lines/templates as advanced Grid authoring.
-
-The rewritten tracker uses broad wording such as "Grid alignment" and does not explicitly track named lines/areas.
-
-Taffy 0.13.0 exposes named Grid-line/area types, and its `grid_template_areas` API changed in 0.13.0.
-
-### Required action
-
-When the Taffy baseline is locked, make the native/Unity task list explicit for every exposed Grid alignment and named-area/line feature that belongs to v1.
-
-If named areas/lines are intentionally postponed beyond v1, state that explicitly rather than silently dropping them.
+Once the Taffy version is selected, explicitly include every v1 Grid feature or explicitly defer it. Do not silently lose functionality from the product goal.
 
 ---
 
-## R10 — Unity LayoutGroup must report its own layout input sizes
+# 6. Unity Architecture Clarification
+
+## R10 — `TaffyLayoutGroup` own layout-input reporting needs an explicit task
 
 **Severity:** MEDIUM-HIGH
 
-The production source plan required `TaffyLayoutGroup` to report min/preferred/flexible size through Unity's layout system.
+A production `LayoutGroup` must not only place children; it also has to participate correctly as an `ILayoutElement` when nested or used with other Unity layout controllers.
 
-The current rewritten Unity tasks focus on child collection, native computation, and `SetChildAlongAxis`, but do not explicitly require:
+The Unity phase should explicitly implement/test group min/preferred/flexible reporting through the normal Unity layout-input path, including `SetLayoutInputForAxis(...)` where appropriate.
 
-```text
-SetLayoutInputForAxis(...)
-```
-
-for the Taffy group itself.
-
-This is important for:
+This matters for:
 
 - nested Taffy groups;
 - parent Unity LayoutGroups;
-- ContentSizeFitter behavior;
-- correct `ILayoutElement` participation.
-
-Add an explicit Unity task and regression tests for group min/preferred/flexible input reporting.
+- ContentSizeFitter;
+- preferred-size calculations.
 
 ---
 
-# 6. Build / Packaging Findings
+# 7. Build and Packaging Clarifications
 
-## R11 — One authoritative build-system location should be chosen
+## R11 — Choose one authoritative build-driver location
 
 **Severity:** MEDIUM
 
-The master/native plans consistently show:
+The plans mostly use:
 
 ```text
 build/build.py
 ```
 
-but the tracker still says the authoritative driver may live under `build/` **or** `scripts/`, and the repository currently contains only:
+but the tracker still allows `build/` or `scripts/`, while the current repository contains only `scripts/build-native.sh`.
 
-```text
-scripts/build-native.sh
-```
-
-### Recommended decision
-
-Use:
-
-```text
-build/build.py
-```
-
-as the future authoritative cross-platform driver.
-
-Treat `scripts/build-native.sh` as temporary bootstrap tooling and mark/remove it when Phase 4 begins.
+Recommended: make `build/build.py` the production entry point and treat `scripts/build-native.sh` as bootstrap tooling to be retired or clearly marked temporary.
 
 ---
 
-## R12 — Current `build-native.sh webgl` is not evidence of Unity Web compatibility
+## R12 — Current WebGL shell script is not Unity-Web proof
 
 **Severity:** MEDIUM
 
-The current script simply adds/builds `wasm32-unknown-emscripten`.
+The existing `build-native.sh webgl` simply builds `wasm32-unknown-emscripten`. That is not enough to prove Unity Web compatibility because the Emscripten version must match the selected Unity lane.
 
-That is insufficient to prove Unity Web/WebGL compatibility because the Emscripten version must match the Unity lane.
-
-The plans correctly state this, but the bootstrap script should eventually be renamed/documented so developers do not mistake it for the production WebGL pipeline.
+The master plan already understands this; the bootstrap script should eventually be labelled accordingly so it does not create false confidence.
 
 ---
 
-## R13 — Native binary source-control/release policy is ambiguous
+## R13 — Native binary Git/release policy is ambiguous
 
 **Severity:** MEDIUM
 
-The final plan supports Git URL UPM installation from `UnityPackage/`.
+The package plans to support Git URL installation from `UnityPackage/`.
 
-For that to work from a Git tag, the native binaries must exist in that tagged repository package payload, or the project must use a generated release branch/repository containing them.
+A release tag therefore needs the actual verified native binaries in the package tree, or a dedicated generated release branch/repository containing them. CI-only artifacts are not available to Unity Package Manager during a normal Git install.
 
-The roadmap currently says binaries are staged under `UnityPackage/Plugins`, but does not explicitly state whether they are committed to release tags.
+Document the policy before release tooling is implemented.
 
-### Required decision
-
-Document one policy, for example:
+Recommended release behavior:
 
 ```text
-Development main:
-    binaries may be refreshed/staged as required.
+Release tag/package payload:
+    UnityPackage/Plugins binaries + .meta files are present and verified.
 
-Release tag:
-    verified Plugins binaries + .meta files are committed as part of the tagged UPM payload,
-    enabling Git URL installation without Rust or CI artifact access.
+Release archive:
+    generated from the same verified payload.
 ```
-
-A release tarball can additionally be generated from the same verified payload.
 
 ---
 
-## R14 — UPM package should explicitly depend on uGUI
+## R14 — UPM package should declare its uGUI dependency
 
 **Severity:** MEDIUM
 
-The runtime assembly references `UnityEngine.UI`, but `package.json` currently declares no `dependencies` section.
+The runtime assembly references `UnityEngine.UI`, but `package.json` currently has no `dependencies` section.
 
-Because TaffyUGUI fundamentally requires Unity uGUI, the release package should explicitly declare the supported `com.unity.ugui` dependency appropriate to its Unity baseline.
-
-TMP should remain optional through the separate adapter strategy.
+Before Unity package validation/release, explicitly declare the supported `com.unity.ugui` dependency for the chosen baseline. TMP should remain optional via the separate adapter assembly.
 
 ---
 
-# 7. Current Source-Code Audit
+# 8. Current Source-Code Status
 
-## 7.1 Rust bootstrap
+## Rust bootstrap
 
-The current native implementation is correctly treated as scaffold, not final architecture.
+The current native implementation is correctly treated as scaffold. It currently has:
 
-Known intentional shortcomings relative to the final plan:
-
-- `HashMap<u64, NodeId>` without generation handles;
+- `HashMap<u64, NodeId>` without generation protection;
 - raw context pointer;
-- no Grid/Block/measurement API yet;
-- no version/build/capability API beyond a single numeric API version;
+- Flex-only style conversion;
+- no Grid/Block/measurement ABI;
 - no bulk operations;
-- no structured error diagnostics;
-- no panic recovery policy;
-- no native tests;
-- tree style is currently Flex-only;
+- minimal error codes;
+- no build/Taffy/capability version contract;
+- no native test suite;
 - no `Cargo.lock`.
 
-These are all appropriate Phase 0–3 work rather than evidence that the architecture is wrong.
+These are expected Phase 0–3 tasks, not reasons to redesign the project.
 
-## 7.2 Current Unity scaffold
+## Unity bootstrap
 
-The current C# code must **not** be mistaken for the intended production implementation.
+The existing C# code is also scaffold and must not be treated as production-ready. Current behavior includes:
 
-Important bootstrap behavior that later phases must replace:
+- dirty rebuild destroys and recreates the native context/tree;
+- both `SetLayoutHorizontal()` and `SetLayoutVertical()` compute the full layout, causing duplicate work;
+- per-node result calls instead of bulk result retrieval;
+- temporary managed allocations;
+- ABI check after context creation instead of a safer pre-context handshake;
+- no managed `IDisposable` context wrapper;
+- no domain-reload lifecycle management;
+- no complete group preferred/min/flexible reporting;
+- no packaged native binary.
 
-- dirty layout rebuild destroys/recreates the whole native context/tree;
-- full layout is currently computed from both `SetLayoutHorizontal()` and `SetLayoutVertical()`, potentially doing duplicate work;
-- node results are read one-by-one rather than bulk;
-- temporary lists/arrays allocate during rebuild;
-- ABI handshake occurs after context creation rather than before native state is used;
-- no managed `IDisposable` native-context wrapper;
-- no domain-reload cleanup integration;
-- no proper group min/preferred/flexible layout-input reporting;
-- no native binary is currently packaged.
-
-The tracker correctly pauses active Unity feature development, so these do not block Phase 0 native work.
+The tracker correctly pauses Unity feature work, so these do not block Phase 0 native stabilization.
 
 ---
 
-# 8. CI Findings
+# 9. CI Status
 
-## Existing CI — useful but bootstrap-level
-
-Current workflow checks Linux, Windows, and macOS with:
+The existing workflow is a useful Phase 0 foundation:
 
 ```text
+Linux / Windows / macOS
 fmt
 clippy
 test
 release build
 ```
 
-This is the right Phase 0 foundation.
+Later phases correctly need locked builds, ABI/golden tests, target artifact jobs, symbol/architecture checks, Unity tests, and release packaging.
 
-### Improvements already implied by later phases
-
-- locked dependency builds (`--locked`);
-- MSRV lane if an MSRV is publicly declared;
-- native golden/ABI tests;
-- platform artifact jobs;
-- artifact upload;
-- architecture/symbol validation;
-- Unity tests;
-- release assembly.
-
-### Small maintenance item
-
-The workflow currently uses `actions/checkout@v4`, while GitHub has released newer major versions and current runners already warn that v4 targets the deprecated Node 20 runtime.
-
-This is not a project blocker, but should be updated during Phase 0 CI cleanup.
+Small maintenance item: the workflow still uses `actions/checkout@v4`; current GitHub runners warn about its deprecated Node 20 runtime and a newer major checkout release exists. Update this during Phase 0 CI cleanup.
 
 ---
 
-# 9. Missing Files / Directories That Are NOT Current Blockers
+# 10. Planned Files That Are Not Mistakes Yet
 
-The repository does not yet contain the following planned structures:
+The current repository does not yet contain:
 
 ```text
 native/Cargo.lock
@@ -566,77 +432,78 @@ UnityPackage/Plugins/
 UnityPackage/Editor/
 UnityPackage/Runtime.TMP/
 UnityPackage/Tests/
-UnityPackage/Samples~/nCHANGELOG.md
+UnityPackage/Samples~/
+CHANGELOG.md
 SECURITY.md
 THIRD_PARTY_NOTICES.md
 ```
 
-Except for `Cargo.lock`, these are **not considered mistakes at the current phase**. They are intentionally created by later tasks.
-
-Release/security/third-party files must exist before v1.0.
+Except for `Cargo.lock`, these are not current-phase failures. They are intentionally created by later phases. Release/security/third-party files must exist before v1.0.
 
 ---
 
-# 10. Pre-Development Readiness Checklist
+# 11. Pre-Phase-1 Readiness Checklist
 
-Before beginning the large Phase 1 native feature implementation, complete these items:
+Before starting the large full-native-engine implementation:
 
-- [ ] Choose and pin the intended Taffy baseline, preferably evaluate/upgrade to 0.13.0 now.
-- [ ] Fix rustfmt failure.
-- [ ] Fix Clippy safety-documentation failures.
-- [ ] Obtain a fully green host CI run.
-- [ ] Generate and commit `Cargo.lock`.
-- [ ] Define/test Rust MSRV/release toolchain policy.
-- [ ] Decide final context-handle representation.
-- [ ] Add an explicit authoritative C-header task.
-- [ ] Define panic/unwind/abort behavior.
-- [ ] Change Phase 3 "ABI v1 freeze" to an ABI candidate lock; perform final v1 freeze after managed contract validation.
-- [ ] Define the primary Unity compatibility/toolchain lane before native platform cross-compilation.
-- [ ] Choose `build/` as the authoritative build-driver location (or explicitly choose another location once).
+- [ ] Evaluate and lock Taffy 0.13.0 vs 0.12.2.
+- [ ] Fix rustfmt.
+- [ ] Fix Clippy safety documentation.
+- [ ] Obtain fully green host CI.
+- [ ] Generate/commit `Cargo.lock` and use locked builds.
+- [ ] Define/test Rust MSRV and release toolchain policy.
+- [ ] Decide the final context-handle representation.
+- [ ] Add an authoritative C-header task.
+- [ ] Define panic/unwind/abort policy.
+- [ ] Treat Phase 3 as an ABI candidate lock and perform final ABI v1 freeze after managed contract proof.
+- [ ] Define primary Unity/toolchain compatibility before Phase 4.
+- [ ] Choose one authoritative build-driver location.
 - [ ] Clarify Grid named-area/line and justify-items/self v1 scope.
-- [ ] Add TaffyLayoutGroup own min/preferred/flexible-size reporting to the Unity phase.
-- [ ] Define Git-release handling of native binaries for UPM Git URL installs.
-- [ ] Add explicit uGUI package dependency before Unity package validation/release.
+- [ ] Add `TaffyLayoutGroup` own min/preferred/flexible reporting to Unity tasks.
+- [ ] Define Git-release handling of packaged native binaries.
+- [ ] Add explicit uGUI dependency before package validation/release.
 
 ---
 
-# 11. Readiness Decision
+# 12. Readiness Decision
 
 ## Can development start?
 
-**YES — Phase 0 development can start now.**
+**YES — Phase 0 stabilization can start now.**
 
-The project has enough architectural clarity to begin resolving the Rust foundation immediately.
+The architecture is clear enough to begin correcting the Rust foundation.
 
-## Can the team start implementing the full Phase 1 Rust feature engine immediately without revisiting the plan?
+## Can full Phase 1 native feature implementation start immediately without revisiting the plan?
 
 **NO.**
 
-First close the high-priority baseline items:
-
-1. Taffy 0.13.0 vs 0.12.2 decision;
-2. green CI;
-3. `Cargo.lock`;
-4. ABI freeze timing;
-5. Unity/toolchain compatibility baseline;
-6. final handle/panic/header/build-driver decisions.
-
-Once those are closed, the project is ready for sustained implementation.
+First close the high-priority baseline decisions: Taffy version, green CI, lockfile, ABI freeze timing, Unity/toolchain baseline, and final handle/panic/header/build-driver contracts.
 
 ## Can Unity feature development start?
 
 **NO.**
 
-That remains correctly gated behind the Native Milestone.
+It remains correctly gated behind the Native Milestone.
 
 ---
 
-# 12. Final Assessment
+# 13. Final Assessment
 
-The project direction is strong and the native-first roadmap is materially better than the original bootstrap state.
+The native-first roadmap is fundamentally sound. There is no reason to redesign the project.
 
-There is **no reason to redesign the whole project**.
+The remaining work is mainly preflight contract cleanup and Phase 0 engineering. The two largest avoidable mistakes would be:
 
-The remaining issues are mostly preflight contract decisions and Phase 0 quality work. The largest avoidable mistake would be implementing the full native ABI on Taffy 0.12.2 and freezing ABI v1 before validating the managed C# contract.
+1. implementing the full native API against Taffy 0.12.2 without first deciding whether to move to 0.13.0; and
+2. declaring ABI v1 permanently frozen before the first managed C# ABI proof.
 
-After the readiness checklist above is incorporated into the tracker and completed in Phase 0, TaffyUGUI will have a solid, low-ambiguity foundation for the full Rust → cross-platform native artifacts → Unity integration → UPM release development sequence.
+Once the Pre-Phase-1 checklist is incorporated into the active tracker and completed, TaffyUGUI will have a strong, low-ambiguity foundation for the complete sequence:
+
+```text
+Rust/Taffy engine
+→ native ABI
+→ cross-platform native artifacts
+→ Unity managed integration
+→ uGUI features/editor tooling
+→ real player validation
+→ production UPM release
+```

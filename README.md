@@ -18,6 +18,8 @@ Early development. The repository currently provides the native Rust bridge, Uni
 
 The complete implementation sequence, acceptance gates, Unity integration architecture, testing strategy, editor tooling, migration workflow, platform build matrix, and v1.0 definition of done are documented in **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)**.
 
+**Live development progress, the active phase, blockers, stability gates, and the single next task are tracked in [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).**
+
 ## Why TaffyUGUI
 
 - Keep existing Unity uGUI instead of migrating to UI Toolkit.
@@ -112,4 +114,4 @@ Taffy is a separate dependency and is also available under permissive licensing;
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md), and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).

@@ -85,10 +85,7 @@ pub unsafe extern "C" fn taffy_ugui_create_node(
 /// `ptr` must be a live context pointer created by [`taffy_ugui_create_context`] and must
 /// be exclusively accessible for the duration of the call.
 #[no_mangle]
-pub unsafe extern "C" fn taffy_ugui_remove_node(
-    ptr: *mut c_void,
-    id: BootstrapNodeHandle,
-) -> i32 {
+pub unsafe extern "C" fn taffy_ugui_remove_node(ptr: *mut c_void, id: BootstrapNodeHandle) -> i32 {
     let Some(ctx) = (unsafe { Context::from_opaque_ptr(ptr) }) else {
         return ERR_NULL;
     };
@@ -158,10 +155,7 @@ pub unsafe extern "C" fn taffy_ugui_set_children(
 /// `ptr` must be a live context pointer created by [`taffy_ugui_create_context`] and must
 /// be exclusively accessible for the duration of the call.
 #[no_mangle]
-pub unsafe extern "C" fn taffy_ugui_mark_dirty(
-    ptr: *mut c_void,
-    id: BootstrapNodeHandle,
-) -> i32 {
+pub unsafe extern "C" fn taffy_ugui_mark_dirty(ptr: *mut c_void, id: BootstrapNodeHandle) -> i32 {
     let Some(ctx) = (unsafe { Context::from_opaque_ptr(ptr) }) else {
         return ERR_NULL;
     };

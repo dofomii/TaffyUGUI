@@ -1,48 +1,80 @@
-# TaffyUGUI — Rust Native Library Build and Packaging Plan
+# TaffyUGUI — Final Native Library Build and Packaging Plan
 
-**Status:** Active engineering contract  
 **Repository:** `dofomii/TaffyUGUI`  
 **Native crate:** `native/` / `taffy_ugui_native`  
 **Library:** `taffy_ugui`  
-**Unity package:** `UnityPackage/`  
+**Normative decisions:** [PROJECT_DECISIONS.md](PROJECT_DECISIONS.md)  
 **Master plan:** [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)  
 **Tracker:** [TASK_TRACKER.md](TASK_TRACKER.md)
 
+This document defines how the Rust library becomes the verified native payload shipped inside the Unity package.
+
 ---
 
-# 1. Native-First Product Rule
+# 1. Native-first rule
 
-The Rust library is developed to feature completion, verified, cross-compiled, and staged for Unity **before active Unity feature development begins**.
+The native engine is developed to feature completion before user-facing Unity layout work.
 
-Required order:
+Final sequence:
 
 ```text
-Rust project
+Rust/Taffy engine
     ↓
-Taffy setup
+production C ABI candidate
     ↓
-full native layout engine
+generated C header + native verification
     ↓
-production C ABI
+ABI-v1-RC
     ↓
-native tests + ABI freeze
+compile Windows/macOS/Android/iOS/WebGL RC artifacts
     ↓
-Windows/macOS/Android/iOS/WebGL builds
+stage RC payload in Unity package structure
     ↓
-UnityPackage/Plugins staging
+minimal managed ABI conformance
     ↓
-NATIVE MILESTONE COMPLETE
+freeze ABI v1
     ↓
-Unity managed/runtime/editor development
+rebuild + reverify + restage every native target
+    ↓
+FINAL NATIVE PAYLOAD
+    ↓
+user-facing Unity layout development
 ```
 
-Existing C# files are bootstrap scaffolding until this gate passes.
+Managed ABI conformance is intentionally narrow and exists only to prove binary compatibility before the permanent ABI freeze.
 
 ---
 
-# 2. Native Source Ownership
+# 2. Fixed native baseline
 
-Canonical source:
+- Taffy: exact `0.13.0`.
+- Rust MSRV: `1.82.0`.
+- pinned normal/release Rust: `1.97.1`.
+- committed `native/Cargo.lock`.
+- crate types: `cdylib` and `staticlib`.
+- primary Unity compatibility baseline: Unity 2021.3 LTS.
+
+Enabled Taffy features:
+
+```text
+std
+taffy_tree
+flexbox
+grid
+block_layout
+float_layout
+calc
+content_size
+detailed_layout_info
+```
+
+The runtime ABI does not depend on Taffy serde or CSS-string parsing.
+
+---
+
+# 3. Native source ownership
+
+Canonical native source:
 
 ```text
 native/
@@ -55,192 +87,210 @@ native/
     ├── handles.rs
     ├── style.rs
     ├── grid.rs
+    ├── calc.rs
     ├── measurement.rs
     ├── error.rs
     └── version.rs
 ```
 
-Ownership boundaries:
-
-- `native/` — Rust/Taffy implementation and C ABI.
-- `dist/native/` — generated/staged build outputs.
-- `UnityPackage/Plugins/` — verified native artifacts shipped to Unity users.
-- `UnityPackage/Runtime/Native/` — later managed wrapper; it does not own layout logic.
-
----
-
-# 3. Library Output Contract
-
-The crate emits both:
-
-```toml
-[lib]
-name = "taffy_ugui"
-crate-type = ["cdylib", "staticlib"]
-```
-
-Expected target-family outputs:
-
-| Target family | Primary artifact |
-|---|---|
-| Windows x64 | `taffy_ugui.dll` |
-| macOS Apple Silicon / Intel as supported | `libtaffy_ugui.dylib` / universal packaging |
-| Android ARM64 | `libtaffy_ugui.so` |
-| iOS ARM64 | `libtaffy_ugui.a` or selected XCFramework packaging |
-| Unity Web/WebGL | Unity-compatible Emscripten static/linkage artifact |
-
-Additional Windows ARM64, Android ARMv7/x86_64 and simulator slices are included only when part of the validated compatibility matrix.
-
----
-
-# 4. Full Native Feature Scope Before Unity
-
-The native library must expose the intended v1 behavior before Unity integration begins:
-
-## Tree/context
-
-- persistent Taffy tree.
-- context create/destroy/clear.
-- generation-safe opaque node handles.
-- create/remove nodes.
-- set children/topology.
-- dirty state.
-
-## Core style
-
-- display.
-- logical length/percent/auto sizing.
-- min/max.
-- aspect ratio.
-- margin/padding/layout border.
-- relative/absolute position and insets.
-- direction.
-- overflow/scrollbar reservation where supported.
-
-## Flexbox
-
-- directions/reverse.
-- wrap.
-- grow/shrink/basis.
-- gap.
-- alignment/justification.
-
-## Block
-
-- supported Block layout behavior.
-
-## Grid
-
-- explicit/implicit tracks.
-- fixed/percent/auto/fr/minmax/repeat where supported by the pinned Taffy baseline.
-- auto flow.
-- placement/spans.
-- alignment/gap.
-- variable-length Grid resource lifetime.
-
-## Measurement
-
-- managed-supplied intrinsic measurement records.
-- known/available size data required by Taffy.
-- cached measurement updates.
-- no per-measurement Rust→C# callback requirement.
-
-## Production transfer
-
-- bulk style uploads.
-- bulk measurement uploads.
-- one compute call per root/layout generation.
-- bulk result retrieval.
-
----
-
-# 5. ABI Contract
-
-The C ABI is owned by TaffyUGUI and isolated from Taffy's Rust API.
-
-Conceptual exports:
+Additional ownership:
 
 ```text
-tu_get_abi_version
-tu_get_taffy_version
-tu_get_build_version
-tu_get_capabilities
-
-tu_context_create
-tu_context_destroy
-tu_context_clear
-
-tu_node_create
-tu_nodes_create_bulk
-tu_node_remove
-tu_nodes_remove_bulk
-tu_node_set_children
-tu_node_set_children_bulk
-tu_node_set_style
-tu_nodes_set_styles_bulk
-tu_node_set_measurement
-tu_nodes_set_measurements_bulk
-tu_node_mark_dirty
-
-tu_compute_layout
-tu_get_layout
-tu_get_layouts_bulk
+include/taffy_ugui.h     generated public C header
+build/build.py            authoritative build entry point
+dist/native/...           generated/ignored build staging
+UnityPackage/Plugins/...  verified native payload shipped to users
 ```
 
-Rules:
-
-- `#[repr(C)]` POD structs.
-- fixed-width numeric types.
-- explicit enum numbers.
-- no ABI `bool`.
-- no Rust-owned `Vec`, `String`, reference or Taffy ID across FFI.
-- stable numeric errors.
-- last-error diagnostics.
-- stale handle detection.
-- documented `# Safety` for unsafe exports.
-- no Rust unwind across FFI.
-
-ABI v1 is frozen only after native verification passes.
+`scripts/build-native.sh` is only a bootstrap compatibility wrapper and is not an authoritative platform builder.
 
 ---
 
-# 6. Native Quality and Verification Pipeline
+# 4. Native feature completeness before Unity features
 
-Every native change must eventually satisfy:
+The native engine must implement the intended Taffy 0.13 layout surface required by v1 before the ABI release candidate is locked.
+
+### Core
+
+- display/box generation;
+- box sizing;
+- direction;
+- overflow/scrollbar reservation;
+- relative/absolute positioning/insets;
+- Auto/Length/Percent;
+- typed Calc representation/resource model;
+- size/min/max/aspect ratio;
+- margin/padding/border geometry;
+- content-size metadata.
+
+### Flexbox
+
+- row/column/reverse;
+- wrap variants;
+- grow/shrink/basis;
+- align-items/self/content;
+- justify-content;
+- gap.
+
+### Block / FlowRoot / Float
+
+Expose the geometry-capable behavior supported by the selected Taffy feature set.
+
+### Grid
+
+- explicit/implicit tracks;
+- fixed/percent/auto/fr/minmax/repeat;
+- auto tracks and auto-flow;
+- placement/spans;
+- align/justify content/items/self;
+- named lines;
+- named template areas;
+- detailed layout information for diagnostics where useful.
+
+### Measurement
+
+Native cached measurement records accept caller-supplied known/available/intrinsic information. Rust must not require a synchronous per-node managed callback during layout.
+
+### Transfer
+
+Bulk style, measurement, and result paths are production requirements. Topology batching is added where design/profiling demonstrates value.
+
+---
+
+# 5. Production ABI contract
+
+The final public ABI uses:
+
+- C ABI exports;
+- fixed-width integer fields;
+- `float`/Rust `f32` layout values;
+- explicit numeric enum values;
+- opaque generation-safe `uint64_t` context/node/resource handles;
+- pointer + `uint32_t` count for temporary caller-owned arrays;
+- stable status/error values;
+- last-error diagnostics.
+
+It does not expose persistent raw Rust pointers, `usize`, Rust `bool`, Taffy IDs, Rust references, `Vec`, or `String`.
+
+Conceptual API families:
+
+```text
+version / build / Taffy / capabilities
+context create / destroy / clear
+node/resource create / remove
+children/topology
+styles
+measurements
+dirty marking
+compute
+single/bulk result retrieval
+errors/diagnostics
+```
+
+Exact names become canonical `tu_*` exports during the ABI candidate phase.
+
+---
+
+# 6. Generated C header
+
+The public C header is generated from the Rust FFI surface with cbindgen:
+
+```text
+python build/build.py header
+    ↓
+include/taffy_ugui.h
+```
+
+`cbindgen.toml` is committed.
+
+CI eventually regenerates the header and fails if the generated result differs from the committed file.
+
+The C/C++ smoke harness compiles against this exact generated header; there is no independently hand-maintained header contract.
+
+---
+
+# 7. Panic and error behavior
+
+Expected invalid inputs are status-code errors.
+
+Before crossing into Taffy/native state, validate:
+
+- handles/context ownership;
+- pointers and counts;
+- enum ranges;
+- dimensions and finite-number requirements;
+- resource lifetimes;
+- capabilities.
+
+No Rust unwind may cross the C boundary.
+
+Where a target supports and validates unwinding, exports use a common `catch_unwind` boundary for unexpected internal panics. Where a Unity-compatible target is built abort-only, build/capability metadata must reflect that limitation. Callers must never depend on panic recovery for normal control flow.
+
+The repository does not globally force `panic = "abort"`; target-specific behavior belongs in platform build configuration.
+
+---
+
+# 8. Quality pipeline
+
+Current Phase 0 quality command:
+
+```text
+python build/build.py quality
+```
+
+Equivalent required checks:
 
 ```text
 cargo fmt --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo build --release
-native golden tests
-ABI contract tests
-compiled-artifact smoke test
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo build --locked --release
+MSRV check/test at Rust 1.82.0
 ```
 
-The artifact smoke test performs:
+Later native gates add:
 
-```text
-load artifact
-→ query ABI/build/Taffy/capabilities
-→ create context
-→ create known tree
-→ upload style/topology
-→ compute layout
-→ bulk read layouts
-→ assert geometry
-→ destroy context
-```
+- golden layout tests;
+- ABI struct/enum tests;
+- malformed-input/stale-handle tests;
+- C header consistency;
+- compiled-artifact smoke tests;
+- topology/lifecycle stress tests.
 
-Invalid/stale handle and malformed-input tests are mandatory before ABI freeze.
+No native phase is stable while its required checks are red.
 
 ---
 
-# 7. Authoritative Cross-Platform Build Pipeline
+# 9. ABI release-candidate verification
 
-Target command model:
+Before platform compilation, verify host artifacts through:
 
 ```text
+query versions/capabilities
+create context
+create root/children
+upload style/topology/measurement data
+compute known layout
+bulk read geometry/content results
+assert expected results
+destroy context
+```
+
+This test must use the compiled artifact, not only call Rust functions internally.
+
+When the native engine, generated header, golden/safety/ABI tests, and host smoke harness pass, the interface is designated **ABI-v1-RC**.
+
+That RC is stable enough for target-family compilation but is not yet the permanent ABI v1 promise.
+
+---
+
+# 10. Authoritative build interface
+
+All production builds converge on:
+
+```text
+python build/build.py quality
+python build/build.py header
 python build/build.py native host
 python build/build.py native windows-x64
 python build/build.py native macos
@@ -249,56 +299,53 @@ python build/build.py native ios
 python build/build.py native webgl
 python build/build.py native all
 python build/build.py stage-unity
+python build/build.py package
 ```
 
-For each target the driver must:
+Target commands are implemented phase-by-phase behind this stable interface.
 
-1. verify prerequisites.
-2. select the correct Rust target/toolchain.
-3. use the locked dependency graph.
-4. build release output.
-5. verify file/architecture/export symbols.
-6. run ABI smoke test when executable on the host.
-7. perform static/link verification otherwise.
-8. place output under deterministic `dist/native/...`.
-9. record version/ABI/Taffy/target/source metadata.
-10. generate checksum.
+For each target the build driver must:
+
+1. verify required tools/SDKs;
+2. select exact target/toolchain;
+3. use locked dependencies;
+4. compile release output;
+5. verify artifact format/architecture;
+6. verify exported symbols/version metadata;
+7. run smoke tests where host-runnable;
+8. perform static/link checks where not directly runnable;
+9. stage deterministic output;
+10. emit manifest/checksum information.
 
 ---
 
-# 8. Platform Build Requirements
+# 11. Target-family build contract
 
 ## Windows
+
+Primary v1 target:
+
+```text
+x86_64-pc-windows-msvc
+→ taffy_ugui.dll
+```
+
+Validate on Windows CI with the compiled-library smoke harness. Windows ARM64 is optional until included in the support matrix.
+
+## macOS
+
+Build Apple Silicon and the Intel slice retained by the compatibility matrix. Validate individual Mach-O architectures before optionally assembling a universal binary.
+
+## Android
 
 Primary:
 
 ```text
-x86_64-pc-windows-msvc
+aarch64-linux-android
+→ arm64-v8a/libtaffy_ugui.so
 ```
 
-Requirements:
-
-- MSVC-compatible build.
-- correct exported C ABI symbols.
-- DLL smoke test on Windows CI.
-
-Optional ARM64 is added only when supported/advertised.
-
-## macOS
-
-Required Apple Silicon lane; Intel/universal lane according to compatibility matrix.
-
-Verify Mach-O slices and symbols before staging.
-
-## Android
-
-Primary required architecture:
-
-```text
-arm64-v8a / aarch64-linux-android
-```
-
-Use a Unity-compatible Android NDK. Additional ABIs are deliberate compatibility lanes, not assumed.
+Use Unity 2021.3-compatible Android NDK r21d (`21.3.6528147`), not an arbitrary newest NDK. ARMv7/x86_64 are optional lanes.
 
 ## iOS
 
@@ -308,46 +355,48 @@ Primary:
 aarch64-apple-ios
 ```
 
-Produce static library or selected XCFramework form compatible with the Unity→Xcode build path. Simulator slices are added as required by the supported workflow.
+Produce the static form that best survives actual Unity→Xcode validation: raw `.a` or XCFramework as selected by evidence. Simulator slices are optional development lanes.
 
-## Unity Web/WebGL
+## WebGL
 
-Do not use generic WASM compatibility as evidence.
-
-Build/link using an Emscripten toolchain compatible with the Unity version under validation. Final runtime proof occurs in the later Unity Web player validation phase.
+Use the Emscripten toolchain bundled with/matched to the Unity 2021.3 lane, with 2.0.19 as the baseline. Generic system WASM/Emscripten output is not accepted as Unity compatibility proof.
 
 ---
 
-# 9. Deterministic Artifact Layout
+# 12. Deterministic build staging
 
-Generated staging example:
+Generated native outputs go under:
 
 ```text
 dist/native/
-├── windows/x86_64/taffy_ugui.dll
-├── macos/arm64/libtaffy_ugui.dylib
-├── android/arm64-v8a/libtaffy_ugui.so
-├── ios/arm64/libtaffy_ugui.a
-└── webgl/... linkage artifact
+├── windows/x86_64/
+├── macos/...
+├── android/arm64-v8a/
+├── ios/arm64/
+└── webgl/...
 ```
 
-Each build set also produces a manifest containing at least:
+Each artifact set carries a manifest with at least:
 
 ```text
 package/native version
-ABI version
+ABI designation/version
 Taffy version
 Rust target triple
 source commit
 artifact filename
+architecture
 checksum
+panic strategy/capability where relevant
 ```
+
+`dist/` is ignored and never acts as release source.
 
 ---
 
-# 10. Unity Plugin Staging
+# 13. Unity plugin staging
 
-After all required native target-family artifacts compile and verify, stage them into:
+ABI RC artifacts are staged into the final package shape before managed conformance:
 
 ```text
 UnityPackage/Plugins/
@@ -358,92 +407,76 @@ UnityPackage/Plugins/
 └── WebGL/
 ```
 
-Plugin importer `.meta` files must be committed/configured so Unity chooses the correct platform/CPU automatically.
+The staging operation must:
 
-Manual binary copying is not a release workflow.
+- copy only verified artifacts;
+- create/maintain correct Unity importer `.meta` files;
+- include native artifact manifest/checksums;
+- be reproducible from clean source;
+- avoid hand-copied hidden dependencies.
 
-The `stage-unity` build task must be able to rebuild/refresh the plugin payload deterministically.
-
----
-
-# 11. Native Milestone Gate
-
-Active Unity feature development starts only when:
-
-- Rust project quality CI is green.
-- full native v1 feature surface is implemented.
-- full feature surface is exposed through the C ABI.
-- native golden/ABI/safety tests are green.
-- compiled host artifacts pass smoke tests.
-- ABI v1 is frozen.
-- Windows required artifact builds.
-- macOS required artifact builds.
-- Android ARM64 builds.
-- iOS ARM64 builds.
-- Unity Web/WebGL artifact builds through the selected Unity-compatible toolchain strategy.
-- artifacts are staged into `UnityPackage/Plugins`.
-- importer metadata is committed.
-- manifest/checksums are generated.
-- clean source can reproduce the outputs.
-
-This gate is the handoff from **native engine development** to **Unity product integration**.
+This RC payload allows the minimal managed conformance layer to use the same package structure that the final Unity product will use.
 
 ---
 
-# 12. Later Unity Validation Does Not Replace Native Compilation
+# 14. Final ABI v1 freeze and rebuild
 
-The initial native milestone proves:
+After the ABI RC exists across target families, implement a minimal Unity managed conformance layer that proves:
 
-- source correctness at the native level.
-- ABI correctness.
-- target compilation/link compatibility.
-- artifact structure.
+- P/Invoke names and signatures;
+- fixed-width struct packing/size/alignment;
+- enum numeric values;
+- Cdecl usage on shared-library platforms;
+- `__Internal` strategy for static-link platforms;
+- context lifecycle;
+- version/capability handshake;
+- temporary buffer ownership;
+- error translation;
+- one real Unity 2021.3 Editor/native smoke flow.
 
-Later Unity platform validation proves the final missing layer:
+Only then:
 
-```text
-Unity build system
-→ plugin importer/linker
-→ managed P/Invoke / __Internal
-→ actual player/device/browser runtime
-```
+1. assign final **ABI v1**;
+2. rebuild every required target from clean source;
+3. rerun target verification;
+4. regenerate checksums/manifests;
+5. restage every Unity plugin artifact;
+6. commit the final ABI v1 plugin payload.
 
-A platform is not publicly advertised until both native compilation and Unity runtime validation pass.
-
----
-
-# 13. Release Reproducibility
-
-For every shipped binary the project must answer:
-
-```text
-What TaffyUGUI version produced it?
-What ABI version is it?
-What Taffy version is embedded?
-What target triple/architecture produced it?
-What source commit produced it?
-What checksum identifies it?
-```
-
-Final release CI rebuilds artifacts from clean source; it never depends on a developer workstation's untracked outputs.
+This rebuild is mandatory. No ABI-RC binary is shipped as v1 merely because its signatures happened not to change.
 
 ---
 
-# 14. Native Definition of Done for v1.0
+# 15. Release binary policy
 
-The native half is complete only when:
+Normal source development uses generated `dist/` outputs.
 
-- canonical Rust source is in the repository.
-- dependency graph is reproducible.
-- full intended v1 Flex/Grid/Block/core style behavior is implemented.
-- measurement ingestion is implemented.
-- stable ABI/version/capability/error contracts exist.
-- safety/golden/ABI/smoke tests pass.
-- required platform-family artifacts compile.
-- Unity-compatible target toolchains are documented/reproducible.
-- artifacts are automatically staged in the UPM package.
-- importer metadata and checksums are correct.
-- clean clone can regenerate the package native payload.
-- later Unity platform validation confirms all publicly advertised platforms at runtime.
+The installable UPM package is self-contained:
 
-Only after both the native and Unity definitions of done pass is TaffyUGUI v1.0 complete.
+- verified native binaries under `UnityPackage/Plugins` are committed once the native artifact stages are active;
+- matching Unity `.meta` importer files are committed;
+- release tags contain the verified native payload;
+- users installing a tagged `?path=/UnityPackage` Git URL do not need Rust or access to GitHub Actions artifacts;
+- release archives/CI artifacts are additional delivery mechanisms.
+
+Release CI rebuilds every advertised artifact and verifies that the package payload matches generated manifests/checksums.
+
+---
+
+# 16. Final native definition of done
+
+The native half of TaffyUGUI v1 is complete only when:
+
+- Taffy 0.13 native feature surface promised by v1 is implemented;
+- Rust source and lockfile are reproducible;
+- generated public C header is deterministic;
+- final ABI v1 uses fixed-width safe handles/types and stable error/version contracts;
+- golden/safety/ABI/header/smoke tests pass;
+- required Windows/macOS/Android/iOS/WebGL artifacts build through the defined Unity-compatible toolchains;
+- artifacts are rebuilt after final ABI v1 freeze;
+- manifests/checksums identify every binary;
+- `UnityPackage/Plugins` contains the verified final artifacts/import metadata;
+- clean source can regenerate the payload;
+- later Unity player validation proves every publicly advertised target at runtime.
+
+Only after both native and Unity definitions of done pass is TaffyUGUI v1.0 complete.

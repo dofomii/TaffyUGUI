@@ -22,14 +22,17 @@ jobs:
         with:
           toolchain: 1.97.1
           components: rustfmt, clippy
-      - name: Format
+      - name: Canonical quality driver
         if: matrix.os == 'ubuntu-latest'
-        run: cargo fmt --manifest-path native/Cargo.toml --all -- --check
+        run: python build/build.py quality
       - name: Clippy
+        if: matrix.os != 'ubuntu-latest'
         run: cargo clippy --locked --manifest-path native/Cargo.toml --all-targets -- -D warnings
       - name: Test
+        if: matrix.os != 'ubuntu-latest'
         run: cargo test --locked --manifest-path native/Cargo.toml
       - name: Release build
+        if: matrix.os != 'ubuntu-latest'
         run: cargo build --locked --manifest-path native/Cargo.toml --release
 
   msrv:

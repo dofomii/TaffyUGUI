@@ -1,0 +1,147 @@
+name: phase4-repair-once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase4-repair-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - name: Apply deterministic Phase 4 build-driver repairs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("build/build.py")
+          text = path.read_text(encoding="utf-8")
+
+          old_android = '''    if spec.name == "android-arm64":
+              ndk = find_android_ndk()
+              linker = android_linker(ndk)
+              env["CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"] = str(linker)
+              env["CC_aarch64_linux_android"] = str(linker)
+          elif spec.name == "webgl":'''.replace("          ", "")
+          new_android = '''    if spec.name == "android-arm64":
+              ndk = find_android_ndk()
+              linker = android_linker(ndk)
+              env["CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"] = str(linker)
+              env["CC_aarch64_linux_android"] = str(linker)
+              # Rust 1.97's Android std links LLVM libunwind in unwind mode, while
+              # Unity 2021.3's pinned NDK r21d uses libgcc for AArch64 unwinding.
+              # TaffyUGUI does not permit Rust panics to cross its C ABI, so the
+              # production Android payload deliberately uses abort-only panics.
+              existing_rustflags = env.get("RUSTFLAGS", "").strip()
+              env["RUSTFLAGS"] = f"{existing_rustflags} -C panic=abort".strip()
+              env["TAFFY_UGUI_PANIC_STRATEGY"] = "abort"
+          elif spec.name == "webgl":'''.replace("          ", "")
+          if text.count(old_android) != 1:
+              raise SystemExit(f"expected one Android target_environment block, found {text.count(old_android)}")
+          text = text.replace(old_android, new_android)
+
+          marker = '''def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
+          '''.replace("          ", "")
+          helper = '''def find_dumpbin() -> str:
+              direct = shutil.which("dumpbin") or shutil.which("dumpbin.exe")
+              if direct:
+                  return direct
+
+              vswhere_candidates: list[Path] = []
+              for variable in ("ProgramFiles(x86)", "ProgramFiles"):
+                  root = os.environ.get(variable)
+                  if root:
+                      vswhere_candidates.append(Path(root) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe")
+
+              for vswhere in vswhere_candidates:
+                  if not vswhere.exists():
+                      continue
+                  installation = run(
+                      str(vswhere),
+                      "-latest",
+                      "-products",
+                      "*",
+                      "-requires",
+                      "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                      "-property",
+                      "installationPath",
+                      capture=True,
+                  ).strip()
+                  if not installation:
+                      continue
+                  candidates = sorted(
+                      (Path(installation) / "VC" / "Tools" / "MSVC").glob("*/bin/Hostx64/x64/dumpbin.exe"),
+                      reverse=True,
+                  )
+                  if candidates:
+                      return str(candidates[0])
+
+              fallback: list[Path] = []
+              for variable in ("ProgramFiles", "ProgramFiles(x86)"):
+                  root = os.environ.get(variable)
+                  if root:
+                      fallback.extend(Path(root).glob("Microsoft Visual Studio/*/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"))
+              if fallback:
+                  return str(sorted(fallback, reverse=True)[0])
+
+              raise SystemExit(
+                  "Required Visual Studio tool 'dumpbin.exe' was not found. Install the VC x64 build tools or expose dumpbin on PATH."
+              )
+
+
+          def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
+          '''.replace("          ", "")
+          if text.count(marker) != 1:
+              raise SystemExit(f"expected one symbol_output definition, found {text.count(marker)}")
+          text = text.replace(marker, helper)
+
+          old_symbol = '''    if spec.name == "windows-x64":
+              dumpbin = require("dumpbin")
+              return run(dumpbin, "/exports", str(artifact), capture=True, env=env)
+          '''.replace("          ", "")
+          new_symbol = '''    if spec.name == "windows-x64":
+              dumpbin = find_dumpbin()
+              return run(dumpbin, "/exports", str(artifact), capture=True, env=env)
+          '''.replace("          ", "")
+          if text.count(old_symbol) != 1:
+              raise SystemExit(f"expected one Windows symbol block, found {text.count(old_symbol)}")
+          text = text.replace(old_symbol, new_symbol)
+
+          old_apple = '''    if spec.platform == "macos":
+              args += ["-gU"]
+          else:
+              args += ["-g"]
+          '''.replace("          ", "")
+          new_apple = '''    if spec.platform in ("macos", "ios"):
+              args += ["-gU"]
+          else:
+              args += ["-g"]
+          '''.replace("          ", "")
+          if text.count(old_apple) != 1:
+              raise SystemExit(f"expected one Apple nm block, found {text.count(old_apple)}")
+          text = text.replace(old_apple, new_apple)
+
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Validate Python and Phase 4 static contract
+        run: |
+          python -m py_compile build/build.py
+          python scripts/phase4_static_preflight.py
+          git diff --check
+      - name: Commit Phase 4 build-driver repairs
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build/build.py
+          git diff --cached --check
+          git commit -m "Repair Phase 4 platform build verification"
+          git push origin HEAD:main

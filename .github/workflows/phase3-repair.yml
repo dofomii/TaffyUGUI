@@ -20,39 +20,32 @@ jobs:
         with:
           toolchain: 1.97.1
           components: rustfmt
-      - name: Apply deterministic Phase 3 source repairs
+      - name: Repair golden fixture defaults
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          context = Path("native/src/context.rs")
-          text = context.read_text(encoding="utf-8")
-          old = "context.detailed_layout_info(root).unwrap(), DetailedLayoutInfo::Grid(_)"
-          new = "context.detailed_layout_info(root).unwrap(), taffy::tree::DetailedLayoutInfo::Grid(_)"
-          if text.count(old) != 1:
-              raise SystemExit(f"expected exactly one DetailedLayoutInfo test reference, found {text.count(old)}")
-          context.write_text(text.replace(old, new), encoding="utf-8")
-
           verification = Path("native/tests/native_verification.rs")
           text = verification.read_text(encoding="utf-8")
-          unused = "fn auto_value() -> TuValue {\n    typed_value(TuValueKind::Auto, 0.0)\n}\n\n"
-          if text.count(unused) != 1:
-              raise SystemExit(f"expected exactly one unused auto_value helper, found {text.count(unused)}")
-          verification.write_text(text.replace(unused, ""), encoding="utf-8")
+          old = "    style.position = TuPosition::Relative as i32;\n    style.flex_direction = TuFlexDirection::Row as i32;\n"
+          new = "    style.position = TuPosition::Relative as i32;\n    // TuValueKind::Auto is numerically zero, so a zeroed TuStyle would otherwise\n    // create four auto margins instead of the CSS/Taffy default zero margins.\n    style.margin_left = px(0.0);\n    style.margin_right = px(0.0);\n    style.margin_top = px(0.0);\n    style.margin_bottom = px(0.0);\n    style.flex_direction = TuFlexDirection::Row as i32;\n"
+          if text.count(old) != 1:
+              raise SystemExit(f"expected exactly one base_style insertion point, found {text.count(old)}")
+          verification.write_text(text.replace(old, new), encoding="utf-8")
           PY
       - name: Canonical Rust formatting
         run: cargo fmt --manifest-path native/Cargo.toml --all
-      - name: Commit repaired native baseline
+      - name: Commit repaired golden fixture
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add native/src native/tests
+          git add native/tests
           git diff --cached --check
           if git diff --cached --quiet; then
             echo "No repair changes were needed."
             exit 0
           fi
-          git commit -m "Repair Phase 3 native verification baseline"
+          git commit -m "Fix Phase 3 golden style defaults"
           git push origin HEAD:main

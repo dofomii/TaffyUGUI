@@ -29,7 +29,9 @@ fn decode_parts(raw: u64) -> Option<(u32, u32)> {
 pub(crate) struct ContextHandle(u64);
 
 impl ContextHandle {
-    pub(crate) const fn from_raw(raw: u64) -> Self { Self(raw) }
+    pub(crate) const fn from_raw(raw: u64) -> Self {
+        Self(raw)
+    }
 
     pub(crate) fn from_parts(index: u32, generation: u32) -> Self {
         Self(encode_parts(index, generation))
@@ -64,7 +66,6 @@ impl NodeHandle {
         decode_parts(self.0)
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct ResourceHandle(u64);

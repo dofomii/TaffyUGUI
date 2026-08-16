@@ -43,11 +43,16 @@ impl MeasurementRecord {
         if sizes.iter().any(|size| !valid_size(*size)) {
             return Err(NativeError::InvalidValue);
         }
-        if self.aspect_ratio.is_some_and(|ratio| !ratio.is_finite() || ratio <= 0.0) {
+        if self
+            .aspect_ratio
+            .is_some_and(|ratio| !ratio.is_finite() || ratio <= 0.0)
+        {
             return Err(NativeError::InvalidValue);
         }
         if self.width_samples.iter().any(|sample| {
-            !sample.available_width.is_finite() || sample.available_width < 0.0 || !valid_size(sample.size)
+            !sample.available_width.is_finite()
+                || sample.available_width < 0.0
+                || !valid_size(sample.size)
         }) {
             return Err(NativeError::InvalidValue);
         }
@@ -110,40 +115,76 @@ fn valid_size(size: Size<f32>) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use taffy::{geometry::Size, style::AvailableSpace};
     use taffy::style_helpers::TaffyMaxContent;
+    use taffy::{geometry::Size, style::AvailableSpace};
 
     use super::{MeasurementRecord, MeasurementSample};
 
     #[test]
     fn known_width_drives_replaced_aspect_ratio() {
         let record = MeasurementRecord {
-            preferred: Size { width: 400.0, height: 300.0 },
+            preferred: Size {
+                width: 400.0,
+                height: 300.0,
+            },
             aspect_ratio: Some(4.0 / 3.0),
             is_replaced: true,
             ..Default::default()
         };
         let measured = record.measure(
-            Size { width: Some(200.0), height: None },
+            Size {
+                width: Some(200.0),
+                height: None,
+            },
             Size::MAX_CONTENT,
         );
-        assert_eq!(measured, Size { width: 200.0, height: 150.0 });
+        assert_eq!(
+            measured,
+            Size {
+                width: 200.0,
+                height: 150.0
+            }
+        );
     }
 
     #[test]
     fn width_dependent_sample_is_selected_without_callback() {
         let record = MeasurementRecord {
-            preferred: Size { width: 300.0, height: 20.0 },
+            preferred: Size {
+                width: 300.0,
+                height: 20.0,
+            },
             width_samples: vec![
-                MeasurementSample { available_width: 100.0, size: Size { width: 100.0, height: 60.0 } },
-                MeasurementSample { available_width: 200.0, size: Size { width: 200.0, height: 40.0 } },
+                MeasurementSample {
+                    available_width: 100.0,
+                    size: Size {
+                        width: 100.0,
+                        height: 60.0,
+                    },
+                },
+                MeasurementSample {
+                    available_width: 200.0,
+                    size: Size {
+                        width: 200.0,
+                        height: 40.0,
+                    },
+                },
             ],
             ..Default::default()
         };
         let measured = record.measure(
             Size::NONE,
-            Size { width: AvailableSpace::Definite(180.0), height: AvailableSpace::MaxContent },
+            Size {
+                width: AvailableSpace::Definite(180.0),
+                height: AvailableSpace::MaxContent,
+            },
         );
-        assert_eq!(measured, Size { width: 200.0, height: 40.0 });
+        assert_eq!(
+            measured,
+            Size {
+                width: 200.0,
+                height: 40.0
+            }
+        );
     }
 }

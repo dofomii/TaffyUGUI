@@ -67,7 +67,10 @@ impl CalcRegistry {
         self.validate_dependencies(&expr)?;
         let generation = next_resource_generation();
         if let Some(index) = self.free.pop() {
-            let slot = self.slots.get_mut(index as usize).ok_or(NativeError::ResourceNotFound)?;
+            let slot = self
+                .slots
+                .get_mut(index as usize)
+                .ok_or(NativeError::ResourceNotFound)?;
             let handle = ResourceHandle::from_parts(index, generation);
             slot.generation = generation;
             slot.expr = Some(expr);
@@ -91,7 +94,10 @@ impl CalcRegistry {
             return Err(NativeError::InvalidValue);
         }
         let (index, generation) = handle.parts().ok_or(NativeError::ResourceNotFound)?;
-        let slot = self.slots.get_mut(index as usize).ok_or(NativeError::ResourceNotFound)?;
+        let slot = self
+            .slots
+            .get_mut(index as usize)
+            .ok_or(NativeError::ResourceNotFound)?;
         if slot.generation != generation || slot.expr.is_none() {
             return Err(NativeError::ResourceNotFound);
         }
@@ -107,7 +113,10 @@ impl CalcRegistry {
         Ok(Dimension::calc(self.token_ptr(handle)?))
     }
 
-    pub(crate) fn length_percentage(&self, handle: ResourceHandle) -> Result<LengthPercentage, NativeError> {
+    pub(crate) fn length_percentage(
+        &self,
+        handle: ResourceHandle,
+    ) -> Result<LengthPercentage, NativeError> {
         Ok(LengthPercentage::calc(self.token_ptr(handle)?))
     }
 
@@ -129,14 +138,21 @@ impl CalcRegistry {
                 .filter(|token| (&***token as *const CalcToken as usize) == address)
                 .map(|token| token.handle)
         });
-        handle.and_then(|handle| self.evaluate(handle, basis).ok()).unwrap_or(0.0)
+        handle
+            .and_then(|handle| self.evaluate(handle, basis).ok())
+            .unwrap_or(0.0)
     }
 
     pub(crate) fn evaluate(&self, handle: ResourceHandle, basis: f32) -> Result<f32, NativeError> {
         self.evaluate_inner(handle, basis, 0)
     }
 
-    fn evaluate_inner(&self, handle: ResourceHandle, basis: f32, depth: u8) -> Result<f32, NativeError> {
+    fn evaluate_inner(
+        &self,
+        handle: ResourceHandle,
+        basis: f32,
+        depth: u8,
+    ) -> Result<f32, NativeError> {
         if depth >= 64 {
             return Err(NativeError::InvalidValue);
         }
@@ -145,8 +161,12 @@ impl CalcRegistry {
         let value = match expr {
             CalcExpr::Length(value) => *value,
             CalcExpr::Percent(value) => basis * *value,
-            CalcExpr::Add(a, b) => self.evaluate_inner(*a, basis, next)? + self.evaluate_inner(*b, basis, next)?,
-            CalcExpr::Sub(a, b) => self.evaluate_inner(*a, basis, next)? - self.evaluate_inner(*b, basis, next)?,
+            CalcExpr::Add(a, b) => {
+                self.evaluate_inner(*a, basis, next)? + self.evaluate_inner(*b, basis, next)?
+            }
+            CalcExpr::Sub(a, b) => {
+                self.evaluate_inner(*a, basis, next)? - self.evaluate_inner(*b, basis, next)?
+            }
             CalcExpr::Scale(value, factor) => self.evaluate_inner(*value, basis, next)? * *factor,
             CalcExpr::Min(values) => values
                 .iter()
@@ -160,16 +180,23 @@ impl CalcRegistry {
                 .collect::<Result<Vec<_>, _>>()?
                 .into_iter()
                 .fold(f32::NEG_INFINITY, f32::max),
-            CalcExpr::Clamp { min, preferred, max } => {
+            CalcExpr::Clamp {
+                min,
+                preferred,
+                max,
+            } => {
                 let min = self.evaluate_inner(*min, basis, next)?;
                 let preferred = self.evaluate_inner(*preferred, basis, next)?;
                 let max = self.evaluate_inner(*max, basis, next)?;
                 preferred.clamp(min.min(max), max.max(min))
             }
         };
-        if value.is_finite() { Ok(value) } else { Err(NativeError::InvalidValue) }
+        if value.is_finite() {
+            Ok(value)
+        } else {
+            Err(NativeError::InvalidValue)
+        }
     }
-
 
     fn validate_dependencies(&self, expr: &CalcExpr) -> Result<(), NativeError> {
         for handle in expression_dependencies(expr) {
@@ -188,20 +215,29 @@ impl CalcRegistry {
 
     fn get(&self, handle: ResourceHandle) -> Result<&CalcExpr, NativeError> {
         let (index, generation) = handle.parts().ok_or(NativeError::ResourceNotFound)?;
-        let slot = self.slots.get(index as usize).ok_or(NativeError::ResourceNotFound)?;
+        let slot = self
+            .slots
+            .get(index as usize)
+            .ok_or(NativeError::ResourceNotFound)?;
         if slot.generation != generation {
             return Err(NativeError::ResourceNotFound);
         }
         slot.expr.as_ref().ok_or(NativeError::ResourceNotFound)
     }
 
-    pub(crate) fn token_ptr_for_taffy(&self, handle: ResourceHandle) -> Result<*const (), NativeError> {
+    pub(crate) fn token_ptr_for_taffy(
+        &self,
+        handle: ResourceHandle,
+    ) -> Result<*const (), NativeError> {
         self.token_ptr(handle)
     }
 
     fn token_ptr(&self, handle: ResourceHandle) -> Result<*const (), NativeError> {
         let (index, generation) = handle.parts().ok_or(NativeError::ResourceNotFound)?;
-        let slot = self.slots.get(index as usize).ok_or(NativeError::ResourceNotFound)?;
+        let slot = self
+            .slots
+            .get(index as usize)
+            .ok_or(NativeError::ResourceNotFound)?;
         if slot.generation != generation || slot.expr.is_none() {
             return Err(NativeError::ResourceNotFound);
         }
@@ -216,7 +252,11 @@ fn expression_dependencies(expr: &CalcExpr) -> Vec<ResourceHandle> {
         CalcExpr::Add(a, b) | CalcExpr::Sub(a, b) => vec![*a, *b],
         CalcExpr::Scale(value, _) => vec![*value],
         CalcExpr::Min(values) | CalcExpr::Max(values) => values.clone(),
-        CalcExpr::Clamp { min, preferred, max } => vec![*min, *preferred, *max],
+        CalcExpr::Clamp {
+            min,
+            preferred,
+            max,
+        } => vec![*min, *preferred, *max],
     }
 }
 
@@ -227,7 +267,11 @@ fn validate_expr(expr: &CalcExpr) -> Result<(), NativeError> {
         CalcExpr::Min(values) | CalcExpr::Max(values) => !values.is_empty(),
         _ => true,
     };
-    if valid { Ok(()) } else { Err(NativeError::InvalidValue) }
+    if valid {
+        Ok(())
+    } else {
+        Err(NativeError::InvalidValue)
+    }
 }
 
 static NEXT_RESOURCE_GENERATION: AtomicU32 = AtomicU32::new(1);

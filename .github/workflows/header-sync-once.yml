@@ -32,8 +32,7 @@ jobs:
           text = version.read_text(encoding="utf-8")
           replacements = {
               "pub const TU_ABI_VERSION: u32 = 0;": "pub const TU_ABI_VERSION: u32 = 1;",
-              "pub const TU_ABI_STAGE: u32 = 0; // 0 = candidate, 1 = RC, 2 = final":
-                  "pub const TU_ABI_STAGE: u32 = 1; // 0 = candidate, 1 = RC, 2 = final",
+              "pub const TU_ABI_STAGE: u32 = 0; // 0 = candidate, 1 = RC, 2 = final": "pub const TU_ABI_STAGE: u32 = 1; // 0 = candidate, 1 = RC, 2 = final",
           }
           for old, new in replacements.items():
               if text.count(old) != 1:
@@ -43,30 +42,16 @@ jobs:
 
           tests = Path("native/tests/native_verification.rs")
           text = tests.read_text(encoding="utf-8")
-          old = '''    assert_eq!(
-        tu_get_abi_version(),
-        0,
-        "ABI remains candidate until the Phase 3 gate actually passes"
-    );
-    assert_eq!(tu_get_abi_stage(), 0);'''
-          new = '''    assert_eq!(
-        tu_get_abi_version(),
-        1,
-        "ABI-v1-RC must remain locked after the verified Phase 3 gate"
-    );
-    assert_eq!(tu_get_abi_stage(), 1);'''
+          old = "    assert_eq!(\n        tu_get_abi_version(),\n        0,\n        \"ABI remains candidate until the Phase 3 gate actually passes\"\n    );\n    assert_eq!(tu_get_abi_stage(), 0);"
+          new = "    assert_eq!(\n        tu_get_abi_version(),\n        1,\n        \"ABI-v1-RC must remain locked after the verified Phase 3 gate\"\n    );\n    assert_eq!(tu_get_abi_stage(), 1);"
           if text.count(old) != 1:
               raise SystemExit(f"expected exactly one candidate ABI assertion block, found {text.count(old)}")
           tests.write_text(text.replace(old, new), encoding="utf-8")
 
           preflight = Path("scripts/phase3_static_preflight.py")
           text = preflight.read_text(encoding="utf-8")
-          old = '''    # RC is intentionally not declared until the real Phase 3 runtime gate passes.
-    require(version, "TU_ABI_VERSION: u32 = 0", "unfrozen ABI version while verification is blocked", errors)
-    require(version, "TU_ABI_STAGE: u32 = 0", "candidate ABI stage while verification is blocked", errors)'''
-          new = '''    # The complete candidate runtime gate has passed; Phase 3 now requires the ABI-v1-RC lock.
-    require(version, "TU_ABI_VERSION: u32 = 1", "ABI-v1-RC version lock", errors)
-    require(version, "TU_ABI_STAGE: u32 = 1", "ABI-v1-RC stage lock", errors)'''
+          old = "    # RC is intentionally not declared until the real Phase 3 runtime gate passes.\n    require(version, \"TU_ABI_VERSION: u32 = 0\", \"unfrozen ABI version while verification is blocked\", errors)\n    require(version, \"TU_ABI_STAGE: u32 = 0\", \"candidate ABI stage while verification is blocked\", errors)"
+          new = "    # The complete candidate runtime gate has passed; Phase 3 now requires the ABI-v1-RC lock.\n    require(version, \"TU_ABI_VERSION: u32 = 1\", \"ABI-v1-RC version lock\", errors)\n    require(version, \"TU_ABI_STAGE: u32 = 1\", \"ABI-v1-RC stage lock\", errors)"
           if text.count(old) != 1:
               raise SystemExit(f"expected exactly one candidate preflight block, found {text.count(old)}")
           preflight.write_text(text.replace(old, new), encoding="utf-8")

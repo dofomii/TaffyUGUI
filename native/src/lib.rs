@@ -1,3 +1,7 @@
+// The FFI module intentionally keeps several generated-style one-line pointer copies;
+// formatting them as `= *value` is unambiguous but Clippy flags the compact form.
+#![allow(clippy::suspicious_assignment_formatting)]
+
 //! TaffyUGUI native layout library.
 //!
 //! The native engine is persistent and Unity-independent. The exported `tu_*` surface is the

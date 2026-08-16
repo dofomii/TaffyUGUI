@@ -76,7 +76,7 @@ impl core::fmt::Display for NativeError {
 }
 
 thread_local! {
-    static LAST_ERROR: RefCell<String> = RefCell::new(String::new());
+    static LAST_ERROR: RefCell<String> = const { RefCell::new(String::new()) };
 }
 
 pub(crate) fn clear_last_error() { LAST_ERROR.with(|v| v.borrow_mut().clear()); }

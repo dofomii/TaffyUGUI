@@ -111,6 +111,7 @@ fn valid_size(size: Size<f32>) -> bool {
 #[cfg(test)]
 mod tests {
     use taffy::{geometry::Size, style::AvailableSpace};
+    use taffy::style_helpers::TaffyMaxContent;
 
     use super::{MeasurementRecord, MeasurementSample};
 

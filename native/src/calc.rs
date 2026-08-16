@@ -43,6 +43,9 @@ struct CalcSlot {
 pub(crate) struct CalcRegistry {
     slots: Vec<CalcSlot>,
     free: Vec<u32>,
+    // Box indirection is intentional: retired Calc token addresses must remain stable for any
+    // Taffy CompactLength values that still carry their opaque pointer.
+    #[allow(clippy::vec_box)]
     retired_tokens: Vec<Box<CalcToken>>,
 }
 

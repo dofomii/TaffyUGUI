@@ -9,7 +9,7 @@ mod phase1_style_tests {
 
     #[test]
     fn core_box_model_position_overflow_and_sizing_map_directly_to_taffy() {
-        let style = Style {
+        let style: Style<String> = Style {
             display: Display::Block,
             box_sizing: BoxSizing::ContentBox,
             direction: Direction::Rtl,
@@ -40,7 +40,7 @@ mod phase1_style_tests {
 
     #[test]
     fn complete_flex_alignment_surface_is_representable() {
-        let style = Style {
+        let style: Style<String> = Style {
             display: Display::Flex,
             flex_direction: FlexDirection::ColumnReverse,
             flex_wrap: FlexWrap::WrapReverse,
@@ -62,8 +62,8 @@ mod phase1_style_tests {
 
     #[test]
     fn block_flow_root_float_and_clear_surface_is_representable() {
-        let block = Style { display: Display::Block, float: Float::Left, clear: Clear::Right, ..Default::default() };
-        let flow_root = Style { display: Display::FlowRoot, ..Default::default() };
+        let block: Style<String> = Style { display: Display::Block, float: Float::Left, clear: Clear::Right, ..Default::default() };
+        let flow_root: Style<String> = Style { display: Display::FlowRoot, ..Default::default() };
         assert_eq!(block.float, Float::Left);
         assert_eq!(block.clear, Clear::Right);
         assert_eq!(flow_root.display, Display::FlowRoot);
@@ -71,6 +71,7 @@ mod phase1_style_tests {
 
     #[test]
     fn display_none_surface_is_representable() {
-        assert_eq!(Style { display: Display::None, ..Default::default() }.display, Display::None);
+        let style: Style<String> = Style { display: Display::None, ..Default::default() };
+        assert_eq!(style.display, Display::None);
     }
 }

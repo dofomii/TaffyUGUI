@@ -5,16 +5,16 @@ use taffy_ugui::*;
 
 const OK: i32 = TuStatus::Ok as i32;
 
-fn value(kind: TuValueKind, value: f32) -> TuValue {
-    TuValue { kind: kind as i32, value, resource: 0 }
+fn typed_value(kind: TuValueKind, scalar: f32) -> TuValue {
+    TuValue { kind: kind as i32, value: scalar, resource: 0 }
 }
 
 fn px(value: f32) -> TuValue {
-    value(TuValueKind::Length, value)
+    typed_value(TuValueKind::Length, value)
 }
 
 fn auto_value() -> TuValue {
-    value(TuValueKind::Auto, 0.0)
+    typed_value(TuValueKind::Auto, 0.0)
 }
 
 fn calc_value(resource: TuResourceHandle) -> TuValue {

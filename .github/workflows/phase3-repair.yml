@@ -1,0 +1,73 @@
+name: phase3-repair-once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase3-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          components: rustfmt
+      - name: Apply deterministic Phase 3 repairs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          context = Path("native/src/context.rs")
+          text = context.read_text(encoding="utf-8")
+          old = "context.detailed_layout_info(root).unwrap(), DetailedLayoutInfo::Grid(_)"
+          new = "context.detailed_layout_info(root).unwrap(), taffy::tree::DetailedLayoutInfo::Grid(_)"
+          if text.count(old) != 1:
+              raise SystemExit(f"expected exactly one DetailedLayoutInfo test reference, found {text.count(old)}")
+          context.write_text(text.replace(old, new), encoding="utf-8")
+
+          verification = Path("native/tests/native_verification.rs")
+          text = verification.read_text(encoding="utf-8")
+          unused = "fn auto_value() -> TuValue {\n    typed_value(TuValueKind::Auto, 0.0)\n}\n\n"
+          if text.count(unused) != 1:
+              raise SystemExit(f"expected exactly one unused auto_value helper, found {text.count(unused)}")
+          verification.write_text(text.replace(unused, ""), encoding="utf-8")
+
+          workflow = Path(".github/workflows/native-ci.yml")
+          text = workflow.read_text(encoding="utf-8")
+          replacements = {
+              "run: cargo check --locked --manifest-path native/Cargo.toml --all-targets":
+                  "run: cargo +1.82.0 check --locked --manifest-path native/Cargo.toml --all-targets",
+              "run: cargo test --locked --manifest-path native/Cargo.toml":
+                  "run: cargo +1.82.0 test --locked --manifest-path native/Cargo.toml",
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"expected exactly one MSRV command {old!r}, found {count}")
+              text = text.replace(old, new)
+          workflow.write_text(text, encoding="utf-8")
+          PY
+      - name: Canonical Rust formatting
+        run: cargo fmt --manifest-path native/Cargo.toml --all
+      - name: Commit repaired native baseline
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native/src native/tests .github/workflows/native-ci.yml
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No repair changes were needed."
+            exit 0
+          fi
+          git commit -m "Repair Phase 3 native verification baseline"
+          git push origin HEAD:main

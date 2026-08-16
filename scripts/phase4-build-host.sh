@@ -16,8 +16,8 @@ case "$(uname -s)" in
       echo "ANDROID_NDK_HOME or ANDROID_NDK_ROOT must point to NDK 21.3.6528147 (r21d)." >&2
       exit 2
     fi
-    if ! command -v emcc >/dev/null 2>&1 || ! command -v emar >/dev/null 2>&1 || ! command -v emnm >/dev/null 2>&1; then
-      echo "Emscripten 2.0.19 (emcc/emar/emnm) must be active in PATH." >&2
+    if ! command -v emcc >/dev/null 2>&1 || ! command -v emar >/dev/null 2>&1; then
+      echo "Emscripten 2.0.19 (emcc/emar) must be active in PATH." >&2
       exit 2
     fi
     ;;

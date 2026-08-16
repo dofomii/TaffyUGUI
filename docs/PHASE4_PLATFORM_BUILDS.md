@@ -106,7 +106,7 @@ dist/native/ios/arm64/libtaffy_ugui.a
 - Rust 1.97.1
 - `wasm32-unknown-emscripten`
 - Emscripten **2.0.19**, matching the current Unity 2021.3 baseline
-- `emcc`, `emar`, and `emnm` from that toolchain; an archive member must identify as WebAssembly/Wasm or LLVM bitcode
+- `emcc`, `emar`, and the bundled `llvm-nm` from that toolchain; an archive member must identify as WebAssembly/Wasm or LLVM bitcode
 
 Output:
 

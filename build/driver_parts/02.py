@@ -16,13 +16,27 @@ def target_env(spec: TargetSpec) -> dict[str, str]:
     elif spec.name == "webgl":
         emcc = require("emcc", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
         require("emar", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
-        require("emnm", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
+        bundled_llvm_nm = Path(emcc).resolve().parent.parent / "bin" / "llvm-nm"
+        if bundled_llvm_nm.is_file():
+            env["TAFFYUGUI_WEBGL_NM"] = str(bundled_llvm_nm)
+        else:
+            env["TAFFYUGUI_WEBGL_NM"] = require(
+                "llvm-nm",
+                f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.",
+            )
         version = run(emcc, "--version", capture=True)
         if WEBGL_EMSCRIPTEN_VERSION not in version:
             raise SystemExit(f"WebGL baseline requires Emscripten {WEBGL_EMSCRIPTEN_VERSION}; got {version.splitlines()[0] if version else 'unknown'}")
         env["CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_LINKER"] = emcc
         env["CC_wasm32_unknown_emscripten"] = emcc
     return env
+
+
+def webgl_nm(env: dict[str, str]) -> str:
+    configured = env.get("TAFFYUGUI_WEBGL_NM")
+    if configured and Path(configured).is_file():
+        return configured
+    return require("llvm-nm", f"WebGL verification requires Emscripten {WEBGL_EMSCRIPTEN_VERSION} llvm-nm.")
 
 
 def cargo_artifact(spec: TargetSpec) -> Path:
@@ -88,7 +102,7 @@ def target_architecture_evidence(
 
     if spec.name == "webgl":
         emar = require("emar", f"WebGL verification requires Emscripten {WEBGL_EMSCRIPTEN_VERSION} emar.")
-        require("emnm", f"WebGL verification requires Emscripten {WEBGL_EMSCRIPTEN_VERSION} emnm.")
+        webgl_nm(env)
         members = [line.strip() for line in run(emar, "t", str(artifact), capture=True, env=env).splitlines() if line.strip()]
         if not members:
             raise SystemExit("WebGL static library is empty.")
@@ -143,8 +157,7 @@ def symbol_text(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
         nm = require("nm")
         return run(nm, "-D", "--defined-only", str(artifact), capture=True, env=env)
     if spec.name == "webgl":
-        emnm = require("emnm", f"WebGL export verification requires Emscripten {WEBGL_EMSCRIPTEN_VERSION} emnm.")
-        return run(emnm, "-g", str(artifact), capture=True, env=env)
+        return run(webgl_nm(env), "-g", str(artifact), capture=True, env=env)
     nm = require("nm")
     args = [nm]
     if spec.platform_name == "macos":

@@ -99,7 +99,7 @@ python3 build/build.py verify-native <target>
 Platform SDK/toolchain requirements are intentionally strict:
 
 - Android baseline: NDK r21d / revision `21.3.6528147`, API 21.
-- WebGL baseline: Emscripten `2.0.19` for the current Unity 2021.3 compatibility target.
+- WebGL baseline: Emscripten `2.0.19` (including its bundled `llvm-nm`) for the current Unity 2021.3 compatibility target.
 - iOS and macOS outputs must be built on macOS with Xcode tooling.
 - Windows MSVC output must be built on Windows.
 

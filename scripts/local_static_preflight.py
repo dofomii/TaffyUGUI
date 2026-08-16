@@ -82,7 +82,7 @@ for token in (
     "PHASE4_HOST_TARGETS", "phase4_host", "verify_phase4", "phase4-index.json",
     "source_tree", "SHA256SUMS", "built_locally", "public_exports_sha256",
     "architecture_evidence", "validate_manifest_architecture_evidence", "phase4_driver_selftest",
-    "emar", "emnm", "lipo -info",
+    "emar", "llvm-nm", "lipo -info",
 ):
     require(token in build, f"local Phase 4 build contract missing token: {token}")
 require("api.github.com" not in build.lower() and "actions/" not in build.lower() and "github.run" not in build.lower(), "local build driver contains an executable GitHub/Actions dependency")

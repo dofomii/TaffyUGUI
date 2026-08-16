@@ -15,14 +15,14 @@ The native interface is **ABI-v1-RC (version 1, stage 1)** with Taffy **0.13.0**
 | 0 — Rust/toolchain foundation | **Complete** |
 | 1 — Complete native Taffy engine | **Implementation complete** |
 | 2 — Production C ABI | **Implementation complete** |
-| 3 — Native verification / ABI RC | **ABI locked; canonical local compiled gate pending** |
-| 4 — Cross-platform native builds | **Build infrastructure complete; real artifacts pending** |
+| 3 — Native verification / ABI RC | **ABI locked; canonical local compiled gate passed** |
+| 4 — Cross-platform native builds | **Build infrastructure complete; Android ARM64 accepted; remaining artifacts pending** |
 | 5 — Unity-ready native staging | Not started |
 | 6 — Managed ABI conformance / final ABI v1 | Partial early P/Invoke scaffolding only |
 | 7 — Minimal working Unity product | Prototype scaffolding exists; formal phase gated |
 | 8–14 — Production integration through v1.0 | Not started |
 
-The current sandbox passes the provider-independent static gate, including C11/C++17 public-header compilation and native/managed contract checks. It cannot honestly complete the Rust/platform build gates because the required binary toolchains and SDKs are not available in this environment.
+The local Linux build host has passed the complete Phase 3 compiled gate and accepted an Android ARM64 artifact. WebGL remains unaccepted; the compatibility decision is documented below.
 
 For the full current state, use:
 
@@ -83,6 +83,21 @@ python3 build/build.py verify-phase4
 ```
 
 The final Phase 4 gate verifies same-source/same-ABI/export parity and writes `dist/native/phase4-index.json`. See [docs/PHASE4_PLATFORM_BUILDS.md](docs/PHASE4_PLATFORM_BUILDS.md).
+
+### Unity 2022 WebGL: deferred legacy branch
+
+**Decision:** Unity 2022 WebGL native-plugin support will be delivered later on a dedicated, maintained legacy branch. It is not part of the active Phase 4 branch and must not change the mainline Rust, Taffy, or Unity 2021.3 WebGL baseline merely to make Unity 2022 build.
+
+**Why a separate branch is necessary:** Unity requires a WebGL native plugin to be compiled with the Emscripten version embedded in the consuming Unity Editor, because their LLVM-generated objects are binary-compatible only with the matching compiler version. Unity 2022's WebGL baseline is Emscripten `3.1.8`; the current project is Rust `1.97.1` with Taffy `0.13.0`, while mainline's current Unity 2021.3 WebGL baseline is Emscripten `2.0.19`. The latter fails before an archive is produced: LLVM 13 `wasm-ld` aborts on the Rust WebAssembly runtime objects with `unknown symbol kind`. Replacing only Emscripten is not valid for Unity 2022 because its Editor requires the matching `3.1.8` toolchain. Therefore supporting Unity 2022 natively requires an independently pinned legacy Rust/dependency/compiler stack, rather than a mainline toolchain change.
+
+**Tests performed:** these are all compiler-compatibility tests completed to date. No Unity 2022 `3.1.8` candidate build or Unity 2022 WebGL Player test has been run.
+
+- Rust `1.97.1` + Emscripten `2.0.19`: release WebGL link failed with `wasm-ld: unknown symbol kind` in Rust runtime archives.
+- The same build with `panic=abort`: failed with the same linker error; the runtime still supplied an unwind archive.
+- Unity 6.3/6.4 bundled Emscripten `3.1.39-git` and standalone Emscripten `3.1.38`: linking advanced further but optimized `wasm-opt` failed on unsupported `--enable-bulk-memory-opt`.
+- Standalone Emscripten `4.0.19`: the optimized Rust release build succeeded and its archive exposed all 31 required `tu_*` symbols. This is compiler-only evidence, not Unity Player validation, and it cannot be used by Unity 2022.
+
+**Required before that branch can claim Unity 2022 support:** pin and record the exact Unity 2022 Editor/WebGL Support package and its Emscripten `3.1.8` binaries; create a clean reproducible legacy build; validate the static archive and all 31 ABI exports; compile and build a Unity 2022 WebGL Player; then run representative Flexbox, Grid, Block, Calc, lifetime/error, and managed ABI-conformance tests in the browser. Until all of these pass, Unity 2022 WebGL is not a supported target. The compiler-matching requirement and Unity 2022 Emscripten baseline are from Unity's [Unity 2022.3 native Web plugin documentation](https://docs.unity3d.com/2022.3/Documentation/Manual/webgl-native-plugins-with-emscripten.html).
 
 ## Unity package
 

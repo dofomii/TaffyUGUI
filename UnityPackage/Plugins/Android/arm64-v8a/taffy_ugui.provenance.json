@@ -1,0 +1,18 @@
+{
+  "abi": {
+    "designation": "ABI-v1-RC",
+    "stage": 1,
+    "version": 1
+  },
+  "architecture": "arm64-v8a",
+  "artifact": "libtaffy_ugui.so",
+  "phase": 5,
+  "phase4_index": "dist/native/phase4-index.json",
+  "platform": "android",
+  "schema": 1,
+  "sha256": "b41be001013f3198ec1c34e578a047c8ec742731157843d16a54f750dabb0064",
+  "source_manifest": "dist/native/android/arm64-v8a/manifest.json",
+  "source_revision": "a2077e61e665004aadf201bfea913ea1402d2360",
+  "source_tree": "cb581a7af22ac59d5287ebcdbbde2e7a56d69084",
+  "taffy_version": "0.13.0"
+}

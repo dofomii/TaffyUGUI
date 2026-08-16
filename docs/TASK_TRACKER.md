@@ -35,8 +35,8 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 2:** production C ABI implementation COMPLETE.
 - **Phase 3:** COMPLETE; ABI-v1-RC `1/1` passed the canonical local compiled gate.
 - **Phase 4:** COMPLETE for the active **Android ARM64-only** release scope; other platform targets are deferred and are not advertised/supported by this branch.
-- **Phase 5:** ACTIVE — Android Unity native payload staging and verification.
-- **Phase 6:** PARTIAL EARLY SCAFFOLDING only (production `tu_*` P/Invoke surface already aligned); formal managed conformance NOT STARTED.
+- **Phase 5:** COMPLETE for Android ARM64; verified Unity package native payload staged.
+- **Phase 6:** READY / PARTIAL EARLY SCAFFOLDING (production `tu_*` P/Invoke surface already aligned); formal managed conformance can begin next.
 - **Phase 7:** prototype components exist; formal production Unity phase NOT STARTED.
 - **Phase 8–14:** NOT STARTED.
 
@@ -270,7 +270,7 @@ Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact
 - [x] P4.5 Android ARM64 `libtaffy_ugui.so` builds with NDK r21d `21.3.6528147`, API 21, and verifies.
 - [x] P4.8 The active Android artifact has accepted `manifest.json` + `SHA256SUMS`.
 - [x] P4.9 The active Android artifact exposes the complete required 31-function ABI export set.
-- [ ] P4.10 Run final `python3 build/build.py verify-phase4` for the Android-only scope and produce `dist/native/phase4-index.json`.
+- [x] P4.10 Final `python3 build/build.py verify-phase4` passed for the Android-only scope and produced `dist/native/phase4-index.json`.
 
 ## Deferred targets — outside active branch release scope
 
@@ -293,27 +293,31 @@ The Android ARM64 artifact exists, is locally architecture/export/checksum verif
 
 # Phase 5 — Unity-Ready Native Payload Staging
 
-**Status:** ACTIVE — Android ARM64 only
+**Status:** COMPLETE — Android ARM64 only
+
+**Status:** COMPLETE — Android ARM64 only
 
 **Goal:** convert the verified Android `dist/native/**` output into the native payload actually shipped by the Unity package.
 
-- [ ] P5.1 Define/confirm canonical `UnityPackage/Plugins/Android/arm64-v8a/` structure.
-- [ ] P5.2 Copy only the Phase-4-verified Android ARM64 binary into the package plugin path.
-- [ ] P5.3 Create/verify Unity `.meta` importer configuration for Android ARM64 and disable unsupported platforms/editor loading.
-- [ ] P5.4 Preserve source/ABI/checksum provenance for the staged binary.
-- [ ] P5.5 Verify no debug, unverified, or non-Android native artifact is packaged.
-- [ ] P5.6 Verify Git/UPM package path includes the required Android native binary and metadata.
-- [ ] P5.7 Verify package-native payload is reproducible from `dist/native/phase4-index.json`.
-- [ ] P5.8 Declare **Android Native Engine Candidate Complete** only after staging verification.
+- [x] P5.1 Canonical `UnityPackage/Plugins/Android/arm64-v8a/` structure established.
+- [x] P5.2 Only the Phase-4-verified Android ARM64 binary is copied into the package plugin path.
+- [x] P5.3 Deterministic Unity `.meta` importer configuration enables Android ARM64 and disables unsupported platforms/editor loading.
+- [x] P5.4 Source revision/tree, ABI, Taffy version, and checksum provenance are preserved beside the staged binary.
+- [x] P5.5 Verification rejects debug, unverified, or additional non-Android native artifacts in the package.
+- [x] P5.6 Git/UPM package path contains the required Android native binary and metadata.
+- [x] P5.7 `stage-phase5` reproducibly stages from `dist/native/phase4-index.json`; `verify-phase5` confirms checksum/provenance/importer integrity.
+- [x] P5.8 **Android Native Engine Candidate Complete**.
 
+### Phase 5 exit gate
 
-A complete, verified Unity-native payload exists for every currently supported platform and can be consumed without changing the public native ABI.
+A complete, verified Android ARM64 Unity-native payload exists at `UnityPackage/Plugins/Android/arm64-v8a/` and matches the accepted Phase 4 artifact byte-for-byte. No other platform is claimed by this gate.
+A complete, verified Android ARM64 Unity-native payload exists at `UnityPackage/Plugins/Android/arm64-v8a/` and matches the accepted Phase 4 artifact byte-for-byte. No other platform is claimed by this gate.
 
 ---
 
 # Phase 6 — Minimal Managed ABI Conformance and Final ABI v1 Freeze
 
-**Status:** PARTIAL EARLY SCAFFOLDING — formal phase gated by Phase 5
+**Status:** READY / PARTIAL EARLY SCAFFOLDING — Phase 5 gate is complete; formal managed conformance is next.
 
 **Early work already present:**
 

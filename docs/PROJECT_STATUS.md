@@ -15,8 +15,8 @@ The active release scope is now intentionally **Android ARM64 only**:
 - Phase 2 production C ABI implementation: **complete**.
 - Phase 3 ABI/verification gate: **complete** on the local Linux host.
 - Phase 4: **complete for Android ARM64-only scope**; Windows/macOS/iOS/WebGL are deferred and are not advertised by this branch.
-- Phase 5: **active**, staging the verified Android native library into the Unity package.
-- Phase 6 and later product/package phases: not formally started, except for explicitly documented early scaffolding.
+- Phase 5: **complete for Android ARM64**, with the verified native binary staged under the Unity package together with deterministic importer metadata and provenance.
+- Phase 6: **ready to begin formal managed ABI conformance**; early P/Invoke scaffolding already exists.
 
 The local Linux host can run the full compiled Phase 3 gate and has staged and re-verified a real Android ARM64 artifact. Phase 5 may proceed from an Android-only `phase4-index.json`.
 
@@ -48,12 +48,9 @@ The following targets remain implemented as future build definitions but are out
 
 - Windows x64.
 - macOS arm64/x64/universal.
-- iOS arm64.
-- WebGL, including the retained Emscripten `2.0.19` / Rust `1.97.1` compatibility investigation.
-
-They must not be advertised as supported until they are explicitly restored to the required target set and pass their real platform validation gates.
-
 ## Next authoritative action
+
+Begin Phase 6 managed ABI conformance against the staged Android ARM64 library. The Phase 5 package payload is now reproducible with `python3 build/build.py stage-phase5` and independently checked with `python3 build/build.py verify-phase5`.
 
 1. Re-run the Phase 3 gate on the exact clean Android-only release tree.
 2. Rebuild and verify Android ARM64 from that tree.

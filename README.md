@@ -8,21 +8,21 @@ Responsive Flexbox, Grid, Block, and CSS-style layout for existing Unity uGUI, p
 
 ## Current progress
 
-The native interface is **ABI-v1-RC (version 1, stage 1)** with Taffy **0.13.0** pinned exactly. The production native engine and `tu_*` C ABI are implemented. The current authoritative boundary is the **local Phase 3 compiled verification gate**, followed by real Phase 4 cross-platform artifact production.
+The native interface is **ABI-v1-RC (version 1, stage 1)** with Taffy **0.13.0** pinned exactly. The production native engine and `tu_*` C ABI are implemented and locally verified. The active release scope is intentionally **Android ARM64 only**.
 
 | Phase | Status |
 |---|---|
 | 0 — Rust/toolchain foundation | **Complete** |
 | 1 — Complete native Taffy engine | **Implementation complete** |
 | 2 — Production C ABI | **Implementation complete** |
-| 3 — Native verification / ABI RC | **ABI locked; canonical local compiled gate passed** |
-| 4 — Cross-platform native builds | **Build infrastructure complete; Android ARM64 accepted; remaining artifacts pending** |
-| 5 — Unity-ready native staging | Not started |
-| 6 — Managed ABI conformance / final ABI v1 | Partial early P/Invoke scaffolding only |
+| 3 — Native verification / ABI RC | **Complete; canonical local compiled gate passed** |
+| 4 — Native artifact release gate | **Complete for Android ARM64-only scope** |
+| 5 — Unity-ready native staging | **Complete for Android ARM64** |
+| 6 — Managed ABI conformance / final ABI v1 | Ready; partial early P/Invoke scaffolding exists |
 | 7 — Minimal working Unity product | Prototype scaffolding exists; formal phase gated |
 | 8–14 — Production integration through v1.0 | Not started |
 
-The local Linux build host has passed the complete Phase 3 compiled gate and accepted an Android ARM64 artifact. WebGL remains unaccepted; the compatibility decision is documented below.
+The verified Android ARM64 library is staged under `UnityPackage/Plugins/Android/arm64-v8a/` together with Android-only PluginImporter metadata and source/checksum provenance. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
 
 For the full current state, use:
 
@@ -60,29 +60,26 @@ python3 build/build.py verify-abi-rc
 
 That gate runs rustfmt, Clippy, Rust tests, release build, cbindgen drift verification, and linked C/C++ host smoke tests locally. See [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
-## Phase 4 targets
+## Android native release and Unity staging
 
-Phase 4 is a local multi-host build. Every artifact-producing machine must first pass `verify-abi-rc` on the byte-identical clean source tree.
-
-```bash
-python3 build/build.py list-targets
-python3 build/build.py phase4-status
-python3 build/build.py phase4-host
-```
-
-Canonical ownership is:
-
-- Windows → Windows x64
-- macOS → macOS arm64/x64/universal + iOS ARM64
-- Linux → Android ARM64 + WebGL
-
-Each accepted artifact is ABI-gated, architecture-checked, checked against the complete public `tu_*` export set, and staged under `dist/native/` with a manifest and SHA-256 checksum. After collecting all local-host outputs:
+The active release target is Android ARM64. The exact clean source tree must first pass:
 
 ```bash
+python3 build/build.py verify-abi-rc
+python3 build/build.py native android-arm64
 python3 build/build.py verify-phase4
 ```
 
-The final Phase 4 gate verifies same-source/same-ABI/export parity and writes `dist/native/phase4-index.json`. See [docs/PHASE4_PLATFORM_BUILDS.md](docs/PHASE4_PLATFORM_BUILDS.md).
+`verify-phase4` accepts the Android ARM64 artifact and writes `dist/native/phase4-index.json`. Phase 5 then stages and verifies the package payload with:
+
+```bash
+python3 build/build.py stage-phase5
+python3 build/build.py verify-phase5
+```
+
+The packaged binary is `UnityPackage/Plugins/Android/arm64-v8a/libtaffy_ugui.so`. Its checksum must match the verified Phase 4 artifact exactly. See [docs/PHASE4_PLATFORM_BUILDS.md](docs/PHASE4_PLATFORM_BUILDS.md) and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).
+
+Deferred Windows, macOS, iOS, and WebGL build definitions remain available for future branches but do not gate or define support for the active Android-only release.
 
 ### Unity 2022 WebGL: deferred legacy branch
 

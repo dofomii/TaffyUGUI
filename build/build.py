@@ -387,6 +387,18 @@ def find_dumpbin() -> str:
         "Required Visual Studio tool 'dumpbin.exe' was not found. Install the VC x64 build tools or expose dumpbin on PATH."
     )
 
+def find_rust_llvm_tool(name: str) -> str:
+    sysroot = Path(run("rustc", "--print", "sysroot", capture=True).strip())
+    candidates = sorted(sysroot.glob(f"lib/rustlib/*/bin/{name}"))
+    if current_os() == "windows":
+        candidates.extend(sorted(sysroot.glob(f"lib/rustlib/*/bin/{name}.exe")))
+    if not candidates:
+        raise SystemExit(
+            f"Rust LLVM tool '{name}' was not found under {sysroot}. "
+            "Install the llvm-tools-preview component for the pinned toolchain."
+        )
+    return str(candidates[0])
+
 def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
     if spec.name == "windows-x64":
         dumpbin = find_dumpbin()
@@ -397,33 +409,23 @@ def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
         if not bins:
             raise SystemExit("llvm-nm was not found in the Android NDK toolchain.")
         return run(str(bins[0]), "-D", "--defined-only", str(artifact), capture=True, env=env)
+    if spec.platform == "ios":
+        llvm_nm = find_rust_llvm_tool("llvm-nm")
+        return run(
+            llvm_nm,
+            "-g",
+            "--defined-only",
+            str(artifact),
+            capture=True,
+            env=env,
+        )
     nm = require("nm")
     args = [nm]
-    if spec.platform in ("macos", "ios"):
+    if spec.platform == "macos":
         args += ["-gU"]
     else:
         args += ["-g"]
     args.append(str(artifact))
-    if spec.platform == "ios":
-        print("+", " ".join(str(arg) for arg in args), flush=True)
-        completed = subprocess.run(
-            args,
-            cwd=ROOT,
-            check=False,
-            env=env,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        output = completed.stdout or ""
-        if completed.returncode != 0:
-            if output:
-                print(output, flush=True)
-            print(
-                f"Apple nm returned {completed.returncode} for the Rust iOS archive; validating required tu_* exports from emitted symbols.",
-                flush=True,
-            )
-        return output
     return run(*args, capture=True, env=env)
 
 

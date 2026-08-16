@@ -45,36 +45,10 @@ jobs:
               raise SystemExit(f"expected one symbol_output definition, found {text.count(marker)}")
           text = text.replace(marker, helper)
 
-          old = '''    nm = require("nm")
-              args = [nm]
-              if spec.platform in ("macos", "ios"):
-                  args += ["-gU"]
-              else:
-                  args += ["-g"]
-              args.append(str(artifact))
-              if spec.platform == "ios":
-                  print("+", " ".join(str(arg) for arg in args), flush=True)
-                  completed = subprocess.run(
-                      args,
-                      cwd=ROOT,
-                      check=False,
-                      env=env,
-                      text=True,
-                      stdout=subprocess.PIPE,
-                      stderr=subprocess.STDOUT,
-                  )
-                  output = completed.stdout or ""
-                  if completed.returncode != 0:
-                      if output:
-                          print(output, flush=True)
-                      print(
-                          f"Apple nm returned {completed.returncode} for the Rust iOS archive; validating required tu_* exports from emitted symbols.",
-                          flush=True,
-                      )
-                  return output
-              return run(*args, capture=True, env=env)
-          '''.replace("          ", "")
-          new = '''    if spec.platform == "ios":
+          start = text.index('    nm = require("nm")\n', text.index(marker))
+          end_marker = '    return run(*args, capture=True, env=env)\n'
+          end = text.index(end_marker, start) + len(end_marker)
+          replacement = '''    if spec.platform == "ios":
               llvm_nm = find_rust_llvm_tool("llvm-nm")
               return run(llvm_nm, "-g", "--defined-only", str(artifact), capture=True, env=env)
               nm = require("nm")
@@ -86,9 +60,8 @@ jobs:
               args.append(str(artifact))
               return run(*args, capture=True, env=env)
           '''.replace("          ", "")
-          if text.count(old) != 1:
-              raise SystemExit(f"expected one Apple nm verification block, found {text.count(old)}")
-          path.write_text(text.replace(old, new), encoding="utf-8")
+          text = text[:start] + replacement + text[end:]
+          path.write_text(text, encoding="utf-8")
           PY
       - name: Validate build driver
         run: |

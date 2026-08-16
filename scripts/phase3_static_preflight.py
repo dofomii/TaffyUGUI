@@ -77,9 +77,9 @@ def main() -> int:
     ]:
         require(build, needle, description, errors)
 
-    # RC is intentionally not declared until the real Phase 3 runtime gate passes.
-    require(version, "TU_ABI_VERSION: u32 = 0", "unfrozen ABI version while verification is blocked", errors)
-    require(version, "TU_ABI_STAGE: u32 = 0", "candidate ABI stage while verification is blocked", errors)
+    # The complete candidate runtime gate has passed; Phase 3 now requires the ABI-v1-RC lock.
+    require(version, "TU_ABI_VERSION: u32 = 1", "ABI-v1-RC version lock", errors)
+    require(version, "TU_ABI_STAGE: u32 = 1", "ABI-v1-RC stage lock", errors)
     require(tracker, "Phase 3 — Native Verification and ABI Release-Candidate Lock", "Phase 3 tracker section", errors)
 
     if errors:

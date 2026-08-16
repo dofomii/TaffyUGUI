@@ -149,10 +149,10 @@ fn fixed_track(value: f32) -> TuGridTrack {
 fn p3_1_context_handle_error_and_version_units() {
     assert_eq!(
         tu_get_abi_version(),
-        0,
-        "ABI remains candidate until the Phase 3 gate actually passes"
+        1,
+        "ABI-v1-RC must remain locked after the verified Phase 3 gate"
     );
-    assert_eq!(tu_get_abi_stage(), 0);
+    assert_eq!(tu_get_abi_stage(), 1);
     assert_eq!(tu_get_taffy_version_packed(), 13 << 12);
     assert_ne!(tu_get_capabilities(), 0);
 

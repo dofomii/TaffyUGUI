@@ -1,29 +1,32 @@
-# Rust
+# Rust / native build output
+/target/
+/.build/
 /native/target/
-**/*.rs.bk
+/dist/
 
-# Unity generated
+# Unity generated project folders
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
 [Bb]uild/
 [Bb]uilds/
+
+# Root build/ contains TaffyUGUI source tooling, not Unity-generated player output.
+!/build/
+!/build/build.py
 [Ll]ogs/
 UserSettings/
-MemoryCaptures/
 
-# IDE
-.vs/
+# IDE / OS
 .vscode/
 .idea/
-*.csproj
-*.sln
-*.suo
-*.user
-
-# OS
 .DS_Store
 Thumbs.db
+*.user
+*.suo
+*.tmp
+*.log
 
-# Native build output copied into package/release staging
-/dist/
+# Python
+__pycache__/
+*.pyc

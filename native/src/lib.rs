@@ -5,7 +5,7 @@
 //! TaffyUGUI native layout library.
 //!
 //! The native engine is persistent and Unity-independent. The exported `tu_*` surface is the
-//! Phase 2 production ABI candidate; it is not yet the ABI-v1-RC or final ABI v1 promise.
+//! The exported `tu_*` surface is locked as ABI-v1-RC (version 1, stage 1).
 
 mod calc;
 mod context;

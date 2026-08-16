@@ -10,749 +10,233 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define TU_ENUM_I32(name, ...) \
+  enum name __VA_ARGS__; /* declaration helper intentionally unused */
+
 enum TuStatus
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuStatus_Ok = 0,
-  TuStatus_NullPointer = -1,
-  TuStatus_InvalidContext = -2,
-  TuStatus_InvalidNode = -3,
-  TuStatus_InvalidResource = -4,
-  TuStatus_InvalidEnum = -5,
-  TuStatus_InvalidCount = -6,
-  TuStatus_InvalidNumber = -7,
-  TuStatus_InvalidValue = -8,
-  TuStatus_Capacity = -9,
-  TuStatus_WrongThread = -10,
-  TuStatus_RegistryBusy = -11,
-  TuStatus_Engine = -12,
-  TuStatus_InternalPanic = -13,
-};
+#endif
+ { TuStatus_Ok=0, TuStatus_NullPointer=-1, TuStatus_InvalidContext=-2, TuStatus_InvalidNode=-3, TuStatus_InvalidResource=-4, TuStatus_InvalidEnum=-5, TuStatus_InvalidCount=-6, TuStatus_InvalidNumber=-7, TuStatus_InvalidValue=-8, TuStatus_Capacity=-9, TuStatus_WrongThread=-10, TuStatus_RegistryBusy=-11, TuStatus_Engine=-12, TuStatus_InternalPanic=-13 };
 #ifndef __cplusplus
 typedef int32_t TuStatus;
-#endif // __cplusplus
+#endif
 
 enum TuValueKind
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuValueKind_Auto = 0,
-  TuValueKind_Length = 1,
-  TuValueKind_Percent = 2,
-  TuValueKind_Calc = 3,
-};
+#endif
+ { TuValueKind_Auto=0, TuValueKind_Length=1, TuValueKind_Percent=2, TuValueKind_Calc=3 };
 #ifndef __cplusplus
 typedef int32_t TuValueKind;
-#endif // __cplusplus
+#endif
 
 enum TuDisplay
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuDisplay_None = 0,
-  TuDisplay_Flex = 1,
-  TuDisplay_Grid = 2,
-  TuDisplay_Block = 3,
-  TuDisplay_FlowRoot = 4,
-};
+#endif
+ { TuDisplay_None=0, TuDisplay_Flex=1, TuDisplay_Grid=2, TuDisplay_Block=3, TuDisplay_FlowRoot=4 };
 #ifndef __cplusplus
 typedef int32_t TuDisplay;
-#endif // __cplusplus
+#endif
 
 enum TuBoxSizing
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuBoxSizing_BorderBox = 0,
-  TuBoxSizing_ContentBox = 1,
-};
+#endif
+ { TuBoxSizing_BorderBox=0, TuBoxSizing_ContentBox=1 };
 #ifndef __cplusplus
 typedef int32_t TuBoxSizing;
-#endif // __cplusplus
+#endif
 
 enum TuDirection
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuDirection_Ltr = 0,
-  TuDirection_Rtl = 1,
-};
+#endif
+ { TuDirection_Ltr=0, TuDirection_Rtl=1 };
 #ifndef __cplusplus
 typedef int32_t TuDirection;
-#endif // __cplusplus
+#endif
 
 enum TuOverflow
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuOverflow_Visible = 0,
-  TuOverflow_Clip = 1,
-  TuOverflow_Hidden = 2,
-  TuOverflow_Scroll = 3,
-};
+#endif
+ { TuOverflow_Visible=0, TuOverflow_Clip=1, TuOverflow_Hidden=2, TuOverflow_Scroll=3 };
 #ifndef __cplusplus
 typedef int32_t TuOverflow;
-#endif // __cplusplus
+#endif
 
 enum TuPosition
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuPosition_Relative = 0,
-  TuPosition_Absolute = 1,
-};
+#endif
+ { TuPosition_Relative=0, TuPosition_Absolute=1 };
 #ifndef __cplusplus
 typedef int32_t TuPosition;
-#endif // __cplusplus
+#endif
 
 enum TuFlexDirection
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuFlexDirection_Row = 0,
-  TuFlexDirection_Column = 1,
-  TuFlexDirection_RowReverse = 2,
-  TuFlexDirection_ColumnReverse = 3,
-};
+#endif
+ { TuFlexDirection_Row=0, TuFlexDirection_Column=1, TuFlexDirection_RowReverse=2, TuFlexDirection_ColumnReverse=3 };
 #ifndef __cplusplus
 typedef int32_t TuFlexDirection;
-#endif // __cplusplus
+#endif
 
 enum TuFlexWrap
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuFlexWrap_NoWrap = 0,
-  TuFlexWrap_Wrap = 1,
-  TuFlexWrap_WrapReverse = 2,
-};
+#endif
+ { TuFlexWrap_NoWrap=0, TuFlexWrap_Wrap=1, TuFlexWrap_WrapReverse=2 };
 #ifndef __cplusplus
 typedef int32_t TuFlexWrap;
-#endif // __cplusplus
+#endif
 
 enum TuAlign
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuAlign_Unset = -1,
-  TuAlign_Start = 0,
-  TuAlign_End = 1,
-  TuAlign_Center = 2,
-  TuAlign_Stretch = 3,
-  TuAlign_Baseline = 4,
-  TuAlign_FlexStart = 5,
-  TuAlign_FlexEnd = 6,
-  TuAlign_SelfStart = 7,
-  TuAlign_SelfEnd = 8,
-  TuAlign_SafeStart = 9,
-  TuAlign_SafeEnd = 10,
-  TuAlign_SafeCenter = 11,
-  TuAlign_SafeFlexStart = 12,
-  TuAlign_SafeFlexEnd = 13,
-  TuAlign_SafeSelfStart = 14,
-  TuAlign_SafeSelfEnd = 15,
-};
+#endif
+ { TuAlign_Unset=-1, TuAlign_Start=0, TuAlign_End=1, TuAlign_Center=2, TuAlign_Stretch=3, TuAlign_Baseline=4, TuAlign_FlexStart=5, TuAlign_FlexEnd=6, TuAlign_SelfStart=7, TuAlign_SelfEnd=8, TuAlign_SafeStart=9, TuAlign_SafeEnd=10, TuAlign_SafeCenter=11, TuAlign_SafeFlexStart=12, TuAlign_SafeFlexEnd=13, TuAlign_SafeSelfStart=14, TuAlign_SafeSelfEnd=15 };
 #ifndef __cplusplus
 typedef int32_t TuAlign;
-#endif // __cplusplus
+#endif
 
 enum TuAlignContent
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuAlignContent_Unset = -1,
-  TuAlignContent_Start = 0,
-  TuAlignContent_End = 1,
-  TuAlignContent_Center = 2,
-  TuAlignContent_Stretch = 3,
-  TuAlignContent_SpaceBetween = 4,
-  TuAlignContent_SpaceAround = 5,
-  TuAlignContent_SpaceEvenly = 6,
-  TuAlignContent_FlexStart = 7,
-  TuAlignContent_FlexEnd = 8,
-  TuAlignContent_SafeStart = 9,
-  TuAlignContent_SafeEnd = 10,
-  TuAlignContent_SafeCenter = 11,
-  TuAlignContent_SafeFlexStart = 12,
-  TuAlignContent_SafeFlexEnd = 13,
-};
+#endif
+ { TuAlignContent_Unset=-1, TuAlignContent_Start=0, TuAlignContent_End=1, TuAlignContent_Center=2, TuAlignContent_Stretch=3, TuAlignContent_SpaceBetween=4, TuAlignContent_SpaceAround=5, TuAlignContent_SpaceEvenly=6, TuAlignContent_FlexStart=7, TuAlignContent_FlexEnd=8, TuAlignContent_SafeStart=9, TuAlignContent_SafeEnd=10, TuAlignContent_SafeCenter=11, TuAlignContent_SafeFlexStart=12, TuAlignContent_SafeFlexEnd=13 };
 #ifndef __cplusplus
 typedef int32_t TuAlignContent;
-#endif // __cplusplus
+#endif
 
 enum TuTextAlign
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuTextAlign_Auto = 0,
-  TuTextAlign_LegacyLeft = 1,
-  TuTextAlign_LegacyRight = 2,
-  TuTextAlign_LegacyCenter = 3,
-};
+#endif
+ { TuTextAlign_Auto=0, TuTextAlign_LegacyLeft=1, TuTextAlign_LegacyRight=2, TuTextAlign_LegacyCenter=3 };
 #ifndef __cplusplus
 typedef int32_t TuTextAlign;
-#endif // __cplusplus
+#endif
 
 enum TuFloatMode
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuFloatMode_None = 0,
-  TuFloatMode_Left = 1,
-  TuFloatMode_Right = 2,
-};
+#endif
+ { TuFloatMode_None=0, TuFloatMode_Left=1, TuFloatMode_Right=2 };
 #ifndef __cplusplus
 typedef int32_t TuFloatMode;
-#endif // __cplusplus
+#endif
 
 enum TuClearMode
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuClearMode_None = 0,
-  TuClearMode_Left = 1,
-  TuClearMode_Right = 2,
-  TuClearMode_Both = 3,
-};
+#endif
+ { TuClearMode_None=0, TuClearMode_Left=1, TuClearMode_Right=2, TuClearMode_Both=3 };
 #ifndef __cplusplus
 typedef int32_t TuClearMode;
-#endif // __cplusplus
+#endif
 
 enum TuGridAutoFlow
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuGridAutoFlow_Row = 0,
-  TuGridAutoFlow_Column = 1,
-  TuGridAutoFlow_RowDense = 2,
-  TuGridAutoFlow_ColumnDense = 3,
-};
+#endif
+ { TuGridAutoFlow_Row=0, TuGridAutoFlow_Column=1, TuGridAutoFlow_RowDense=2, TuGridAutoFlow_ColumnDense=3 };
 #ifndef __cplusplus
 typedef int32_t TuGridAutoFlow;
-#endif // __cplusplus
+#endif
 
 enum TuGridPlacementKind
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuGridPlacementKind_Auto = 0,
-  TuGridPlacementKind_Line = 1,
-  TuGridPlacementKind_Span = 2,
-  TuGridPlacementKind_NamedLine = 3,
-  TuGridPlacementKind_NamedSpan = 4,
-};
+#endif
+ { TuGridPlacementKind_Auto=0, TuGridPlacementKind_Line=1, TuGridPlacementKind_Span=2, TuGridPlacementKind_NamedLine=3, TuGridPlacementKind_NamedSpan=4 };
 #ifndef __cplusplus
 typedef int32_t TuGridPlacementKind;
-#endif // __cplusplus
+#endif
 
 enum TuCalcOp
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuCalcOp_Length = 0,
-  TuCalcOp_Percent = 1,
-  TuCalcOp_Add = 2,
-  TuCalcOp_Sub = 3,
-  TuCalcOp_Scale = 4,
-  TuCalcOp_Min = 5,
-  TuCalcOp_Max = 6,
-  TuCalcOp_Clamp = 7,
-};
+#endif
+ { TuCalcOp_Length=0, TuCalcOp_Percent=1, TuCalcOp_Add=2, TuCalcOp_Sub=3, TuCalcOp_Scale=4, TuCalcOp_Min=5, TuCalcOp_Max=6, TuCalcOp_Clamp=7 };
 #ifndef __cplusplus
 typedef int32_t TuCalcOp;
-#endif // __cplusplus
+#endif
 
 enum TuGridTrackKind
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuGridTrackKind_Auto = 0,
-  TuGridTrackKind_Length = 1,
-  TuGridTrackKind_Percent = 2,
-  TuGridTrackKind_Fraction = 3,
-  TuGridTrackKind_MinMax = 4,
-  TuGridTrackKind_MinContent = 5,
-  TuGridTrackKind_MaxContent = 6,
-  TuGridTrackKind_Calc = 7,
-  TuGridTrackKind_Repeat = 8,
-};
+#endif
+ { TuGridTrackKind_Auto=0, TuGridTrackKind_Length=1, TuGridTrackKind_Percent=2, TuGridTrackKind_Fraction=3, TuGridTrackKind_MinMax=4, TuGridTrackKind_MinContent=5, TuGridTrackKind_MaxContent=6, TuGridTrackKind_Calc=7, TuGridTrackKind_Repeat=8 };
 #ifndef __cplusplus
 typedef int32_t TuGridTrackKind;
-#endif // __cplusplus
+#endif
 
 enum TuGridRepeatMode
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuGridRepeatMode_Count = 0,
-  TuGridRepeatMode_AutoFill = 1,
-  TuGridRepeatMode_AutoFit = 2,
-};
+#endif
+ { TuGridRepeatMode_Count=0, TuGridRepeatMode_AutoFill=1, TuGridRepeatMode_AutoFit=2 };
 #ifndef __cplusplus
 typedef int32_t TuGridRepeatMode;
-#endif // __cplusplus
+#endif
 
 enum TuGridAxis
 #ifdef __cplusplus
   : int32_t
-#endif // __cplusplus
- {
-  TuGridAxis_Row = 0,
-  TuGridAxis_Column = 1,
-};
+#endif
+ { TuGridAxis_Row=0, TuGridAxis_Column=1 };
 #ifndef __cplusplus
 typedef int32_t TuGridAxis;
-#endif // __cplusplus
+#endif
 
 typedef uint64_t TuContextHandle;
-
 typedef uint64_t TuResourceHandle;
-
-typedef struct TuValue {
-  int32_t kind;
-  float value;
-  TuResourceHandle resource;
-} TuValue;
-
-typedef struct TuStringView {
-  const uint8_t *data;
-  uint32_t len;
-} TuStringView;
-
-typedef struct TuGridPlacement {
-  int32_t kind;
-  int32_t line;
-  uint32_t span;
-  int32_t occurrence;
-  struct TuStringView name;
-} TuGridPlacement;
-
-typedef struct TuStyle {
-  int32_t display;
-  int32_t box_sizing;
-  int32_t direction;
-  int32_t overflow_x;
-  int32_t overflow_y;
-  float scrollbar_width;
-  int32_t position;
-  struct TuValue inset_left;
-  struct TuValue inset_right;
-  struct TuValue inset_top;
-  struct TuValue inset_bottom;
-  struct TuValue width;
-  struct TuValue height;
-  struct TuValue min_width;
-  struct TuValue min_height;
-  struct TuValue max_width;
-  struct TuValue max_height;
-  float aspect_ratio;
-  struct TuValue margin_left;
-  struct TuValue margin_right;
-  struct TuValue margin_top;
-  struct TuValue margin_bottom;
-  struct TuValue padding_left;
-  struct TuValue padding_right;
-  struct TuValue padding_top;
-  struct TuValue padding_bottom;
-  struct TuValue border_left;
-  struct TuValue border_right;
-  struct TuValue border_top;
-  struct TuValue border_bottom;
-  int32_t flex_direction;
-  int32_t flex_wrap;
-  struct TuValue flex_basis;
-  float flex_grow;
-  float flex_shrink;
-  int32_t align_items;
-  int32_t align_self;
-  int32_t align_content;
-  int32_t justify_content;
-  int32_t justify_items;
-  int32_t justify_self;
-  struct TuValue gap_x;
-  struct TuValue gap_y;
-  uint8_t item_is_table;
-  uint8_t item_is_replaced;
-  int32_t float_mode;
-  int32_t clear_mode;
-  int32_t text_align;
-  int32_t grid_auto_flow;
-  struct TuGridPlacement grid_row_start;
-  struct TuGridPlacement grid_row_end;
-  struct TuGridPlacement grid_column_start;
-  struct TuGridPlacement grid_column_end;
-} TuStyle;
-
 typedef uint64_t TuNodeHandle;
 
-typedef struct TuStyleUpdate {
-  TuNodeHandle node;
-  struct TuStyle style;
-} TuStyleUpdate;
-
-typedef struct TuChildrenUpdate {
-  TuNodeHandle parent;
-  const TuNodeHandle *children;
-  uint32_t child_count;
-} TuChildrenUpdate;
-
-typedef struct TuMeasurementSample {
-  float available_width;
-  float width;
-  float height;
-} TuMeasurementSample;
-
-typedef struct TuMeasurement {
-  float min_width;
-  float min_height;
-  float max_width;
-  float max_height;
-  float preferred_width;
-  float preferred_height;
+typedef struct TuValue { int32_t kind; float value; TuResourceHandle resource; } TuValue;
+typedef struct TuStringView { const uint8_t *data; uint32_t len; } TuStringView;
+typedef struct TuGridPlacement { int32_t kind; int32_t line; uint32_t span; int32_t occurrence; struct TuStringView name; } TuGridPlacement;
+typedef struct TuStyle {
+  int32_t display; int32_t box_sizing; int32_t direction; int32_t overflow_x; int32_t overflow_y; float scrollbar_width; int32_t position;
+  struct TuValue inset_left,inset_right,inset_top,inset_bottom,width,height,min_width,min_height,max_width,max_height;
   float aspect_ratio;
-  uint8_t is_replaced;
-  const struct TuMeasurementSample *samples;
-  uint32_t sample_count;
-} TuMeasurement;
-
-typedef struct TuMeasurementUpdate {
-  TuNodeHandle node;
-  struct TuMeasurement measurement;
-  uint8_t has_measurement;
-} TuMeasurementUpdate;
-
-typedef struct TuCalcSpec {
-  int32_t op;
-  float value;
-  const TuResourceHandle *operands;
-  uint32_t operand_count;
-} TuCalcSpec;
-
-typedef struct TuGridTrack {
-  int32_t kind;
-  float value;
-  TuResourceHandle resource;
-  int32_t min_kind;
-  float min_value;
-  TuResourceHandle min_resource;
-  int32_t max_kind;
-  float max_value;
-  TuResourceHandle max_resource;
-  int32_t repeat_mode;
-  uint32_t repeat_count;
-  const struct TuGridTrack *repeat_tracks;
-  uint32_t repeat_track_count;
-} TuGridTrack;
-
-typedef struct TuNamedGridLine {
-  int32_t axis;
-  uint32_t line_index;
-  struct TuStringView name;
-} TuNamedGridLine;
-
-typedef struct TuGridArea {
-  struct TuStringView name;
-  uint32_t row_start;
-  uint32_t row_end;
-  uint32_t column_start;
-  uint32_t column_end;
-} TuGridArea;
-
-typedef struct TuGridTemplate {
-  const struct TuGridTrack *rows;
-  uint32_t row_count;
-  const struct TuGridTrack *columns;
-  uint32_t column_count;
-  const struct TuGridTrack *auto_rows;
-  uint32_t auto_row_count;
-  const struct TuGridTrack *auto_columns;
-  uint32_t auto_column_count;
-  const struct TuNamedGridLine *named_lines;
-  uint32_t named_line_count;
-  const struct TuGridArea *areas;
-  uint32_t area_count;
-  uint32_t area_rows;
-  uint32_t area_columns;
-} TuGridTemplate;
-
-typedef struct TuGridInfo {
-  uint32_t negative_implicit_rows;
-  uint32_t explicit_rows;
-  uint32_t positive_implicit_rows;
-  uint32_t negative_implicit_columns;
-  uint32_t explicit_columns;
-  uint32_t positive_implicit_columns;
-  uint32_t row_track_count;
-  uint32_t column_track_count;
-  uint32_t item_count;
-} TuGridInfo;
-
-typedef struct TuGridItemInfo {
-  uint32_t row_start;
-  uint32_t row_end;
-  uint32_t column_start;
-  uint32_t column_end;
-} TuGridItemInfo;
-
-typedef struct TuLayout {
-  TuNodeHandle node;
-  uint32_t order;
-  float x;
-  float y;
-  float width;
-  float height;
-  float content_width;
-  float content_height;
-  float scroll_width;
-  float scroll_height;
-} TuLayout;
+  struct TuValue margin_left,margin_right,margin_top,margin_bottom,padding_left,padding_right,padding_top,padding_bottom,border_left,border_right,border_top,border_bottom;
+  int32_t flex_direction; int32_t flex_wrap; struct TuValue flex_basis; float flex_grow; float flex_shrink;
+  int32_t align_items,align_self,align_content,justify_content,justify_items,justify_self; struct TuValue gap_x,gap_y;
+  uint8_t item_is_table; uint8_t item_is_replaced; int32_t float_mode,clear_mode,text_align,grid_auto_flow;
+  struct TuGridPlacement grid_row_start,grid_row_end,grid_column_start,grid_column_end;
+} TuStyle;
+typedef struct TuStyleUpdate { TuNodeHandle node; struct TuStyle style; } TuStyleUpdate;
+typedef struct TuChildrenUpdate { TuNodeHandle parent; const TuNodeHandle *children; uint32_t child_count; } TuChildrenUpdate;
+typedef struct TuMeasurementSample { float available_width,width,height; } TuMeasurementSample;
+typedef struct TuMeasurement { float min_width,min_height,max_width,max_height,preferred_width,preferred_height,aspect_ratio; uint8_t is_replaced; const struct TuMeasurementSample *samples; uint32_t sample_count; } TuMeasurement;
+typedef struct TuMeasurementUpdate { TuNodeHandle node; struct TuMeasurement measurement; uint8_t has_measurement; } TuMeasurementUpdate;
+typedef struct TuCalcSpec { int32_t op; float value; const TuResourceHandle *operands; uint32_t operand_count; } TuCalcSpec;
+typedef struct TuGridTrack { int32_t kind; float value; TuResourceHandle resource; int32_t min_kind; float min_value; TuResourceHandle min_resource; int32_t max_kind; float max_value; TuResourceHandle max_resource; int32_t repeat_mode; uint32_t repeat_count; const struct TuGridTrack *repeat_tracks; uint32_t repeat_track_count; } TuGridTrack;
+typedef struct TuNamedGridLine { int32_t axis; uint32_t line_index; struct TuStringView name; } TuNamedGridLine;
+typedef struct TuGridArea { struct TuStringView name; uint32_t row_start,row_end,column_start,column_end; } TuGridArea;
+typedef struct TuGridTemplate { const struct TuGridTrack *rows; uint32_t row_count; const struct TuGridTrack *columns; uint32_t column_count; const struct TuGridTrack *auto_rows; uint32_t auto_row_count; const struct TuGridTrack *auto_columns; uint32_t auto_column_count; const struct TuNamedGridLine *named_lines; uint32_t named_line_count; const struct TuGridArea *areas; uint32_t area_count,area_rows,area_columns; } TuGridTemplate;
+typedef struct TuGridInfo { uint32_t negative_implicit_rows,explicit_rows,positive_implicit_rows,negative_implicit_columns,explicit_columns,positive_implicit_columns,row_track_count,column_track_count,item_count; } TuGridInfo;
+typedef struct TuGridItemInfo { uint32_t row_start,row_end,column_start,column_end; } TuGridItemInfo;
+typedef struct TuLayout { TuNodeHandle node; uint32_t order; float x,y,width,height,content_width,content_height,scroll_width,scroll_height; } TuLayout;
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
-
-uint32_t tu_get_abi_version(void);
-
-uint32_t tu_get_abi_stage(void);
-
-uint64_t tu_get_capabilities(void);
-
-uint32_t tu_get_taffy_version_packed(void);
-
-uint32_t tu_get_build_version_length(void);
-
-/**
- * Copies the native package/build version.
- *
- * # Safety
- * `buffer` must reference `capacity` writable bytes and `out_written` must be writable.
- */
-int32_t tu_copy_build_version(uint8_t *buffer, uint32_t capacity, uint32_t *out_written);
-
-uint32_t tu_get_last_error_length(void);
-
-/**
- * Copies the thread-local diagnostic string.
- *
- * # Safety
- * `buffer` must reference `capacity` writable bytes and `out_written` must reference one writable `u32`.
- */
-int32_t tu_copy_last_error(uint8_t *buffer,
-                           uint32_t capacity,
-                           uint32_t *out_written);
-
-/**
- * Creates a context.
- *
- * # Safety
- * `out_context` must point to writable storage for one context handle.
- */
-int32_t tu_context_create(TuContextHandle *out_context);
-
-int32_t tu_context_destroy(TuContextHandle context);
-
-int32_t tu_context_clear(TuContextHandle context);
-
-/**
- * Creates a node.
- *
- * # Safety
- * `style_ptr` must point to one initialized `TuStyle`, and `out_node` must be writable.
- */
-int32_t tu_node_create(TuContextHandle context,
-                       const struct TuStyle *style_ptr,
-                       TuNodeHandle *out_node);
-
-int32_t tu_node_remove(TuContextHandle context, TuNodeHandle node_handle);
-
-/**
- * Sets one style.
- *
- * # Safety
- * `style_ptr` must point to one initialized `TuStyle` for the duration of the call.
- */
-int32_t tu_node_set_style(TuContextHandle context,
-                          TuNodeHandle node_handle,
-                          const struct TuStyle *style_ptr);
-
-/**
- * Bulk style upload.
- *
- * # Safety
- * `updates` must reference `count` initialized entries when `count` is non-zero.
- */
-int32_t tu_nodes_set_styles(TuContextHandle context,
-                            const struct TuStyleUpdate *updates,
-                            uint32_t count);
-
-/**
- * Replaces children.
- *
- * # Safety
- * `children` must reference `count` node handles when `count` is non-zero.
- */
-int32_t tu_node_set_children(TuContextHandle context,
-                             TuNodeHandle parent,
-                             const TuNodeHandle *children,
-                             uint32_t count);
-
-/**
- * Bulk topology upload.
- *
- * # Safety
- * `updates` and every nested child buffer must remain valid for the duration of the call.
- */
-int32_t tu_nodes_set_children(TuContextHandle context,
-                              const struct TuChildrenUpdate *updates,
-                              uint32_t count);
-
-int32_t tu_node_mark_dirty(TuContextHandle context, TuNodeHandle node_handle);
-
-/**
- * Returns dirty state as `0` or `1`.
- *
- * # Safety
- * `out_dirty` must point to one writable byte.
- */
-int32_t tu_node_is_dirty(TuContextHandle context, TuNodeHandle node_handle, uint8_t *out_dirty);
-
-/**
- * Sets or clears a cached measurement record.
- *
- * # Safety
- * When non-null, `measurement_ptr` and its nested sample buffer must remain valid for the call.
- */
-int32_t tu_node_set_measurement(TuContextHandle context,
-                                TuNodeHandle node_handle,
-                                const struct TuMeasurement *measurement_ptr);
-
-/**
- * Bulk measurement upload.
- *
- * # Safety
- * `updates` and each nested sample buffer must remain valid for the duration of the call.
- */
-int32_t tu_nodes_set_measurements(TuContextHandle context,
-                                  const struct TuMeasurementUpdate *updates,
-                                  uint32_t count);
-
-/**
- * Creates a typed Calc resource.
- *
- * # Safety
- * `spec` and its operand buffer must remain valid for the call, and `out_resource` must be writable.
- */
-int32_t tu_calc_create(TuContextHandle context,
-                       const struct TuCalcSpec *spec,
-                       TuResourceHandle *out_resource);
-
-int32_t tu_calc_remove(TuContextHandle context, TuResourceHandle res);
-
-/**
- * Applies Grid track, named-line, and area data to a node style.
- *
- * # Safety
- * `template` and all nested buffers/string views must remain valid for the duration of the call.
- */
-int32_t tu_node_set_grid_template(TuContextHandle context,
-                                  TuNodeHandle node_handle,
-                                  const struct TuGridTemplate *template_);
-
-/**
- * Reads detailed Grid summary metadata.
- *
- * # Safety
- * `out_info` must point to writable storage for one `TuGridInfo`.
- */
-int32_t tu_get_grid_info(TuContextHandle context,
-                         TuNodeHandle node_handle,
-                         struct TuGridInfo *out_info);
-
-/**
- * Copies detailed Grid track sizes for row (`0`) or column (`1`).
- *
- * # Safety
- * `sizes` must reference `capacity` writable floats when required, and `out_written` must be writable.
- */
-int32_t tu_get_grid_track_sizes(TuContextHandle context,
-                                TuNodeHandle node_handle,
-                                int32_t axis,
-                                float *sizes,
-                                uint32_t capacity,
-                                uint32_t *out_written);
-
-/**
- * Copies detailed Grid item placements.
- *
- * # Safety
- * `items` must reference `capacity` writable entries when required, and `out_written` must be writable.
- */
-int32_t tu_get_grid_items(TuContextHandle context,
-                          TuNodeHandle node_handle,
-                          struct TuGridItemInfo *items,
-                          uint32_t capacity,
-                          uint32_t *out_written);
-
-/**
- * Copies detailed Grid gutter sizes for row (`0`) or column (`1`).
- *
- * # Safety
- * `gutters` must reference `capacity` writable floats when required, and `out_written` must be writable.
- */
-int32_t tu_get_grid_gutters(TuContextHandle context,
-                            TuNodeHandle node_handle,
-                            int32_t axis,
-                            float *gutters,
-                            uint32_t capacity,
-                            uint32_t *out_written);
-
-int32_t tu_compute_layout(TuContextHandle context, TuNodeHandle root, float width, float height);
-
-/**
- * Reads one computed layout.
- *
- * # Safety
- * `out_layout` must point to writable storage for one `TuLayout`.
- */
-int32_t tu_get_layout(TuContextHandle context,
-                      TuNodeHandle node_handle,
-                      struct TuLayout *out_layout);
-
-/**
- * Bulk layout retrieval.
- *
- * # Safety
- * `handles` must reference `count` entries, `output` must reference `capacity` writable entries, and `out_written` must be writable.
- */
-int32_t tu_get_layouts_bulk(TuContextHandle context,
-                            const TuNodeHandle *handles,
-                            uint32_t count,
-                            struct TuLayout *output,
-                            uint32_t capacity,
-                            uint32_t *out_written);
-
+#endif
+uint32_t tu_get_abi_version(void); uint32_t tu_get_abi_stage(void); uint64_t tu_get_capabilities(void); uint32_t tu_get_taffy_version_packed(void); uint32_t tu_get_build_version_length(void);
+int32_t tu_copy_build_version(uint8_t*,uint32_t,uint32_t*); uint32_t tu_get_last_error_length(void); int32_t tu_copy_last_error(uint8_t*,uint32_t,uint32_t*);
+int32_t tu_context_create(TuContextHandle*); int32_t tu_context_destroy(TuContextHandle); int32_t tu_context_clear(TuContextHandle);
+int32_t tu_node_create(TuContextHandle,const struct TuStyle*,TuNodeHandle*); int32_t tu_node_remove(TuContextHandle,TuNodeHandle); int32_t tu_node_set_style(TuContextHandle,TuNodeHandle,const struct TuStyle*); int32_t tu_nodes_set_styles(TuContextHandle,const struct TuStyleUpdate*,uint32_t);
+int32_t tu_node_set_children(TuContextHandle,TuNodeHandle,const TuNodeHandle*,uint32_t); int32_t tu_nodes_set_children(TuContextHandle,const struct TuChildrenUpdate*,uint32_t); int32_t tu_node_mark_dirty(TuContextHandle,TuNodeHandle); int32_t tu_node_is_dirty(TuContextHandle,TuNodeHandle,uint8_t*);
+int32_t tu_node_set_measurement(TuContextHandle,TuNodeHandle,const struct TuMeasurement*); int32_t tu_nodes_set_measurements(TuContextHandle,const struct TuMeasurementUpdate*,uint32_t);
+int32_t tu_calc_create(TuContextHandle,const struct TuCalcSpec*,TuResourceHandle*); int32_t tu_calc_remove(TuContextHandle,TuResourceHandle);
+int32_t tu_node_set_grid_template(TuContextHandle,TuNodeHandle,const struct TuGridTemplate*); int32_t tu_get_grid_info(TuContextHandle,TuNodeHandle,struct TuGridInfo*); int32_t tu_get_grid_track_sizes(TuContextHandle,TuNodeHandle,int32_t,float*,uint32_t,uint32_t*); int32_t tu_get_grid_items(TuContextHandle,TuNodeHandle,struct TuGridItemInfo*,uint32_t,uint32_t*); int32_t tu_get_grid_gutters(TuContextHandle,TuNodeHandle,int32_t,float*,uint32_t,uint32_t*);
+int32_t tu_compute_layout(TuContextHandle,TuNodeHandle,float,float); int32_t tu_get_layout(TuContextHandle,TuNodeHandle,struct TuLayout*); int32_t tu_get_layouts_bulk(TuContextHandle,const TuNodeHandle*,uint32_t,struct TuLayout*,uint32_t,uint32_t*);
 #ifdef __cplusplus
-}  // extern "C"
-#endif  // __cplusplus
-
-#endif  /* TAFFY_UGUI_H */
+}
+#endif
+#endif

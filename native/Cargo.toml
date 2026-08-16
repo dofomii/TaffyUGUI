@@ -11,7 +11,6 @@ publish = false
 [lib]
 name = "taffy_ugui"
 crate-type = ["cdylib", "staticlib", "rlib"]
-test = false
 
 [dependencies]
 taffy = { version = "=0.13.0", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "float_layout", "calc", "content_size", "detailed_layout_info"] }

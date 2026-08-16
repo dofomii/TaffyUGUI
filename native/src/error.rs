@@ -52,9 +52,7 @@ impl NativeError {
             Self::RegistryBusy => TuStatus::RegistryBusy,
         }
     }
-    pub(crate) const fn status_code(self) -> i32 {
-        self.status() as i32
-    }
+    pub(crate) const fn status_code(self) -> i32 { self.status() as i32 }
 }
 
 impl core::fmt::Display for NativeError {
@@ -63,9 +61,7 @@ impl core::fmt::Display for NativeError {
             Self::NullPointer => "required pointer was null",
             Self::ContextNotFound => "context handle is invalid or stale",
             Self::NodeNotFound => "node handle is invalid, stale, or belongs to another context",
-            Self::ResourceNotFound => {
-                "resource handle is invalid, stale, or belongs to another context"
-            }
+            Self::ResourceNotFound => "resource handle is invalid, stale, or belongs to another context",
             Self::InvalidEnum => "enum value is outside the supported numeric range",
             Self::InvalidCount => "buffer count or capacity is invalid",
             Self::InvalidNumber => "numeric input is not finite or is outside the allowed range",
@@ -77,16 +73,7 @@ impl core::fmt::Display for NativeError {
     }
 }
 
-thread_local! {
-    static LAST_ERROR: RefCell<String> = const { RefCell::new(String::new()) };
-}
-
-pub(crate) fn clear_last_error() {
-    LAST_ERROR.with(|v| v.borrow_mut().clear());
-}
-pub(crate) fn set_last_error(message: impl Into<String>) {
-    LAST_ERROR.with(|v| *v.borrow_mut() = message.into());
-}
-pub(crate) fn last_error_bytes() -> Vec<u8> {
-    LAST_ERROR.with(|v| v.borrow().as_bytes().to_vec())
-}
+thread_local! { static LAST_ERROR: RefCell<String> = const { RefCell::new(String::new()) }; }
+pub(crate) fn clear_last_error() { LAST_ERROR.with(|v| v.borrow_mut().clear()); }
+pub(crate) fn set_last_error(message: impl Into<String>) { LAST_ERROR.with(|v| *v.borrow_mut() = message.into()); }
+pub(crate) fn last_error_bytes() -> Vec<u8> { LAST_ERROR.with(|v| v.borrow().as_bytes().to_vec()) }

@@ -18,7 +18,15 @@ namespace TaffyUGUI
         public static TaffyLength Points(float value) => new TaffyLength { unit = TaffyUnit.Points, value = value };
         public static TaffyLength Percent(float value) => new TaffyLength { unit = TaffyUnit.Percent, value = value };
 
-        internal TaffyNative.Dimension ToNative() => new TaffyNative.Dimension { unit = (int)unit, value = value };
+        internal TaffyNative.Value ToNative()
+        {
+            switch (unit)
+            {
+                case TaffyUnit.Points: return TaffyNative.Value.Points(Mathf.Max(0f, value));
+                case TaffyUnit.Percent: return TaffyNative.Value.Percent(Mathf.Max(0f, value));
+                default: return TaffyNative.Value.Auto;
+            }
+        }
     }
 
     [DisallowMultipleComponent]
@@ -36,11 +44,7 @@ namespace TaffyUGUI
         public TaffyAlign alignSelf = TaffyAlign.Auto;
         [Min(0)] public float aspectRatio = 0;
 
-        private void Reset()
-        {
-            width = height = minWidth = minHeight = maxWidth = maxHeight = flexBasis = TaffyLength.Auto;
-        }
-
+        private void Reset() => width = height = minWidth = minHeight = maxWidth = maxHeight = flexBasis = TaffyLength.Auto;
         private void OnEnable() => SetDirty();
         private void OnDisable() => SetDirty();
         private void OnValidate() => SetDirty();
@@ -55,16 +59,15 @@ namespace TaffyUGUI
             style.maxWidth = maxWidth.ToNative();
             style.maxHeight = maxHeight.ToNative();
             style.flexBasis = flexBasis.ToNative();
-            style.flexGrow = flexGrow;
-            style.flexShrink = flexShrink;
+            style.flexGrow = Mathf.Max(0f, flexGrow);
+            style.flexShrink = Mathf.Max(0f, flexShrink);
             style.alignSelf = (int)alignSelf;
-            style.aspectRatio = aspectRatio;
+            style.aspectRatio = Mathf.Max(0f, aspectRatio);
             return style;
         }
 
         private void SetDirty()
         {
-            if (!isActiveAndEnabled) return;
             var group = GetComponentInParent<TaffyLayoutGroup>();
             if (group) group.SetLayoutDirty();
         }

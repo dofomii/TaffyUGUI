@@ -1,4 +1,4 @@
-name: header-sync-once
+name: abi-rc-lock-once
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  sync:
+  lock:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,22 +19,68 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.97.1
+          components: rustfmt, clippy
       - name: Install pinned cbindgen
         run: cargo install cbindgen --version 0.29.2 --locked
-      - name: Generate authoritative C/C++ compatible header
-        run: python build/build.py header
-      - name: Validate generated C11 and C++17 header surface
-        run: python scripts/phase2_static_preflight.py
-      - name: Commit synchronized header
+      - name: Promote verified candidate to ABI-v1-RC
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          version = Path("native/src/version.rs")
+          text = version.read_text(encoding="utf-8")
+          replacements = {
+              "pub const TU_ABI_VERSION: u32 = 0;": "pub const TU_ABI_VERSION: u32 = 1;",
+              "pub const TU_ABI_STAGE: u32 = 0; // 0 = candidate, 1 = RC, 2 = final":
+                  "pub const TU_ABI_STAGE: u32 = 1; // 0 = candidate, 1 = RC, 2 = final",
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f"expected exactly one version declaration {old!r}, found {text.count(old)}")
+              text = text.replace(old, new)
+          version.write_text(text, encoding="utf-8")
+
+          tests = Path("native/tests/native_verification.rs")
+          text = tests.read_text(encoding="utf-8")
+          old = '''    assert_eq!(
+        tu_get_abi_version(),
+        0,
+        "ABI remains candidate until the Phase 3 gate actually passes"
+    );
+    assert_eq!(tu_get_abi_stage(), 0);'''
+          new = '''    assert_eq!(
+        tu_get_abi_version(),
+        1,
+        "ABI-v1-RC must remain locked after the verified Phase 3 gate"
+    );
+    assert_eq!(tu_get_abi_stage(), 1);'''
+          if text.count(old) != 1:
+              raise SystemExit(f"expected exactly one candidate ABI assertion block, found {text.count(old)}")
+          tests.write_text(text.replace(old, new), encoding="utf-8")
+
+          preflight = Path("scripts/phase3_static_preflight.py")
+          text = preflight.read_text(encoding="utf-8")
+          old = '''    # RC is intentionally not declared until the real Phase 3 runtime gate passes.
+    require(version, "TU_ABI_VERSION: u32 = 0", "unfrozen ABI version while verification is blocked", errors)
+    require(version, "TU_ABI_STAGE: u32 = 0", "candidate ABI stage while verification is blocked", errors)'''
+          new = '''    # The complete candidate runtime gate has passed; Phase 3 now requires the ABI-v1-RC lock.
+    require(version, "TU_ABI_VERSION: u32 = 1", "ABI-v1-RC version lock", errors)
+    require(version, "TU_ABI_STAGE: u32 = 1", "ABI-v1-RC stage lock", errors)'''
+          if text.count(old) != 1:
+              raise SystemExit(f"expected exactly one candidate preflight block, found {text.count(old)}")
+          preflight.write_text(text.replace(old, new), encoding="utf-8")
+          PY
+      - name: Canonical formatting
+        run: cargo fmt --manifest-path native/Cargo.toml --all
+      - name: Re-run complete Phase 3 gate at ABI-v1-RC
+        run: python build/build.py verify-abi-rc
+      - name: Commit ABI-v1-RC lock
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add include/taffy_ugui.h
+          git add native/src/version.rs native/tests/native_verification.rs scripts/phase3_static_preflight.py
           git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "Header already synchronized."
-            exit 0
-          fi
-          git commit -m "Regenerate authoritative C ABI header"
+          git commit -m "Lock verified ABI v1 release candidate"
           git push origin HEAD:main

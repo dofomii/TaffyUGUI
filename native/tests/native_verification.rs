@@ -35,6 +35,12 @@ fn base_style(display: TuDisplay) -> TuStyle {
     style.overflow_x = TuOverflow::Visible as i32;
     style.overflow_y = TuOverflow::Visible as i32;
     style.position = TuPosition::Relative as i32;
+    // TuValueKind::Auto is numerically zero, so a zeroed TuStyle would otherwise
+    // create four auto margins instead of the CSS/Taffy default zero margins.
+    style.margin_left = px(0.0);
+    style.margin_right = px(0.0);
+    style.margin_top = px(0.0);
+    style.margin_bottom = px(0.0);
     style.flex_direction = TuFlexDirection::Row as i32;
     style.flex_wrap = TuFlexWrap::NoWrap as i32;
     style.flex_shrink = 1.0;

@@ -16,55 +16,46 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: main
-      - name: Synchronize project state with verified Phase 4 start
+      - name: Synchronize verified project state
         shell: bash
         run: |
           python - <<'PY'
           import re
           from pathlib import Path
 
-          def replace_once(text, old, new, label):
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected one match, found {count}")
+          def once(text, old, new, label):
+              if text.count(old) != 1:
+                  raise SystemExit(f"{label}: expected one match, found {text.count(old)}")
               return text.replace(old, new)
 
-          # README
-          path = Path("README.md")
-          text = path.read_text(encoding="utf-8")
+          p = Path("README.md")
+          s = p.read_text(encoding="utf-8")
           old = "**Active native engine development.** Phase 0 — Rust Project and Toolchain Foundation is complete. The formal tracker remains in **Phase 1 stabilization — Complete Rust/Taffy 0.13 Engine** because the mandatory Rust verification gate cannot run in the current detached environment. By explicit project-owner direction, the complete **Phase 2 production C ABI candidate implementation has also been prepared locally** without formally advancing the phase gate. User-facing Unity feature development remains intentionally gated until the native verification, cross-platform ABI release candidate, managed ABI conformance, final ABI v1 freeze, and native artifact rebuild are complete."
-          new = "**Active native engine development.** Phases 0–3 are complete and verified. The Rust/Taffy 0.13 engine, production fixed-width C ABI, authoritative generated C/C++ header, golden/safety/lifecycle suites, host release builds, true Rust 1.82 MSRV lane, cbindgen drift check, and linked C11/C++17 smoke tests are green. The native interface is locked as **ABI-v1-RC (version 1, stage 1)** and **Phase 4 — Cross-Platform Native Compilation is active**. Windows x64, macOS universal, and iOS ARM64 native RC artifacts are verified in CI. Android ARM64 and WebGL remain active Phase 4 compatibility work. User-facing Unity feature development remains intentionally gated until managed ABI conformance freezes final ABI v1 and all native artifacts are rebuilt."
-          text = replace_once(text, old, new, "README status")
-          text = replace_once(
-              text,
-              "- current production `tu_*` ABI candidate reports version `0` while unfrozen; final ABI v1 is frozen only after managed conformance testing.",
-              "- current production `tu_*` interface is **ABI-v1-RC**, version `1`, stage `1`; final ABI v1 is frozen only after managed conformance testing in Phase 6.",
-              "README ABI bullet",
-          )
-          path.write_text(text, encoding="utf-8")
+          new = "**Active native engine development.** Phases 0–3 are complete and verified. The Rust/Taffy 0.13 engine, production fixed-width C ABI, authoritative generated C/C++ header, golden/safety/lifecycle suites, host release builds, true Rust 1.82 MSRV lane, cbindgen drift check, and linked C11/C++17 smoke tests are green. The native interface is locked as **ABI-v1-RC (version 1, stage 1)** and **Phase 4 — Cross-Platform Native Compilation is active**. Windows x64, macOS universal, and iOS ARM64 native RC artifacts are verified in CI. Android ARM64 and WebGL remain active Phase 4 compatibility work. User-facing Unity feature development remains gated until managed ABI conformance freezes final ABI v1 and all native artifacts are rebuilt."
+          s = once(s, old, new, "README status")
+          s = once(s, "- current production `tu_*` ABI candidate reports version `0` while unfrozen; final ABI v1 is frozen only after managed conformance testing.", "- current production `tu_*` interface is **ABI-v1-RC**, version `1`, stage `1`; final ABI v1 is frozen only after managed conformance testing in Phase 6.", "README ABI")
+          p.write_text(s, encoding="utf-8")
 
-          # Tracker current state and summary.
-          path = Path("docs/TASK_TRACKER.md")
-          text = path.read_text(encoding="utf-8")
-          current_pattern = re.compile(r"# 3\. Current state\n\n.*?\n\n### Pre-development decisions now closed", re.DOTALL)
-          current = """# 3. Current state
-
-**Current phase:** Phase 4 — Cross-Platform Native Compilation (ABI RC)  
-**Phase state:** IN PROGRESS  
-**Current dependency baseline:** Taffy `0.13.0` exact pin  
-**Project MSRV:** Rust `1.82.0`  
-**Pinned normal/release toolchain:** Rust `1.97.1`  
-**Native ABI:** **ABI-v1-RC — version `1`, stage `1`**  
-**Phase 3 evidence:** canonical `python build/build.py verify-abi-rc`, Linux/Windows/macOS host lanes, true Rust 1.82 MSRV, authoritative generated-header diff, and linked C11/C++17 smoke tests are green.  
-**Verified Phase 4 targets:** Windows x64, macOS arm64/x64 + universal, iOS ARM64.  
-**Active Phase 4 blockers:** Android ARM64 compatibility between Rust 1.97 and Unity 2021.3 NDK r21d; WebGL compatibility between Rust 1.97/LLVM 22 output and Unity 2021.3 Emscripten 2.0.19.  
-**Unity feature development:** PAUSED until Phase 6 proves managed ABI conformance, freezes final ABI v1, and rebuilds the final native payload.  
-**NEXT TASK:** **Resolve P4.9 Android ARM64 without inventing or bundling an unverified runtime; then resolve P4.13 WebGL against the pinned Unity toolchain.**
-
-### Pre-development decisions now closed"""
-          text, count = current_pattern.subn(current, text, count=1)
-          if count != 1:
-              raise SystemExit(f"tracker current-state block: expected one match, found {count}")
+          p = Path("docs/TASK_TRACKER.md")
+          s = p.read_text(encoding="utf-8")
+          current = "\n".join([
+              "# 3. Current state", "",
+              "**Current phase:** Phase 4 — Cross-Platform Native Compilation (ABI RC)  ",
+              "**Phase state:** IN PROGRESS  ",
+              "**Current dependency baseline:** Taffy `0.13.0` exact pin  ",
+              "**Project MSRV:** Rust `1.82.0`  ",
+              "**Pinned normal/release toolchain:** Rust `1.97.1`  ",
+              "**Native ABI:** **ABI-v1-RC — version `1`, stage `1`**  ",
+              "**Phase 3 evidence:** canonical `python build/build.py verify-abi-rc`, Linux/Windows/macOS host lanes, true Rust 1.82 MSRV, generated-header diff, and linked C11/C++17 smoke tests are green.  ",
+              "**Verified Phase 4 native targets:** Windows x64, macOS arm64/x64 + universal, iOS ARM64.  ",
+              "**Active Phase 4 blockers:** Android ARM64 Rust 1.97 / Unity NDK r21d unwind compatibility; WebGL Rust 1.97/LLVM 22 / Unity Emscripten 2.0.19 compatibility.  ",
+              "**Unity feature development:** PAUSED until Phase 6 managed ABI conformance, final ABI v1 freeze, and final native rebuild.  ",
+              "**NEXT TASK:** **Resolve P4.9 Android ARM64 without inventing or silently substituting an unverified runtime; then resolve P4.13 WebGL against the pinned Unity toolchain.**", "",
+              "### Pre-development decisions now closed",
+          ])
+          s, n = re.subn(r"# 3\. Current state\n\n.*?\n\n### Pre-development decisions now closed", current, s, count=1, flags=re.DOTALL)
+          if n != 1:
+              raise SystemExit(f"current-state block: {n}")
 
           rows = {
               "| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | **IN PROGRESS** |": "| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | **COMPLETE** |",
@@ -72,88 +63,68 @@ jobs:
               "| 3 | Native Verification + ABI RC | Golden/safety/header/smoke tests prove an ABI release candidate | NOT STARTED |": "| 3 | Native Verification + ABI RC | Golden/safety/header/smoke tests prove an ABI release candidate | **COMPLETE** |",
               "| 4 | Cross-Platform Native Compilation | ABI RC builds for Windows/macOS/Android/iOS/WebGL | NOT STARTED |": "| 4 | Cross-Platform Native Compilation | ABI RC builds for Windows/macOS/Android/iOS/WebGL | **IN PROGRESS** |",
           }
-          for old, new in rows.items():
-              text = replace_once(text, old, new, "tracker summary row")
+          for a, b in rows.items():
+              s = once(s, a, b, "summary")
 
-          # Completed phases 1-3: mark state/tasks/gates.
-          phase_specs = [
-              (1, 2, "All intended native v1 Taffy features have deterministic native tests and execute without Unity."),
-              (2, 3, "The complete engine is callable through the verified fixed-width `tu_*` C ABI and authoritative generated header."),
-              (3, 4, "`python build/build.py verify-abi-rc` passes at ABI version/stage `1/1`, including golden/safety/lifecycle suites, generated-header drift verification, locked release build, and linked C11/C++17 smoke executables."),
-          ]
-          for phase, next_phase, gate_text in phase_specs:
-              pattern = re.compile(rf"(# Phase {phase} — .*?)(?=\n---\n\n# Phase {next_phase} —)", re.DOTALL)
-              match = pattern.search(text)
-              if not match:
-                  raise SystemExit(f"could not isolate Phase {phase}")
-              block = match.group(1)
-              block = block.replace("**State:** IN PROGRESS", "**State:** COMPLETE", 1)
-              block = block.replace("**State:** NOT STARTED", "**State:** COMPLETE", 1)
-              block = re.sub(rf"- \[ \] \*\*P{phase}\.([0-9]+)(?: — NEXT TASK)?\*\*", rf"- [x] **P{phase}.\1**", block)
-              if phase == 1:
-                  block = re.sub(r"### Phase 1 gate\n\n.*?$", "### Phase 1 gate — PASSED\n\n" + gate_text, block, flags=re.DOTALL)
-              elif phase == 2:
-                  block = re.sub(r"### Phase 2 gate\n\n.*?$", "### Phase 2 gate — PASSED\n\n" + gate_text, block, flags=re.DOTALL)
+          gates = {
+              1: "All intended native v1 Taffy features have deterministic native tests and execute without Unity.",
+              2: "The complete engine is callable through the verified fixed-width `tu_*` C ABI and authoritative generated header.",
+              3: "`python build/build.py verify-abi-rc` passes at ABI version/stage `1/1`, including golden/safety/lifecycle suites, generated-header drift verification, locked release build, and linked C11/C++17 smoke executables.",
+          }
+          for phase in (1, 2, 3):
+              next_phase = phase + 1
+              m = re.search(rf"(# Phase {phase} — .*?)(?=\n---\n\n# Phase {next_phase} —)", s, flags=re.DOTALL)
+              if not m:
+                  raise SystemExit(f"phase {phase} block not found")
+              b = m.group(1)
+              b = b.replace("**State:** IN PROGRESS", "**State:** COMPLETE", 1).replace("**State:** NOT STARTED", "**State:** COMPLETE", 1)
+              b = re.sub(rf"- \[ \] \*\*P{phase}\.([0-9]+)(?: — NEXT TASK)?\*\*", rf"- [x] **P{phase}.\1**", b)
+              if phase in (1, 2):
+                  b = re.sub(rf"### Phase {phase} gate\n\n.*?$", f"### Phase {phase} gate — PASSED\n\n{gates[phase]}", b, flags=re.DOTALL)
               else:
-                  block = block.rstrip() + "\n\n### Phase 3 gate — PASSED\n\n" + gate_text + "\n"
-              text = text[:match.start(1)] + block + text[match.end(1):]
+                  b = b.rstrip() + f"\n\n### Phase 3 gate — PASSED\n\n{gates[3]}\n"
+              s = s[:m.start(1)] + b + s[m.end(1):]
 
-          # Phase 4 is active. Build infrastructure and proven targets are complete.
-          text = replace_once(text, "# Phase 4 — Cross-Platform Native Compilation (ABI RC)\n\n**State:** NOT STARTED", "# Phase 4 — Cross-Platform Native Compilation (ABI RC)\n\n**State:** IN PROGRESS", "Phase 4 state")
+          s = once(s, "# Phase 4 — Cross-Platform Native Compilation (ABI RC)\n\n**State:** NOT STARTED", "# Phase 4 — Cross-Platform Native Compilation (ABI RC)\n\n**State:** IN PROGRESS", "phase4 state")
           for task in ("P4.1", "P4.2", "P4.3", "P4.4", "P4.5", "P4.6", "P4.7", "P4.8", "P4.11"):
-              pattern = rf"- \[ \] \*\*{re.escape(task)}\*\*"
-              text, count = re.subn(pattern, f"- [x] **{task}**", text, count=1)
-              if count != 1:
-                  raise SystemExit(f"could not mark {task} complete")
+              s, n = re.subn(rf"- \[ \] \*\*{re.escape(task)}\*\*", f"- [x] **{task}**", s, count=1)
+              if n != 1:
+                  raise SystemExit(f"task {task}: {n}")
+          s = once(s, "- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d.", "- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d. — **BLOCKED:** the pinned Rust 1.97 Android target requires unwind compatibility not yet satisfied by the pinned r21d layout; resolve this without fabricating or silently substituting an unverified runtime.", "P4.9")
+          s = once(s, "- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19.", "- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19. — **BLOCKED:** pinned Emscripten 2.0.19 cannot currently consume the Rust 1.97/LLVM 22 output; determine a Unity-compatible build path before claiming WebGL support.", "P4.13")
+          s = once(s, "### Phase 4 gate\n\nEvery required platform-family artifact compiles with identical ABI RC symbols/version and passes host/static/link verification appropriate to that target.", "### Phase 4 gate — OPEN\n\nWindows x64, macOS arm64/x64 + universal, and iOS ARM64 compile, verify, and stage as CI artifacts with ABI-v1-RC. Android ARM64 and WebGL remain required open work, so Phase 4 is intentionally not complete yet.", "phase4 gate")
+          p.write_text(s, encoding="utf-8")
 
-          text = replace_once(
-              text,
-              "- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d.",
-              "- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d. — **BLOCKED:** the pinned Rust 1.97 Android target expects unwind support that is not satisfied by the pinned r21d layout; resolve the compatibility path without fabricating or silently substituting an unverified runtime.",
-              "P4.9 blocker",
-          )
-          text = replace_once(
-              text,
-              "- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19.",
-              "- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19. — **BLOCKED:** the pinned Emscripten 2.0.19 toolchain cannot currently consume the Rust 1.97/LLVM 22 output; determine a Unity-compatible build path before claiming WebGL support.",
-              "P4.13 blocker",
-          )
-          text = replace_once(
-              text,
-              "### Phase 4 gate\n\nEvery required platform-family artifact compiles with identical ABI RC symbols/version and passes host/static/link verification appropriate to that target.",
-              "### Phase 4 gate — OPEN\n\nWindows x64, macOS arm64/x64 + universal, and iOS ARM64 compile, verify, and stage as CI artifacts with ABI-v1-RC. Android ARM64 and WebGL remain required open work, so Phase 4 is intentionally not complete yet.",
-              "Phase 4 gate",
-          )
-          path.write_text(text, encoding="utf-8")
-
-          # ABI documentation.
-          path = Path("docs/ABI_CANDIDATE.md")
-          text = path.read_text(encoding="utf-8")
-          intro_pattern = re.compile(r"This document describes the \*\*Phase 2 ABI candidate\*\*.*?final binary contract\.\n", re.DOTALL)
-          intro = "This document describes the production C ABI implemented by `native/src/ffi.rs` and mirrored by the authoritative cbindgen output in `include/taffy_ugui.h`.\n\nThe complete Phase 3 native verification gate has passed and the interface is locked as **ABI-v1-RC (version 1, stage 1)** for cross-platform native compilation. This is still not the final ABI v1 promise: Phase 6 managed conformance must prove the P/Invoke binary contract before final ABI v1 is frozen and every native artifact is rebuilt.\n"
-          text, count = intro_pattern.subn(intro, text, count=1)
-          if count != 1:
-              raise SystemExit(f"ABI intro: expected one match, found {count}")
-          handshake_pattern = re.compile(r"## Candidate version handshake\n\n.*?managed-conformance freeze\.\n", re.DOTALL)
-          handshake = "## ABI-v1-RC version handshake\n\n`tu_get_abi_version()` reports `1` and `tu_get_abi_stage()` reports `1`, identifying the verified **ABI-v1-RC** contract used by Phase 4 platform builds. Callers must also inspect `tu_get_capabilities()` before assuming an optional feature is available.\n\nThe RC lock means all Phase 4 artifacts must expose this same binary contract. The final ABI v1 designation remains owned by Phase 6 managed conformance and the subsequent full native rebuild.\n"
-          text, count = handshake_pattern.subn(handshake, text, count=1)
-          if count != 1:
-              raise SystemExit(f"ABI handshake: expected one match, found {count}")
-          text = text.replace(
-              "The checked-in `include/taffy_ugui.h` in this local Phase 2 work is a manually synchronized candidate mirror because this execution environment has no `cbindgen`. It is compiled as both C11 and C++17 by the static preflight. It must be regenerated with cbindgen and diff-checked in a Rust/cbindgen-enabled environment before P2.13 can be marked verified.",
-              "The checked-in `include/taffy_ugui.h` is authoritative cbindgen output. CI installs pinned cbindgen `0.29.2`, regenerates the header, fails on drift, and compiles the consumer surface as both C11 and C++17 before the ABI-RC gate can pass.",
-          )
-          path.write_text(text, encoding="utf-8")
+          p = Path("docs/ABI_CANDIDATE.md")
+          s = p.read_text(encoding="utf-8")
+          intro = "\n".join([
+              "This document describes the production C ABI implemented by `native/src/ffi.rs` and mirrored by the authoritative cbindgen output in `include/taffy_ugui.h`.", "",
+              "The complete Phase 3 native verification gate has passed and the interface is locked as **ABI-v1-RC (version 1, stage 1)** for cross-platform native compilation. This is still not the final ABI v1 promise: Phase 6 managed conformance must prove the P/Invoke binary contract before final ABI v1 is frozen and every native artifact is rebuilt.",
+          ])
+          s, n = re.subn(r"This document describes the \*\*Phase 2 ABI candidate\*\*.*?final binary contract\.", intro, s, count=1, flags=re.DOTALL)
+          if n != 1:
+              raise SystemExit(f"ABI intro: {n}")
+          handshake = "\n".join([
+              "## ABI-v1-RC version handshake", "",
+              "`tu_get_abi_version()` reports `1` and `tu_get_abi_stage()` reports `1`, identifying the verified **ABI-v1-RC** contract used by Phase 4 platform builds. Callers must also inspect `tu_get_capabilities()` before assuming an optional feature is available.", "",
+              "The RC lock means all Phase 4 artifacts must expose this same binary contract. Final ABI v1 remains owned by Phase 6 managed conformance and the subsequent full native rebuild.",
+          ])
+          s, n = re.subn(r"## Candidate version handshake\n\n.*?managed-conformance freeze\.", handshake, s, count=1, flags=re.DOTALL)
+          if n != 1:
+              raise SystemExit(f"ABI handshake: {n}")
+          old_header = "The checked-in `include/taffy_ugui.h` in this local Phase 2 work is a manually synchronized candidate mirror because this execution environment has no `cbindgen`. It is compiled as both C11 and C++17 by the static preflight. It must be regenerated with cbindgen and diff-checked in a Rust/cbindgen-enabled environment before P2.13 can be marked verified."
+          new_header = "The checked-in `include/taffy_ugui.h` is authoritative cbindgen output. CI installs pinned cbindgen `0.29.2`, regenerates the header, fails on drift, and compiles the consumer surface as both C11 and C++17 before the ABI-RC gate can pass."
+          s = once(s, old_header, new_header, "ABI header")
+          p.write_text(s, encoding="utf-8")
           PY
       - name: Validate synchronized state
         run: |
           git diff --check
-          grep -q 'Phase 4 — Cross-Platform Native Compilation' README.md
-          grep -q 'ABI-v1-RC — version `1`, stage `1`' docs/TASK_TRACKER.md
+          grep -q 'ABI-v1-RC' README.md
           grep -q 'Phase 3 gate — PASSED' docs/TASK_TRACKER.md
           grep -q 'Phase 4 gate — OPEN' docs/TASK_TRACKER.md
           grep -q 'ABI-v1-RC version handshake' docs/ABI_CANDIDATE.md
-      - name: Commit synchronized project state
+      - name: Commit synchronized state
         shell: bash
         run: |
           git config user.name "github-actions[bot]"

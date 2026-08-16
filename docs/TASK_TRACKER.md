@@ -1,62 +1,522 @@
 # TaffyUGUI Task Tracker
 
-**Canonical workflow:** local development/build/test. GitHub is backup storage only.
+**Canonical workflow:** local development, local build, local verification. GitHub is backup storage only.
+**Status date:** 2026-08-16
+**Taffy baseline:** exactly `0.13.0`
+**Canonical Rust toolchain:** `1.97.1`
+**MSRV:** `1.82.0`
+**Unity primary baseline:** `2021.3 LTS`
+**Native ABI source state:** `ABI-v1-RC`, version `1`, stage `1`
 
-## Current state
+## How to read this tracker
 
-- **Current boundary:** Phase 3 — Native Verification and ABI Release-Candidate Lock
-- **ABI source state:** `ABI-v1-RC`, version `1`, stage `1`
-- **Taffy baseline:** exactly `0.13.0`
-- **Unity package minimum:** `2021.3`
-- **Next phase:** Phase 4 — Cross-Platform Native Builds and Artifact Staging
-- **Phase 4 build pipeline:** hardened locally; artifact execution remains gated by Phase 3 evidence.
-- **Phase 4 may start only after:** `python3 build/build.py verify-abi-rc` passes on each local artifact-producing machine for byte-identical clean source content (same Git tree SHA).
-- **Current environment blocker:** this sandbox has no Rust/rustup/cbindgen or platform SDKs and blocks outbound binary downloads. This is an execution-environment limitation, not a reason to bypass the gate.
+The tracker distinguishes three things:
 
-## Phase 3 gate
+- **Implemented** — source/build infrastructure exists.
+- **Verified** — the required checks actually executed in the canonical local environment.
+- **Gate complete** — all mandatory implementation + verification requirements are satisfied and the project may advance authoritatively.
 
-- [x] Generation-safe fixed-width context/node/resource handles.
-- [x] Stable `tu_*` C ABI with explicit status codes and last-error diagnostics.
-- [x] Persistent native layout tree and bulk mutation/result paths.
-- [x] Flex, Block/FlowRoot/Float, Grid, Calc, and cached measurement golden verification inventory.
-- [x] ABI size/alignment/offset and enum-number assertions.
-- [x] Repeated lifecycle/topology stress verification inventory.
-- [x] C11/C++17 public-header smoke harness.
-- [x] Unity P/Invoke migrated from obsolete bootstrap symbols to ABI-v1-RC `tu_*` symbols.
-- [x] Managed/native structure-size guards for the current ABI.
-- [x] Local-only verification/build driver; no GitHub Actions dependency.
-- [ ] Full local Rust gate (`fmt`, Clippy, tests, release, cbindgen drift, linked smoke) recorded on the active development machine.
+A later-phase prototype or early scaffold does not automatically mean that later phase is complete.
 
-## Phase 4 — Cross-Platform Native Builds and Artifact Staging
+### Status legend
 
-**Goal:** produce reproducible, locally verified native binaries before Unity plugin importer packaging work.
+- **COMPLETE** — phase gate complete.
+- **IMPLEMENTATION COMPLETE / VERIFICATION PENDING** — required code exists but the current canonical verification gate still needs execution.
+- **ACTIVE / BLOCKED** — current phase work is prepared but cannot finish until a prerequisite is available.
+- **PARTIAL EARLY SCAFFOLDING** — some work exists out of sequence, but the formal phase is not open/complete.
+- **NOT STARTED** — intentionally gated.
 
-### Phase 4 local build infrastructure
+---
 
-- [x] Phase 4 builds require recorded local Phase 3 evidence from the exact clean source tree; the local commit SHA is also recorded for traceability.
-- [x] Windows/macOS/Linux canonical host ownership is explicit and enforced; `phase4-host` builds the targets assigned to that OS.
-- [x] Native verification checks the complete 31-function public `tu_*` export contract, not a subset.
-- [x] Artifact manifest schema records source revision/tree fingerprint, ABI, Taffy/Rust target, checksum, size, full export fingerprint, target-specific architecture evidence, and local toolchain evidence without machine-local SDK paths.
-- [x] `SHA256SUMS` is validated as part of staged-artifact verification.
-- [x] Windows architecture proof cannot silently degrade when `file` is unavailable; PE/x64 header tools are required instead.
-- [x] iOS archive verification requires device ARM64 `lipo -info` evidence.
-- [x] WebGL verification requires pinned Emscripten `emcc`/`emar`/`emnm` plus Wasm/LLVM-bitcode archive-member evidence.
-- [x] `verify-phase4` requires every target, same source-tree fingerprint, same ABI/export contract, and writes the final `dist/native/phase4-index.json`.
-- [x] Build-driver self-test proves canonical host assignments cover every required Phase 4 target and rejects malformed iOS/WebGL architecture evidence.
-- [x] One-command local host wrappers cover Windows and macOS/Linux execution, plus a local aggregation finalizer.
-- [x] Multi-host local build procedure is documented in `docs/PHASE4_PLATFORM_BUILDS.md`.
+# Current Project State
 
-- [ ] P4.1 Windows x64 DLL builds, architecture/export checks pass, manifest/checksum staged.
-- [ ] P4.2 macOS arm64 dylib builds and verifies.
-- [ ] P4.3 macOS x64 dylib builds and verifies.
-- [ ] P4.4 macOS universal dylib assembles with both architectures.
-- [ ] P4.5 Android ARM64 `.so` builds with pinned NDK r21d/API21 and verifies.
-- [ ] P4.6 iOS ARM64 static library builds and verifies.
-- [ ] P4.7 WebGL static library builds with the pinned Unity-compatible Emscripten baseline and verifies.
-- [ ] P4.8 Every artifact has `manifest.json` and `SHA256SUMS` under `dist/native/`.
-- [ ] P4.9 Same required ABI export set is present on every advertised target.
-- [ ] P4.10 No target is advertised until its local build and verification pass.
+- **Phase 0:** COMPLETE.
+- **Phase 1:** native engine implementation COMPLETE.
+- **Phase 2:** production C ABI implementation COMPLETE.
+- **Phase 3:** implementation COMPLETE and ABI source locked at `1/1`; **canonical local compiled verification PENDING**.
+- **Phase 4:** build/staging infrastructure COMPLETE; **real cross-platform artifact production PENDING/BLOCKED** by Phase 3 local evidence and missing platform toolchains.
+- **Phase 5:** NOT STARTED.
+- **Phase 6:** PARTIAL EARLY SCAFFOLDING only (production `tu_*` P/Invoke surface already aligned); formal managed conformance NOT STARTED.
+- **Phase 7:** prototype components exist; formal production Unity phase NOT STARTED.
+- **Phase 8–14:** NOT STARTED.
+
+## Current authoritative boundary
+
+Before any Phase 4 artifact is accepted, every artifact-producing host must pass:
+
+```bash
+python3 build/build.py verify-abi-rc
+```
+
+on the same clean Git tree.
+
+The provider-independent local gate currently passes:
+
+```bash
+python3 build/build.py static-gate
+```
+
+The current sandbox cannot execute the full compiled Phase 3 gate because Rust/rustup/rustfmt/Clippy/cbindgen and the required platform SDKs are unavailable and outbound binary downloads are blocked.
+
+**Next authoritative task:** obtain a local build host with the pinned Rust/toolchain prerequisites, run the full Phase 3 gate, then execute P4.1–P4.10 on the canonical Windows/macOS/Linux hosts.
+
+---
+
+# Phase 0 — Rust Project and Toolchain Foundation
+
+**Status:** COMPLETE
+
+**Goal:** establish a deterministic native project/toolchain foundation before feature implementation.
+
+- [x] P0.1 Create Rust native crate/workspace.
+- [x] P0.2 Configure native outputs for `cdylib` + `staticlib`.
+- [x] P0.3 Pin Taffy exactly to `0.13.0`.
+- [x] P0.4 Commit deterministic Cargo lockfile.
+- [x] P0.5 Establish Rust MSRV `1.82.0`.
+- [x] P0.6 Pin canonical development/release Rust toolchain `1.97.1`.
+- [x] P0.7 Establish rustfmt/Clippy/test/release quality requirements.
+- [x] P0.8 Split native implementation into production modules (`context`, `handles`, `style`, `grid`, `calc`, `measurement`, `error`, `version`, `ffi`).
+- [x] P0.9 Establish public cbindgen configuration/header path.
+- [x] P0.10 Establish canonical local `build/build.py` entry point.
+- [x] P0.11 Establish clean local development/bootstrap documentation.
+- [x] P0.12 Preserve native-only architecture: Unity owns rendering/input; Rust owns geometry.
+
+### Phase 0 gate
+
+- [x] Deterministic native workspace exists.
+- [x] Dependency/toolchain baselines are explicit.
+- [x] Native module structure supports production implementation.
+- [x] Canonical build entry point exists.
+
+**Documentation:** `PHASE0_FOUNDATION.md`
+
+---
+
+# Phase 1 — Complete Rust/Taffy Native Engine
+
+**Status:** IMPLEMENTATION COMPLETE
+**Current compiled proof:** inherited by pending Phase 3 local gate
+
+**Goal:** finish the persistent Taffy 0.13 native engine before freezing the production ABI.
+
+## State/ownership
+
+- [x] P1.1 Implement persistent native context registry.
+- [x] P1.2 Implement generation-safe fixed-width context handles.
+- [x] P1.3 Implement generation-safe node/resource handles.
+- [x] P1.4 Implement persistent parent/child topology.
+- [x] P1.5 Implement dirty/cache invalidation and node dirty query.
+- [x] P1.6 Implement stale-handle rejection.
+- [x] P1.7 Implement cross-context handle rejection.
+- [x] P1.8 Implement explicit cross-thread context rejection.
+- [x] P1.9 Prevent generation-wrap ABA/stale-handle resurrection.
+
+## Core style/layout
+
+- [x] P1.10 Implement dimensions, min/max sizes, margin, padding, border.
+- [x] P1.11 Implement position/insets.
+- [x] P1.12 Implement overflow/scrollbar width.
+- [x] P1.13 Implement box-sizing/direction/aspect-ratio/display-none surface.
+
+## Flex
+
+- [x] P1.14 Flex row/column/reverse directions.
+- [x] P1.15 Flex wrap/wrap-reverse.
+- [x] P1.16 Flex grow/shrink/basis.
+- [x] P1.17 Flex align-items/align-self/align-content.
+- [x] P1.18 Flex justify-content.
+- [x] P1.19 Flex gaps and auto margins.
+
+## Block / FlowRoot / Float
+
+- [x] P1.20 Block layout dispatch.
+- [x] P1.21 FlowRoot layout dispatch.
+- [x] P1.22 Float left/right.
+- [x] P1.23 Clear behavior.
+- [x] P1.24 Block text-align surface required by Taffy.
+
+## Grid
+
+- [x] P1.25 Grid auto-flow row/column/dense modes.
+- [x] P1.26 Explicit row/column tracks.
+- [x] P1.27 Implicit/auto tracks.
+- [x] P1.28 Fixed/percent/fraction/minmax/content tracks.
+- [x] P1.29 Repeat/count/auto-fill/auto-fit.
+- [x] P1.30 Named lines, named spans, named template areas, and item placement.
+- [x] P1.31 Grid justify-items/justify-self and alignment surface.
+- [x] P1.32 Detailed Grid track/gutter/item diagnostic extraction.
+
+## Calc/resources
+
+- [x] P1.33 Typed Calc resource graph without CSS text parsing.
+- [x] P1.34 Calc/resource lifetime ownership.
+- [x] P1.35 Bounded Calc graph/evaluation behavior.
+
+## Measurement/bulk operations
+
+- [x] P1.36 Cached min-content/max-content/preferred measurement records.
+- [x] P1.37 Width-dependent cached samples and replaced-element intrinsic aspect-ratio support.
+- [x] P1.38 Bulk style/topology/measurement upload and bulk layout retrieval.
+- [x] P1.39 Persistent cache/duplicate-compute behavior and deterministic result retrieval.
+
+### Phase 1 gate
+
+- [x] Complete required native v1 style/algorithm surface is represented in source.
+- [x] Native unit/integration/golden verification inventory exists.
+- [ ] Current-machine compiled execution of the complete native verification inventory — **covered by Phase 3 `verify-abi-rc`, pending in this sandbox**.
+
+**Documentation:** `PHASE1_NATIVE_ENGINE.md`
+
+---
+
+# Phase 2 — Production C ABI Candidate and Safety Boundary
+
+**Status:** IMPLEMENTATION COMPLETE
+**Current ABI source:** promoted to ABI-v1-RC `1/1`
+
+**Goal:** expose the complete native engine through a production-shaped fixed-width C ABI.
+
+- [x] P2.1 Replace bootstrap/raw-pointer API with production `tu_*` surface.
+- [x] P2.2 Use opaque `uint64_t` context/node/resource handles.
+- [x] P2.3 Use fixed `uint32_t` counts/capacities.
+- [x] P2.4 Use fixed 32-bit enum/status representation.
+- [x] P2.5 Use `uint8_t` bool-like ABI fields.
+- [x] P2.6 Implement explicit status/error model.
+- [x] P2.7 Implement thread-local last-error diagnostics.
+- [x] P2.8 Validate arguments/handles/counts/enums before use.
+- [x] P2.9 Add panic guard so Rust panic is not intended to unwind over C.
+- [x] P2.10 Expose ABI version/stage/capability/build/Taffy-version queries.
+- [x] P2.11 Expose context lifecycle.
+- [x] P2.12 Expose node lifecycle/style/topology/dirty APIs.
+- [x] P2.13 Expose cached measurement APIs.
+- [x] P2.14 Expose Calc resource APIs.
+- [x] P2.15 Expose Grid template and diagnostics APIs.
+- [x] P2.16 Expose compute/single-layout/bulk-layout APIs.
+- [x] P2.17 Generate public C header through cbindgen configuration.
+- [x] P2.18 Keep public ABI independent from Rust/Taffy implementation types.
+- [x] P2.19 Maintain complete public export inventory: **31 `tu_*` functions**.
+
+### Phase 2 gate
+
+- [x] Production ABI implementation exists.
+- [x] Public C/C++ header exists.
+- [x] Static export inventory matches header inventory.
+- [x] C11/C++17 header compile passes in current local static gate.
+- [ ] Current-machine cbindgen regeneration/drift proof — pending in Phase 3 compiled gate.
+
+**Documentation:** `PHASE2_PRODUCTION_C_ABI.md`
+
+---
+
+# Phase 3 — Native Verification and ABI Release-Candidate Lock
+
+**Status:** IMPLEMENTATION COMPLETE / CANONICAL LOCAL VERIFICATION PENDING
+
+**Goal:** prove the native engine/ABI release candidate before using it for platform artifacts.
+
+- [x] P3.1 ABI/version/capability/context/handle unit verification inventory.
+- [x] P3.2 Flex golden geometry verification inventory.
+- [x] P3.3 Block/FlowRoot/Float golden verification inventory.
+- [x] P3.4 Grid named-area/placement/diagnostic verification inventory.
+- [x] P3.5 Calc and cached-measurement golden verification inventory.
+- [x] P3.6 ABI size/alignment/offset and enum numeric-contract assertions.
+- [x] P3.7 Invalid/stale/cross-context/malformed/wrong-thread verification inventory.
+- [x] P3.8 Repeated lifecycle/topology stress verification inventory.
+- [x] P3.9 C11 public-header smoke source.
+- [x] P3.10 C++17 public-header smoke source.
+- [x] P3.11 cbindgen header regeneration/drift command.
+- [x] P3.12 Linked host C/C++ smoke command.
+- [x] P3.13 One canonical local `verify-abi-rc` command.
+- [x] P3.14 ABI source promoted to release-candidate state `1/1`.
+- [x] P3.15 Provider-independent local static gate passes.
+- [ ] P3.16 Run `cargo fmt --check` locally on current canonical machine/source.
+- [ ] P3.17 Run Clippy with `-D warnings` locally.
+- [ ] P3.18 Run full Rust test inventory locally.
+- [ ] P3.19 Build host release native library locally.
+- [ ] P3.20 Regenerate/diff public header with pinned cbindgen locally.
+- [ ] P3.21 Link and execute C/C++ smoke programs against the built Rust library locally.
+- [ ] P3.22 Record Phase 3 evidence for the clean source tree.
+
+### Current Phase 3 gate
+
+**BLOCKED in this sandbox by missing Rust/rustup/rustfmt/Clippy/cbindgen and blocked binary downloads.**
+
+Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact-producing source tree/host as required by the build driver.
+
+**Documentation:** `PHASE3_NATIVE_VERIFICATION.md`
+
+---
+
+# Phase 4 — Cross-Platform Native Builds and Artifact Staging
+
+**Status:** ACTIVE INFRASTRUCTURE / ARTIFACT EXECUTION BLOCKED
+
+**Goal:** produce reproducible native libraries from ABI-v1-RC before Unity plugin payload packaging.
+
+## Build infrastructure — complete
+
+- [x] Phase 4 builds require clean Phase 3 evidence for the exact source tree.
+- [x] Canonical host ownership is explicit and enforced.
+- [x] Full 31-function public export contract checked per artifact.
+- [x] Target manifests record source tree, ABI, Taffy/Rust target, checksum, size, exports, architecture evidence and toolchain evidence.
+- [x] `SHA256SUMS` verification is part of artifact acceptance.
+- [x] Windows architecture verification cannot silently skip.
+- [x] iOS requires device ARM64 `lipo` evidence.
+- [x] WebGL requires Emscripten/Wasm archive evidence.
+- [x] Android records canonical NDK/API evidence without leaking machine-local SDK paths.
+- [x] macOS universal verification requires both slices and export parity.
+- [x] Final `verify-phase4` requires all targets from the same source tree/ABI/export contract.
+- [x] Final Phase 4 index generation implemented.
+- [x] One-command Windows/macOS/Linux host runners implemented.
+- [x] Final aggregation/finalizer command implemented.
+
+## Required real artifacts
+
+- [ ] P4.1 Windows x64 `taffy_ugui.dll` builds and verifies.
+- [ ] P4.2 macOS ARM64 `libtaffy_ugui.dylib` builds and verifies.
+- [ ] P4.3 macOS x64 `libtaffy_ugui.dylib` builds and verifies.
+- [ ] P4.4 macOS universal dylib assembles and verifies both slices.
+- [ ] P4.5 Android ARM64 `libtaffy_ugui.so` builds with NDK r21d `21.3.6528147`, API 21, and verifies.
+- [ ] P4.6 iOS ARM64 `libtaffy_ugui.a` builds and verifies as a device ARM64 archive.
+- [ ] P4.7 WebGL `libtaffy_ugui.a` builds with Emscripten `2.0.19` and verifies.
+- [ ] P4.8 Every artifact has accepted `manifest.json` + `SHA256SUMS`.
+- [ ] P4.9 Every target exposes the same required ABI export set.
+- [ ] P4.10 Run final `python3 build/build.py verify-phase4` and produce `dist/native/phase4-index.json`.
 
 ### Phase 4 exit gate
 
-Every advertised native target must be generated from ABI-v1-RC, architecture-checked, export-checked, checksummed, reproducible through `build/build.py`, and ready to be copied into Unity plugin directories without changing the public C# API.
+All required target artifacts exist, are locally architecture/export/checksum verified, share the same source-tree fingerprint and ABI contract, and are accepted by `verify-phase4`.
+
+**Documentation:** `PHASE4_PLATFORM_BUILDS.md`
+
+---
+
+# Phase 5 — Unity-Ready Native Payload Staging
+
+**Status:** NOT STARTED — gated by Phase 4
+
+**Goal:** convert verified `dist/native/**` outputs into the native payload actually shipped by the Unity package.
+
+- [ ] P5.1 Define/confirm canonical `UnityPackage/Plugins/**` directory structure.
+- [ ] P5.2 Copy only Phase-4-verified binaries into package plugin paths.
+- [ ] P5.3 Create/verify Unity `.meta` importer configuration for each platform/CPU.
+- [ ] P5.4 Preserve source/ABI/checksum provenance for staged binaries.
+- [ ] P5.5 Verify no debug/unverified artifact is packaged.
+- [ ] P5.6 Verify Git/UPM package path includes all required native binaries.
+- [ ] P5.7 Verify package-native payload can be reproduced from `dist/native/phase4-index.json`.
+- [ ] P5.8 Declare **Native Engine Candidate Complete** only after staging verification.
+
+### Phase 5 exit gate
+
+A complete, verified Unity-native payload exists for every currently supported platform and can be consumed without changing the public native ABI.
+
+---
+
+# Phase 6 — Minimal Managed ABI Conformance and Final ABI v1 Freeze
+
+**Status:** PARTIAL EARLY SCAFFOLDING — formal phase gated by Phase 5
+
+**Early work already present:**
+
+- [x] P6.E1 Unity low-level P/Invoke migrated from obsolete bootstrap symbols to `tu_*` ABI-v1-RC.
+- [x] P6.E2 Managed/native ABI structure-size guards exist for the current ABI surface.
+
+**Formal Phase 6 tasks:**
+
+- [ ] P6.1 Load each staged native library through the managed wrapper.
+- [ ] P6.2 Validate ABI version/stage/capability handshake from Unity/C#.
+- [ ] P6.3 Validate managed struct layout/size/enum mapping against native ABI.
+- [ ] P6.4 Context create/destroy/clear managed round trip.
+- [ ] P6.5 Node create/remove/style managed round trip.
+- [ ] P6.6 Topology/bulk upload managed round trip.
+- [ ] P6.7 Cached measurement managed round trip.
+- [ ] P6.8 Calc/Grid resource managed round trip.
+- [ ] P6.9 Compute and single/bulk layout retrieval managed round trip.
+- [ ] P6.10 Validate error/last-error diagnostics through P/Invoke.
+- [ ] P6.11 Validate library naming/loading rules per platform.
+- [ ] P6.12 Resolve every ABI discrepancy before final freeze.
+- [ ] P6.13 Freeze final ABI v1.
+- [ ] P6.14 Rebuild **every** Phase 4 artifact from final ABI v1.
+- [ ] P6.15 Re-stage **every** Phase 5 package artifact from final ABI v1.
+- [ ] P6.16 Declare **ABI v1 / Final Native Payload Gate** complete.
+
+### Phase 6 exit gate
+
+The final ABI has been proven through the real managed boundary and the complete cross-platform native payload has been rebuilt from that exact final ABI.
+
+---
+
+# Phase 7 — Minimal Working Unity uGUI Product
+
+**Status:** NOT STARTED — prototype scaffolding exists, but phase is gated by Phase 6
+
+Current repository scaffolding:
+
+- `TaffyLayoutGroup.cs`
+- `TaffyLayoutItem.cs`
+- `TaffyNative.cs`
+
+These files are not considered Phase 7 completion.
+
+- [ ] P7.1 Production persistent managed/native context lifecycle.
+- [ ] P7.2 Stable mapping between RectTransforms and native node handles.
+- [ ] P7.3 Correct topology synchronization without rebuilding everything unnecessarily.
+- [ ] P7.4 Correct `CalculateLayoutInputHorizontal/Vertical` integration.
+- [ ] P7.5 Correct `SetLayoutHorizontal/Vertical` application.
+- [ ] P7.6 Report own min/preferred/flexible size through `SetLayoutInputForAxis`.
+- [ ] P7.7 Support nested Taffy layout groups.
+- [ ] P7.8 Preserve `LayoutElement` behavior/ignoreLayout semantics.
+- [ ] P7.9 Apply native geometry to RectTransform without replacing uGUI rendering/input components.
+- [ ] P7.10 Minimal Unity Edit Mode/Play Mode verification.
+
+---
+
+# Phase 8 — Production Flex / Block / Float / Measurement Unity Integration
+
+**Status:** NOT STARTED
+
+- [ ] P8.1 Complete Unity authoring for core size/min/max/box model.
+- [ ] P8.2 Complete Flex container authoring.
+- [ ] P8.3 Complete Flex item authoring.
+- [ ] P8.4 Block/FlowRoot/Float/Clear Unity authoring.
+- [ ] P8.5 Position/inset/overflow/box-sizing/direction/aspect integration.
+- [ ] P8.6 Managed measurement cache orchestration.
+- [ ] P8.7 TextMeshPro measurement adapter.
+- [ ] P8.8 Unity Text adapter where retained.
+- [ ] P8.9 Image/replaced-element measurement adapter.
+- [ ] P8.10 No managed callback during native Taffy computation.
+- [ ] P8.11 Measurement invalidation on text/font/size/style changes.
+- [ ] P8.12 Production regression tests for Flex/Block/Float/measurement behavior.
+
+---
+
+# Phase 9 — Complete Grid and Calc Unity Authoring
+
+**Status:** NOT STARTED
+**Note:** native Grid/Calc engine support is already implemented in Phase 1.
+
+- [ ] P9.1 Serializable Grid track/unit data model.
+- [ ] P9.2 Grid explicit row/column authoring.
+- [ ] P9.3 Auto/implicit track authoring.
+- [ ] P9.4 `fr`, minmax, min/max-content authoring.
+- [ ] P9.5 repeat/count/auto-fill/auto-fit authoring.
+- [ ] P9.6 named lines/spans.
+- [ ] P9.7 named template areas.
+- [ ] P9.8 grid-auto-flow modes.
+- [ ] P9.9 Grid item placement authoring.
+- [ ] P9.10 justify-items/justify-self/alignment authoring.
+- [ ] P9.11 Typed Calc authoring/resource lifecycle.
+- [ ] P9.12 Grid/Calc diagnostics and validation in Unity.
+
+---
+
+# Phase 10 — Responsive and Integration Hardening
+
+**Status:** NOT STARTED
+
+- [ ] P10.1 Responsive profile/breakpoint system.
+- [ ] P10.2 Intrinsic resize/CanvasScaler responsiveness.
+- [ ] P10.3 Safe-area integration.
+- [ ] P10.4 ScrollRect content/viewport bridge.
+- [ ] P10.5 ContentSizeFitter interaction rules.
+- [ ] P10.6 AspectRatioFitter interaction rules.
+- [ ] P10.7 Animation-driven dirty invalidation.
+- [ ] P10.8 Pixel rounding strategy.
+- [ ] P10.9 Layout rebuild-loop protection.
+- [ ] P10.10 Runtime override API where required.
+
+---
+
+# Phase 11 — Editor Tooling and Migration
+
+**Status:** NOT STARTED
+
+- [ ] P11.1 `TaffyLayoutGroup` custom inspector.
+- [ ] P11.2 `TaffyLayoutItem` custom inspector.
+- [ ] P11.3 Length/dimension/rect property drawers.
+- [ ] P11.4 Grid track/placement/area editor tooling.
+- [ ] P11.5 Scene-view layout visualization.
+- [ ] P11.6 Layout debugger/diagnostics window.
+- [ ] P11.7 HorizontalLayoutGroup migration.
+- [ ] P11.8 VerticalLayoutGroup migration.
+- [ ] P11.9 GridLayoutGroup migration where semantically safe.
+- [ ] P11.10 Prefab/Undo/serialized-data-safe migration behavior.
+- [ ] P11.11 Batch migration workflow.
+
+---
+
+# Phase 12 — Real Unity Platform Validation
+
+**Status:** NOT STARTED
+
+- [ ] P12.1 Unity 2021.3 LTS primary Editor validation.
+- [ ] P12.2 Selected Unity 2022.3 LTS compatibility validation.
+- [ ] P12.3 Selected Unity 6.0 compatibility validation.
+- [ ] P12.4 Windows x64 Unity Player validation.
+- [ ] P12.5 macOS Intel Unity Player validation.
+- [ ] P12.6 macOS Apple Silicon Unity Player validation.
+- [ ] P12.7 Android ARM64 Unity Player validation.
+- [ ] P12.8 iOS ARM64 Unity Player validation.
+- [ ] P12.9 WebGL Player validation.
+- [ ] P12.10 Linux validation if retained as advertised support.
+- [ ] P12.11 Edit Mode regression suite.
+- [ ] P12.12 Play Mode regression suite.
+- [ ] P12.13 Platform regression scenes.
+- [ ] P12.14 Advertise only targets that pass real Unity validation.
+
+---
+
+# Phase 13 — Performance and Reliability Hardening
+
+**Status:** NOT STARTED
+
+- [ ] P13.1 100-node benchmark.
+- [ ] P13.2 1,000-node benchmark.
+- [ ] P13.3 10,000-node benchmark/stress scenario.
+- [ ] P13.4 Native/managed allocation profiling.
+- [ ] P13.5 Dirty propagation/recompute profiling.
+- [ ] P13.6 Bulk ABI transfer profiling.
+- [ ] P13.7 Domain reload/context lifecycle stress.
+- [ ] P13.8 Repeated scene/prefab lifecycle stress.
+- [ ] P13.9 Native resource/memory leak checks.
+- [ ] P13.10 Error-path and panic-containment audit.
+- [ ] P13.11 Package/library load/startup checks.
+- [ ] P13.12 Performance documentation and known limits.
+
+---
+
+# Phase 14 — v1.0 Release
+
+**Status:** NOT STARTED
+
+- [ ] P14.1 Final compatibility matrix.
+- [ ] P14.2 Complete Getting Started documentation.
+- [ ] P14.3 Flexbox documentation.
+- [ ] P14.4 Grid/Calc documentation.
+- [ ] P14.5 LayoutElement/measurement/TMP documentation.
+- [ ] P14.6 ScrollRect/responsive integration documentation.
+- [ ] P14.7 Migration documentation.
+- [ ] P14.8 Platform-support documentation.
+- [ ] P14.9 Troubleshooting/diagnostics documentation.
+- [ ] P14.10 Samples/regression examples packaged.
+- [ ] P14.11 Third-party license/notices audit.
+- [ ] P14.12 Changelog/release notes.
+- [ ] P14.13 Git/UPM installation validation.
+- [ ] P14.14 Final package archive validation.
+- [ ] P14.15 Version/tag/release packaging.
+- [ ] P14.16 Publish v1.0 only after all release gates pass.
+
+---
+
+# Current Next Action
+
+The tracker is intentionally **not** advancing into Phase 5 or user-facing Unity feature work yet.
+
+The next real work is:
+
+1. obtain a local machine/environment containing the pinned Rust verification toolchain;
+2. run `python3 build/build.py verify-abi-rc` successfully on a clean tree;
+3. run the canonical Phase 4 host builds on Windows, macOS, and Linux;
+4. collect artifacts and run `python3 build/build.py verify-phase4`;
+5. mark P4.1–P4.10 complete only from real artifact evidence;
+6. then open Phase 5.

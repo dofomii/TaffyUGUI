@@ -43,23 +43,3 @@ python3 build/build.py verify-abi-rc
 ```
 
 On Windows, use the corresponding PowerShell bootstrap/verify scripts. The build driver refuses to fall back to a remote CI service.
-
-## Phase 4 pipeline hardening completed locally
-
-The local build driver now additionally enforces:
-
-- clean-source Phase 3 evidence before any Phase 4 build;
-- exact source-tree matching between evidence and artifacts;
-- canonical local host ownership for Windows/macOS/Linux target families, enforced by target host restrictions;
-- the complete 31-function public `tu_*` export set for every built artifact;
-- manifest schema 2 with artifact size, checksum, source revision/tree fingerprint, export fingerprint, target-specific architecture evidence, and toolchain evidence;
-- exact `SHA256SUMS` validation;
-- Windows PE/x64 proof even without `file`;
-- iOS device-ARM64 `lipo` evidence;
-- WebGL `emar`/`emnm` plus Wasm/LLVM-bitcode archive-member evidence;
-- Android toolchain evidence without leaking machine-local NDK paths;
-- macOS universal architecture/export evidence;
-- a build-driver contract self-test covering target assignment completeness and malformed iOS/WebGL evidence rejection;
-- a final `verify-phase4` gate that requires the complete multi-host artifact set and writes `dist/native/phase4-index.json` only after all target manifests agree.
-
-`python3 build/build.py static-gate` passes after these changes. The Phase 4 artifact tasks remain unchecked until the required Rust/platform toolchains can actually execute the builds locally.

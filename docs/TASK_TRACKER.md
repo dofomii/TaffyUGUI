@@ -9,7 +9,9 @@
 - **Taffy baseline:** exactly `0.13.0`
 - **Unity package minimum:** `2021.3`
 - **Next phase:** Phase 4 — Cross-Platform Native Builds and Artifact Staging
-- **Phase 4 may start only after:** `python3 build/build.py verify-abi-rc` passes on the local development machine.
+- **Phase 4 build pipeline:** hardened locally; artifact execution remains gated by Phase 3 evidence.
+- **Phase 4 may start only after:** `python3 build/build.py verify-abi-rc` passes on each local artifact-producing machine for byte-identical clean source content (same Git tree SHA).
+- **Current environment blocker:** this sandbox has no Rust/rustup/cbindgen or platform SDKs and blocks outbound binary downloads. This is an execution-environment limitation, not a reason to bypass the gate.
 
 ## Phase 3 gate
 
@@ -28,6 +30,21 @@
 ## Phase 4 — Cross-Platform Native Builds and Artifact Staging
 
 **Goal:** produce reproducible, locally verified native binaries before Unity plugin importer packaging work.
+
+### Phase 4 local build infrastructure
+
+- [x] Phase 4 builds require recorded local Phase 3 evidence from the exact clean source tree; the local commit SHA is also recorded for traceability.
+- [x] Windows/macOS/Linux canonical host ownership is explicit and enforced; `phase4-host` builds the targets assigned to that OS.
+- [x] Native verification checks the complete 31-function public `tu_*` export contract, not a subset.
+- [x] Artifact manifest schema records source revision/tree fingerprint, ABI, Taffy/Rust target, checksum, size, full export fingerprint, target-specific architecture evidence, and local toolchain evidence without machine-local SDK paths.
+- [x] `SHA256SUMS` is validated as part of staged-artifact verification.
+- [x] Windows architecture proof cannot silently degrade when `file` is unavailable; PE/x64 header tools are required instead.
+- [x] iOS archive verification requires device ARM64 `lipo -info` evidence.
+- [x] WebGL verification requires pinned Emscripten `emcc`/`emar`/`emnm` plus Wasm/LLVM-bitcode archive-member evidence.
+- [x] `verify-phase4` requires every target, same source-tree fingerprint, same ABI/export contract, and writes the final `dist/native/phase4-index.json`.
+- [x] Build-driver self-test proves canonical host assignments cover every required Phase 4 target and rejects malformed iOS/WebGL architecture evidence.
+- [x] One-command local host wrappers cover Windows and macOS/Linux execution, plus a local aggregation finalizer.
+- [x] Multi-host local build procedure is documented in `docs/PHASE4_PLATFORM_BUILDS.md`.
 
 - [ ] P4.1 Windows x64 DLL builds, architecture/export checks pass, manifest/checksum staged.
 - [ ] P4.2 macOS arm64 dylib builds and verifies.

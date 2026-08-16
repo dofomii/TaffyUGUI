@@ -34,7 +34,7 @@ tests = text("native/tests/native_verification.rs")
 header = text("include/taffy_ugui.h")
 managed = text("UnityPackage/Runtime/TaffyNative.cs")
 group = text("UnityPackage/Runtime/TaffyLayoutGroup.cs")
-build = text("build/build.py")
+build = text("build/build.py") + "\n" + "\n".join(text(str(path.relative_to(ROOT))) for path in sorted((ROOT / "build" / "driver_parts").glob("[0-9][0-9].py")))
 cbindgen = text("cbindgen.toml")
 
 require("TU_ABI_VERSION: u32 = 1" in version, "ABI-v1 version is not locked to 1")
@@ -47,13 +47,14 @@ require('cpp_compat = true' in cbindgen and 'style = "both"' in cbindgen, "cbind
 require("ABI-v1-RC" in lib and "ABI-v1-RC" in ffi, "native module docs still describe a pre-RC candidate")
 
 required_exports = [
-    "tu_get_abi_version", "tu_get_abi_stage", "tu_get_capabilities", "tu_get_taffy_version_packed",
-    "tu_context_create", "tu_context_destroy", "tu_context_clear", "tu_node_create", "tu_node_remove",
-    "tu_node_set_style", "tu_nodes_set_styles", "tu_node_set_children", "tu_nodes_set_children",
-    "tu_node_mark_dirty", "tu_node_is_dirty", "tu_node_set_measurement", "tu_nodes_set_measurements",
-    "tu_calc_create", "tu_calc_remove", "tu_node_set_grid_template", "tu_get_grid_info",
-    "tu_get_grid_track_sizes", "tu_get_grid_gutters", "tu_get_grid_items", "tu_compute_layout",
-    "tu_get_layout", "tu_get_layouts_bulk",
+    "tu_calc_create", "tu_calc_remove", "tu_compute_layout", "tu_context_clear",
+    "tu_context_create", "tu_context_destroy", "tu_copy_build_version", "tu_copy_last_error",
+    "tu_get_abi_stage", "tu_get_abi_version", "tu_get_build_version_length", "tu_get_capabilities",
+    "tu_get_grid_gutters", "tu_get_grid_info", "tu_get_grid_items", "tu_get_grid_track_sizes",
+    "tu_get_last_error_length", "tu_get_layout", "tu_get_layouts_bulk", "tu_get_taffy_version_packed",
+    "tu_node_create", "tu_node_is_dirty", "tu_node_mark_dirty", "tu_node_remove",
+    "tu_node_set_children", "tu_node_set_grid_template", "tu_node_set_measurement", "tu_node_set_style",
+    "tu_nodes_set_children", "tu_nodes_set_measurements", "tu_nodes_set_styles",
 ]
 for symbol in required_exports:
     require(re.search(rf'extern\s+"C"\s+fn\s+{re.escape(symbol)}\b', ffi) is not None, f"native FFI export missing: {symbol}")
@@ -77,7 +78,11 @@ for token in (
     "windows-x64", "x86_64-pc-windows-msvc", "macos-arm64", "aarch64-apple-darwin",
     "android-arm64", "aarch64-linux-android", "ios-arm64", "aarch64-apple-ios",
     "webgl", "wasm32-unknown-emscripten", "21.3.6528147", "2.0.19",
-    "require_abi_rc", "verify_symbols", "SHA256SUMS", "built_locally",
+    "require_abi_rc", "require_phase3_evidence", "verify_symbols", "PUBLIC_ABI_EXPORTS",
+    "PHASE4_HOST_TARGETS", "phase4_host", "verify_phase4", "phase4-index.json",
+    "source_tree", "SHA256SUMS", "built_locally", "public_exports_sha256",
+    "architecture_evidence", "validate_manifest_architecture_evidence", "phase4_driver_selftest",
+    "emar", "emnm", "lipo -info",
 ):
     require(token in build, f"local Phase 4 build contract missing token: {token}")
 require("api.github.com" not in build.lower() and "actions/" not in build.lower() and "github.run" not in build.lower(), "local build driver contains an executable GitHub/Actions dependency")
@@ -95,6 +100,12 @@ try:
     ast.parse(build)
 except SyntaxError as exc:
     errors.append(f"build/build.py syntax error: {exc}")
+
+# Phase 4 host wrappers must exist and invoke only the local build driver.
+for rel in ("scripts/phase4-build-host.sh", "scripts/phase4-build-host.ps1", "scripts/phase4-finalize.sh"):
+    wrapper = text(rel)
+    require("build/build.py" in wrapper, f"Phase 4 local wrapper does not invoke the build driver: {rel}")
+    require("github" not in wrapper.lower(), f"Phase 4 local wrapper must not depend on GitHub: {rel}")
 
 # No provider workflow is part of the local canonical project.
 workflow_dir = ROOT / ".github" / "workflows"

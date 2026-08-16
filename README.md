@@ -25,16 +25,17 @@ The complete Phase 3 gate runs rustfmt, Clippy, Rust tests, release build, cbind
 
 ## Phase 4 targets
 
+Phase 4 is a local multi-host build. Every artifact-producing machine must first pass `verify-abi-rc` on the exact same clean source commit.
+
 ```bash
 python3 build/build.py list-targets
-python3 build/build.py native windows-x64
-python3 build/build.py native macos-universal
-python3 build/build.py native android-arm64
-python3 build/build.py native ios-arm64
-python3 build/build.py native webgl
+python3 build/build.py phase4-status
+python3 build/build.py phase4-host
 ```
 
-Each target is ABI-gated, architecture-checked, export-checked, and staged under `dist/native/` with a manifest and SHA-256 checksum.
+Canonical ownership is Windows → Windows x64, macOS → macOS arm64/x64/universal + iOS ARM64, and Linux → Android ARM64 + WebGL. Individual targets can still be built with `python3 build/build.py native <target>`.
+
+Each target is ABI-gated, architecture-checked, checked against the **complete** public `tu_*` export set, and staged under `dist/native/` with a manifest and SHA-256 checksum. After collecting all local-host outputs, `python3 build/build.py verify-phase4` verifies same-source/same-ABI parity and writes `dist/native/phase4-index.json`. See [docs/PHASE4_PLATFORM_BUILDS.md](docs/PHASE4_PLATFORM_BUILDS.md).
 
 ## Unity package
 

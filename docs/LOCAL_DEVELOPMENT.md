@@ -67,26 +67,49 @@ If a prerequisite is absent, the command stops with an installation requirement.
 
 ## Phase 4 platform builds
 
-List the registered targets:
+Phase 4 is a local **multi-host** build. Every artifact-producing machine must use the byte-identical clean source tree and first run the complete `verify-abi-rc` gate; the build driver records local evidence and refuses Phase 4 builds without it.
+
+List targets/status:
 
 ```bash
 python3 build/build.py list-targets
+python3 build/build.py phase4-status
 ```
 
-Build one target:
+Build every target assigned to the current local OS directly:
+
+```bash
+python3 build/build.py phase4-host
+```
+
+Or use the full host wrapper, which bootstraps the project-local Rust toolchain, installs the canonical Rust target(s), reruns Phase 3, and then builds the assigned Phase 4 outputs:
+
+```text
+Windows: powershell -ExecutionPolicy Bypass -File scripts/phase4-build-host.ps1
+macOS/Linux: ./scripts/phase4-build-host.sh
+```
+
+Canonical host ownership is Windows → Windows x64, macOS → macOS arm64/x64/universal + iOS ARM64, Linux → Android ARM64 + WebGL. You can still build/deep-verify an individual target with:
 
 ```bash
 python3 build/build.py native <target>
+python3 build/build.py verify-native <target>
 ```
 
-The build driver supports Windows x64, macOS arm64/x64 and universal assembly, Android ARM64, iOS ARM64, and WebGL. Platform SDK/toolchain requirements are intentionally strict:
+Platform SDK/toolchain requirements are intentionally strict:
 
 - Android baseline: NDK r21d / revision `21.3.6528147`, API 21.
 - WebGL baseline: Emscripten `2.0.19` for the current Unity 2021.3 compatibility target.
 - iOS and macOS outputs must be built on macOS with Xcode tooling.
 - Windows MSVC output must be built on Windows.
 
-Verified artifacts are staged in `dist/native/<platform>/<architecture>/` with `manifest.json` and `SHA256SUMS`.
+After collecting all locally built target directories into one checkout, run:
+
+```bash
+python3 build/build.py verify-phase4
+```
+
+That final gate requires every advertised target, verifies checksums/manifests/source-tree parity/full ABI export parity, and writes `dist/native/phase4-index.json`. The checked-in `./scripts/phase4-finalize.sh` reruns the local Phase 3 proof before invoking it. See [PHASE4_PLATFORM_BUILDS.md](PHASE4_PLATFORM_BUILDS.md).
 
 ## Unity development boundary
 

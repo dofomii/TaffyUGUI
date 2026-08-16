@@ -1,0 +1,100 @@
+# TaffyUGUI Production C ABI Candidate
+
+This document describes the **Phase 2 ABI candidate** implemented by `native/src/ffi.rs` and mirrored in `include/taffy_ugui.h`.
+
+It is not the final ABI v1 promise. The interface remains an ABI candidate until the Phase 3 native verification gate locks an ABI-v1-RC and Phase 6 managed conformance later proves the final binary contract.
+
+## Binary rules
+
+- Every exported symbol uses the `tu_*` prefix and the C calling convention.
+- Persistent context, node, and resource identities are opaque `uint64_t` generation-safe handles.
+- Counts and capacities are `uint32_t`.
+- Status and enum values use explicit `int32_t` numeric values.
+- Geometry values use 32-bit `float`.
+- Temporary arrays are caller-owned `pointer + uint32_t count/capacity` buffers.
+- No Rust pointer, `usize`, Rust `bool`, `Vec`, `String`, reference, or Taffy `NodeId` is a persistent ABI value.
+- ABI booleans are `uint8_t` and accept only `0` or `1`.
+
+## Candidate version handshake
+
+`tu_get_abi_version()` remains `0` while the contract is an unfrozen candidate, and `tu_get_abi_stage()` reports the candidate stage. Callers must also inspect `tu_get_capabilities()` before assuming an optional feature is available.
+
+Phase 3 may lock this interface as an ABI-v1 release candidate after native verification; the final ABI v1 designation is owned by the Phase 6 managed-conformance freeze.
+
+## Error contract
+
+Every fallible `tu_*` operation returns a `TuStatus` numeric value. Expected invalid input is converted to a status rather than panicking.
+
+The last diagnostic for the calling thread is available through:
+
+- `tu_get_last_error_length()`;
+- `tu_copy_last_error(...)`.
+
+The diagnostic string is supplementary. Callers should branch on the stable numeric status rather than parse diagnostic text.
+
+On targets where unwinding is enabled, the candidate exports use a common `catch_unwind` guard so an unexpected Rust unwind does not cross the C boundary. Target-specific abort-only behavior remains a later platform-build concern and must be reflected by build/capability metadata before release.
+
+## Thread ownership
+
+Contexts live in a thread-local native registry because the selected Taffy 0.13 configuration is not treated as `Send`/`Sync`.
+
+A context must be created, used, and destroyed on its owner thread. A valid context handle used from another thread returns `TuStatus_WrongThread`; it is never rebound to a same-index context on that other thread.
+
+## Buffer ownership
+
+Input buffers and string views are borrowed only for the duration of a call. The native library does not retain caller array pointers or string pointers.
+
+For input arrays:
+
+- `count == 0` permits a null pointer;
+- `count > 0` requires a non-null pointer to at least `count` initialized entries.
+
+For output arrays:
+
+- capacity must be large enough for the requested result;
+- a non-zero required output requires a non-null output pointer;
+- `out_written` must point to writable `uint32_t` storage.
+
+## Style values
+
+`TuValue` is a typed length descriptor. The permitted kinds depend on the destination field:
+
+- dimensions and flex basis: Auto, Length, Percent, Calc;
+- margin/inset: Auto, Length, Percent, Calc;
+- padding/border/gap: zero/Auto-as-zero, Length, Percent, Calc.
+
+Length-like values that must be non-negative are validated before entering Taffy. Invalid enums, non-finite values, malformed booleans, and invalid handles return defined errors.
+
+## Measurement records
+
+Measurement data is uploaded and cached; Rust never performs a synchronous managed callback per measured node.
+
+A `TuMeasurement` contains min-content, max-content, preferred dimensions, optional intrinsic aspect ratio/replaced-element metadata, and optional width-dependent samples. Nested sample storage is caller-owned only for the duration of the upload call.
+
+Passing a null measurement pointer to `tu_node_set_measurement` clears the cached record.
+
+## Calc resources
+
+Calc is represented as typed native resources, never CSS strings. `TuCalcSpec` supports length, percent, add, subtract, scale, min, max, and clamp expressions.
+
+Composite expressions may reference only currently live Calc handles from the same context. A Calc resource that is referenced by another active Calc expression cannot be removed first.
+
+**Lifetime rule:** callers must not remove a Calc resource while a node style or Grid track still refers to that resource. The opaque pointer used internally by Taffy remains memory-safe after removal, but the removed resource no longer has valid layout semantics.
+
+## Grid resources
+
+`TuGridTemplate` uploads explicit/implicit tracks, repeat definitions, named lines, and named areas. Track descriptors support auto, length, percentage, fraction, minmax, min-content, max-content, Calc, and repeat forms. Min/max components can themselves use Calc handles where Taffy supports them.
+
+Detailed Grid output is queried after layout through the Grid summary, track-size, gutter, and item-placement calls.
+
+## Layout computation
+
+`tu_compute_layout(context, root, width, height)` performs one native layout computation for the requested root/available-size generation. Finite non-negative values are definite available space; positive infinity represents max-content available space. NaN, negative values, and negative infinity are rejected.
+
+Results are copied through `tu_get_layout` or `tu_get_layouts_bulk` and include geometry plus content and scroll extents.
+
+## Header ownership
+
+`cbindgen.toml` contains an explicit production allowlist and `python build/build.py header` is the authoritative header-generation command.
+
+The checked-in `include/taffy_ugui.h` in this local Phase 2 work is a manually synchronized candidate mirror because this execution environment has no `cbindgen`. It is compiled as both C11 and C++17 by the static preflight. It must be regenerated with cbindgen and diff-checked in a Rust/cbindgen-enabled environment before P2.13 can be marked verified.

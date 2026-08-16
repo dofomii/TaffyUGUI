@@ -37,7 +37,13 @@ def cargo_command(command: str, *args: str) -> None:
     run("cargo", command, "--manifest-path", str(MANIFEST), *args)
 
 
+def preflight() -> None:
+    run(sys.executable, str(ROOT / "scripts" / "phase1_static_preflight.py"))
+    run(sys.executable, str(ROOT / "scripts" / "phase2_static_preflight.py"))
+
+
 def quality() -> None:
+    preflight()
     cargo_command("fmt", "--all", "--", "--check")
     cargo_command("clippy", "--locked", "--all-targets", "--", "-D", "warnings")
     cargo_command("test", "--locked")
@@ -72,7 +78,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build and verify TaffyUGUI")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("quality", help="Run fmt, Clippy, tests, and host release build")
+    sub.add_parser("preflight", help="Run static Phase 1/2 architecture and ABI checks")
+    sub.add_parser("quality", help="Run static preflight, fmt, Clippy, tests, and host release build")
     sub.add_parser("header", help="Generate include/taffy_ugui.h with cbindgen")
 
     native = sub.add_parser("native", help="Build a native target")
@@ -94,7 +101,9 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    if args.command == "quality":
+    if args.command == "preflight":
+        preflight()
+    elif args.command == "quality":
         quality()
     elif args.command == "header":
         header()

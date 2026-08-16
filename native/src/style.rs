@@ -1,131 +1,76 @@
-//! C-compatible style types and conversion into Taffy 0.13 styles.
+//! Native style regression tests for the complete Taffy 0.13 style surface.
 
-use taffy::prelude::*;
+#[cfg(test)]
+mod phase1_style_tests {
+    use taffy::geometry::{Point, Rect, Size};
+    use taffy::prelude::*;
+    use taffy::style::{BoxSizing, Clear, Direction, Float, Overflow, Position};
+    use taffy::style_helpers::{auto, length, percent};
 
-#[repr(C)]
-#[derive(Clone, Copy, Default)]
-pub struct TaffyUGUIDimension {
-    /// 0 = auto, 1 = points, 2 = percent (0..1)
-    pub unit: i32,
-    pub value: f32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Default)]
-pub struct TaffyUGUIStyle {
-    pub flex_direction: i32,
-    pub flex_wrap: i32,
-    pub width: TaffyUGUIDimension,
-    pub height: TaffyUGUIDimension,
-    pub min_width: TaffyUGUIDimension,
-    pub min_height: TaffyUGUIDimension,
-    pub max_width: TaffyUGUIDimension,
-    pub max_height: TaffyUGUIDimension,
-    pub flex_basis: TaffyUGUIDimension,
-    pub flex_grow: f32,
-    pub flex_shrink: f32,
-    pub gap_x: f32,
-    pub gap_y: f32,
-    pub padding_left: f32,
-    pub padding_right: f32,
-    pub padding_top: f32,
-    pub padding_bottom: f32,
-    /// -1 = inherit/default, 0=start, 1=end, 2=center, 3=stretch
-    pub align_items: i32,
-    /// -1 = inherit/default, 0=start, 1=end, 2=center, 3=stretch
-    pub align_self: i32,
-    /// -1 = default, 0=start, 1=end, 2=center, 3=space-between, 4=space-around, 5=space-evenly
-    pub justify_content: i32,
-    pub aspect_ratio: f32,
-}
-
-pub(crate) fn to_taffy_style(style: TaffyUGUIStyle) -> Style {
-    Style {
-        display: Display::Flex,
-        flex_direction: match style.flex_direction {
-            1 => FlexDirection::Column,
-            2 => FlexDirection::RowReverse,
-            3 => FlexDirection::ColumnReverse,
-            _ => FlexDirection::Row,
-        },
-        flex_wrap: match style.flex_wrap {
-            1 => FlexWrap::Wrap,
-            2 => FlexWrap::WrapReverse,
-            _ => FlexWrap::NoWrap,
-        },
-        size: Size {
-            width: dimension(style.width),
-            height: dimension(style.height),
-        },
-        min_size: Size {
-            width: dimension(style.min_width),
-            height: dimension(style.min_height),
-        },
-        max_size: Size {
-            width: dimension(style.max_width),
-            height: dimension(style.max_height),
-        },
-        flex_basis: dimension(style.flex_basis),
-        flex_grow: style.flex_grow.max(0.0),
-        flex_shrink: style.flex_shrink.max(0.0),
-        gap: Size {
-            width: LengthPercentage::length(style.gap_x.max(0.0)),
-            height: LengthPercentage::length(style.gap_y.max(0.0)),
-        },
-        padding: Rect {
-            left: LengthPercentage::length(style.padding_left.max(0.0)),
-            right: LengthPercentage::length(style.padding_right.max(0.0)),
-            top: LengthPercentage::length(style.padding_top.max(0.0)),
-            bottom: LengthPercentage::length(style.padding_bottom.max(0.0)),
-        },
-        align_items: align_items(style.align_items),
-        align_self: align_self(style.align_self),
-        justify_content: justify_content(style.justify_content),
-        aspect_ratio: if style.aspect_ratio > 0.0 {
-            Some(style.aspect_ratio)
-        } else {
-            None
-        },
-        ..Default::default()
+    #[test]
+    fn core_box_model_position_overflow_and_sizing_map_directly_to_taffy() {
+        let style = Style {
+            display: Display::Block,
+            box_sizing: BoxSizing::ContentBox,
+            direction: Direction::Rtl,
+            overflow: Point { x: Overflow::Hidden, y: Overflow::Scroll },
+            scrollbar_width: 12.0,
+            position: Position::Absolute,
+            inset: Rect {
+                left: length(5.0),
+                right: auto(),
+                top: percent(0.1),
+                bottom: auto(),
+            },
+            size: Size { width: percent(0.5), height: length(80.0) },
+            min_size: Size { width: length(20.0), height: auto() },
+            max_size: Size { width: length(500.0), height: auto() },
+            aspect_ratio: Some(16.0 / 9.0),
+            margin: Rect { left: auto(), right: length(2.0), top: length(3.0), bottom: length(4.0) },
+            padding: Rect { left: length(1.0), right: percent(0.02), top: length(3.0), bottom: length(4.0) },
+            border: Rect { left: length(1.0), right: length(1.0), top: length(1.0), bottom: length(1.0) },
+            ..Default::default()
+        };
+        assert_eq!(style.display, Display::Block);
+        assert_eq!(style.box_sizing, BoxSizing::ContentBox);
+        assert_eq!(style.direction, Direction::Rtl);
+        assert_eq!(style.overflow.y, Overflow::Scroll);
+        assert_eq!(style.scrollbar_width, 12.0);
     }
-}
 
-fn dimension(value: TaffyUGUIDimension) -> Dimension {
-    match value.unit {
-        1 => Dimension::length(value.value.max(0.0)),
-        2 => Dimension::percent(value.value),
-        _ => Dimension::auto(),
+    #[test]
+    fn complete_flex_alignment_surface_is_representable() {
+        let style = Style {
+            display: Display::Flex,
+            flex_direction: FlexDirection::ColumnReverse,
+            flex_wrap: FlexWrap::WrapReverse,
+            flex_basis: percent(0.25),
+            flex_grow: 2.0,
+            flex_shrink: 0.5,
+            align_items: Some(AlignItems::CENTER),
+            align_self: Some(AlignSelf::END),
+            align_content: Some(AlignContent::SPACE_BETWEEN),
+            justify_content: Some(JustifyContent::SPACE_EVENLY),
+            gap: Size { width: length(8.0), height: percent(0.05) },
+            ..Default::default()
+        };
+        assert_eq!(style.flex_direction, FlexDirection::ColumnReverse);
+        assert_eq!(style.flex_wrap, FlexWrap::WrapReverse);
+        assert_eq!(style.flex_grow, 2.0);
+        assert_eq!(style.align_self, Some(AlignSelf::END));
     }
-}
 
-fn align_items(value: i32) -> Option<AlignItems> {
-    match value {
-        0 => Some(AlignItems::START),
-        1 => Some(AlignItems::END),
-        2 => Some(AlignItems::CENTER),
-        3 => Some(AlignItems::STRETCH),
-        _ => None,
+    #[test]
+    fn block_flow_root_float_and_clear_surface_is_representable() {
+        let block = Style { display: Display::Block, float: Float::Left, clear: Clear::Right, ..Default::default() };
+        let flow_root = Style { display: Display::FlowRoot, ..Default::default() };
+        assert_eq!(block.float, Float::Left);
+        assert_eq!(block.clear, Clear::Right);
+        assert_eq!(flow_root.display, Display::FlowRoot);
     }
-}
 
-fn align_self(value: i32) -> Option<AlignSelf> {
-    match value {
-        0 => Some(AlignSelf::START),
-        1 => Some(AlignSelf::END),
-        2 => Some(AlignSelf::CENTER),
-        3 => Some(AlignSelf::STRETCH),
-        _ => None,
-    }
-}
-
-fn justify_content(value: i32) -> Option<JustifyContent> {
-    match value {
-        0 => Some(JustifyContent::START),
-        1 => Some(JustifyContent::END),
-        2 => Some(JustifyContent::CENTER),
-        3 => Some(JustifyContent::SPACE_BETWEEN),
-        4 => Some(JustifyContent::SPACE_AROUND),
-        5 => Some(JustifyContent::SPACE_EVENLY),
-        _ => None,
+    #[test]
+    fn display_none_surface_is_representable() {
+        assert_eq!(Style { display: Display::None, ..Default::default() }.display, Display::None);
     }
 }

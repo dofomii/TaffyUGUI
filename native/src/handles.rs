@@ -1,10 +1,7 @@
 //! Native handle definitions and fixed-width slot/generation encoding.
 //!
-//! Context and node handles are already production-shaped internally. ABI version 0 still
-//! exposes a pointer-shaped context token and raw `u64` node values only to preserve the
-//! bootstrap managed scaffold until the production C ABI is introduced.
-
-pub(crate) type BootstrapNodeHandle = u64;
+//! Context, node, and resource handles are production-shaped fixed-width values. The Phase 2
+//! C ABI exposes only their opaque `u64` representation; slot/generation details stay private.
 
 const INDEX_MASK: u64 = u32::MAX as u64;
 
@@ -32,6 +29,8 @@ fn decode_parts(raw: u64) -> Option<(u32, u32)> {
 pub(crate) struct ContextHandle(u64);
 
 impl ContextHandle {
+    pub(crate) const fn from_raw(raw: u64) -> Self { Self(raw) }
+
     pub(crate) fn from_parts(index: u32, generation: u32) -> Self {
         Self(encode_parts(index, generation))
     }
@@ -40,7 +39,6 @@ impl ContextHandle {
         decode_parts(self.0)
     }
 
-    #[cfg(test)]
     pub(crate) const fn raw(self) -> u64 {
         self.0
     }
@@ -67,9 +65,31 @@ impl NodeHandle {
     }
 }
 
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct ResourceHandle(u64);
+
+impl ResourceHandle {
+    pub(crate) const fn from_raw(raw: u64) -> Self {
+        Self(raw)
+    }
+
+    pub(crate) const fn raw(self) -> u64 {
+        self.0
+    }
+
+    pub(crate) fn from_parts(index: u32, generation: u32) -> Self {
+        Self(encode_parts(index, generation))
+    }
+
+    pub(crate) fn parts(self) -> Option<(u32, u32)> {
+        decode_parts(self.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ContextHandle, NodeHandle};
+    use super::{ContextHandle, NodeHandle, ResourceHandle};
 
     #[test]
     fn context_handle_round_trips_parts() {
@@ -87,8 +107,16 @@ mod tests {
     }
 
     #[test]
+    fn resource_handle_round_trips_parts_and_raw_value() {
+        let handle = ResourceHandle::from_parts(3, 11);
+        assert_eq!(ResourceHandle::from_raw(handle.raw()), handle);
+        assert_eq!(handle.parts(), Some((3, 11)));
+    }
+
+    #[test]
     fn zero_handles_are_invalid() {
         assert_eq!(ContextHandle(0).parts(), None);
         assert_eq!(NodeHandle::from_raw(0).parts(), None);
+        assert_eq!(ResourceHandle::from_raw(0).parts(), None);
     }
 }

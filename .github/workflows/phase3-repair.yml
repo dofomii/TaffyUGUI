@@ -43,18 +43,11 @@ jobs:
 
           workflow = Path(".github/workflows/native-ci.yml")
           text = workflow.read_text(encoding="utf-8")
-          replacements = {
-              "run: cargo check --locked --manifest-path native/Cargo.toml --all-targets":
-                  "run: cargo +1.82.0 check --locked --manifest-path native/Cargo.toml --all-targets",
-              "run: cargo test --locked --manifest-path native/Cargo.toml":
-                  "run: cargo +1.82.0 test --locked --manifest-path native/Cargo.toml",
-          }
-          for old, new in replacements.items():
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"expected exactly one MSRV command {old!r}, found {count}")
-              text = text.replace(old, new)
-          workflow.write_text(text, encoding="utf-8")
+          old = "      - name: Check MSRV\n        run: cargo check --locked --manifest-path native/Cargo.toml --all-targets\n      - name: Test MSRV\n        run: cargo test --locked --manifest-path native/Cargo.toml\n"
+          new = "      - name: Check MSRV\n        run: cargo +1.82.0 check --locked --manifest-path native/Cargo.toml --all-targets\n      - name: Test MSRV\n        run: cargo +1.82.0 test --locked --manifest-path native/Cargo.toml\n"
+          if text.count(old) != 1:
+              raise SystemExit(f"expected exactly one MSRV job block, found {text.count(old)}")
+          workflow.write_text(text.replace(old, new), encoding="utf-8")
           PY
       - name: Canonical Rust formatting
         run: cargo fmt --manifest-path native/Cargo.toml --all

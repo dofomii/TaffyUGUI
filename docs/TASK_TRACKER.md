@@ -249,7 +249,7 @@ Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact
 
 # Phase 4 — Cross-Platform Native Builds and Artifact Staging
 
-**Status:** ACTIVE INFRASTRUCTURE / ARTIFACT EXECUTION BLOCKED
+**Status:** ACTIVE / ANDROID ARM64 ACCEPTED / REMAINING ARTIFACTS BLOCKED OR PENDING
 
 **Goal:** produce reproducible native libraries from ABI-v1-RC before Unity plugin payload packaging.
 
@@ -276,12 +276,14 @@ Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact
 - [ ] P4.2 macOS ARM64 `libtaffy_ugui.dylib` builds and verifies.
 - [ ] P4.3 macOS x64 `libtaffy_ugui.dylib` builds and verifies.
 - [ ] P4.4 macOS universal dylib assembles and verifies both slices.
-- [ ] P4.5 Android ARM64 `libtaffy_ugui.so` builds with NDK r21d `21.3.6528147`, API 21, and verifies.
+- [x] P4.5 Android ARM64 `libtaffy_ugui.so` builds with NDK r21d `21.3.6528147`, API 21, and verifies.
 - [ ] P4.6 iOS ARM64 `libtaffy_ugui.a` builds and verifies as a device ARM64 archive.
 - [ ] P4.7 WebGL `libtaffy_ugui.a` builds with Emscripten `2.0.19` and verifies.
 - [ ] P4.8 Every artifact has accepted `manifest.json` + `SHA256SUMS`.
 - [ ] P4.9 Every target exposes the same required ABI export set.
 - [ ] P4.10 Run final `python3 build/build.py verify-phase4` and produce `dist/native/phase4-index.json`.
+
+**Current WebGL blocker:** the pinned Emscripten 2.0.19 LLVM 13 linker aborts on Rust 1.97.1 WebAssembly runtime objects (`unknown symbol kind`). This is a toolchain compatibility decision, not an uninstalled dependency.
 
 ### Phase 4 exit gate
 

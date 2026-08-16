@@ -1,8 +1,8 @@
 # Phase 4 — Local Cross-Platform Native Builds
 
 **Infrastructure status:** COMPLETE
-**Artifact status:** 0/7 required native target artifacts accepted
-**Phase gate:** OPEN / BLOCKED by unavailable Phase 4 platform toolchains and required real artifacts
+**Artifact status:** 1/7 required native target artifacts accepted (Android ARM64)
+**Phase gate:** OPEN / BLOCKED by the WebGL compiler/linker compatibility decision, unavailable Windows/macOS hosts, and required remaining artifacts
 
 Phase 4 is a **local multi-host release build**, not a GitHub Actions workflow. GitHub may store source backups, but it is not a build or verification authority.
 
@@ -108,6 +108,8 @@ dist/native/ios/arm64/libtaffy_ugui.a
 - `wasm32-unknown-emscripten`
 - Emscripten **2.0.19**, matching the current Unity 2021.3 baseline
 - `emcc`, `emar`, and the bundled `llvm-nm` from that toolchain; an archive member must identify as WebAssembly/Wasm or LLVM bitcode
+
+**Current verified blocker:** Emscripten 2.0.19's LLVM 13 `wasm-ld` aborts with `unknown symbol kind` when it links Rust 1.97.1 WebAssembly runtime archives. The failure remains when the crate is built with `panic=abort`, because Rust's runtime still supplies an unwind archive. Do not stage a substitute archive until the project explicitly selects and Unity-validates either a newer Emscripten baseline or a WebGL-specific Rust compatibility toolchain.
 
 Output:
 

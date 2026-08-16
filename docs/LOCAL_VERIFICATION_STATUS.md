@@ -1,6 +1,6 @@
 # Local Verification Status
 
-**Date:** 2026-08-16
+**Date:** 2026-08-17
 
 This document records only checks executed in the local project environment. Remote CI results are intentionally excluded.
 
@@ -27,13 +27,14 @@ This document records only checks executed in the local project environment. Rem
 - Host release build of `libtaffy_ugui.so`.
 - Pinned cbindgen public-header regeneration/drift check.
 - Linked C11 and C++17 ABI smoke programs against the host library.
+- Android NDK r21d (`21.3.6528147`) and Emscripten `2.0.19` installed project-locally under ignored `.toolchain` paths.
+- Android ARM64 release build staged and re-verified with `python3 build/build.py verify-native android-arm64`: ELF AArch64 architecture, complete 31-function ABI export set, checksum, and manifest accepted.
 
-## Not executable on this host yet
+## Not yet accepted on this host
 
-The local host does not have the Phase 4 Android/WebGL SDKs or the non-Linux artifact hosts. Therefore the following checks are deliberately **not claimed as passed here**:
+The Linux SDK prerequisites are installed, but the following checks are deliberately **not claimed as passed here**:
 
-- Android ARM64 build: requires Android NDK r21d (`21.3.6528147`), API 21, and the Rust target.
-- WebGL build: requires Emscripten `2.0.19` and the Rust target.
+- WebGL build: Emscripten `2.0.19`'s LLVM 13 linker aborts with `unknown symbol kind` when linking Rust 1.97.1 WebAssembly runtime objects, including with `panic=abort`. A compatibility-baseline decision is required before this artifact can be honestly accepted.
 - Windows x64, macOS, and iOS builds: require their assigned Windows/macOS hosts.
 - Unity Editor compilation / EditMode / PlayMode tests.
 

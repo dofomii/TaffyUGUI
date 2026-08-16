@@ -1,6 +1,6 @@
 # TaffyUGUI Project Status
 
-**Status date:** 2026-08-16
+**Status date:** 2026-08-17
 **Canonical workflow:** local development, local build, local verification. GitHub is backup storage only.
 **Implementation baseline audited before this documentation repair:** local Phase 4 infrastructure state at commit `1db105b69d50c8319dfc88fac34396b4eb66b8d0`. Documentation-only commits after that point do not change the implementation status described here.
 
@@ -14,10 +14,10 @@ The project is currently in **Phase 4 (cross-platform native artifact production
 - Phase 1 native engine implementation: **complete**.
 - Phase 2 production C ABI implementation: **complete**.
 - Phase 3 ABI/verification gate: **complete** on the local Linux host.
-- Phase 4 build/staging infrastructure: **complete**; real platform artifacts are **not yet produced**.
+- Phase 4 build/staging infrastructure: **complete**; Android ARM64 is built and locally accepted, while the remaining targets are pending.
 - Phase 5 and later product/package phases: **not started**, except for explicitly documented scaffolding that was implemented early.
 
-The local Linux host can run the full compiled Phase 3 gate. Phase 4 artifact production remains blocked until each assigned platform host has its required SDK/toolchain and produces its real artifact.
+The local Linux host can run the full compiled Phase 3 gate and has staged a real Android ARM64 artifact. Phase 4 remains incomplete until every assigned host produces its required artifact from the same clean source tree.
 
 ## Progress model
 
@@ -41,20 +41,21 @@ The local provider-independent gate currently proves:
 - the current x86_64 ABI size probe matches the managed/native contract (`TuValue=16`, `TuGridPlacement=32`, `TuStyle=632`, `TuLayout=48`, `TuGridTrack=72`, `TuGridTemplate=104`);
 - Phase 4 target definitions, host ownership, architecture validators, checksum/manifests, and final aggregation logic are internally consistent.
 - The complete Phase 3 suite passes locally: formatting, Clippy with warnings denied, 44 Rust unit/integration tests, release build, cbindgen header-drift check, and linked C11/C++17 ABI smoke executables.
+- Android ARM64 `libtaffy_ugui.so` has been built with NDK r21d (`21.3.6528147`), API 21, and the pinned Rust target; its ELF architecture, 31 ABI exports, checksum, and manifest were locally re-verified.
 
 See `LOCAL_VERIFICATION_STATUS.md` for the exact distinction between passed and unavailable checks.
 
 ## Current blockers
 
-Phase 3 is no longer the blocker. The remaining Phase 4 prerequisites are platform-specific:
+Phase 3 is no longer the blocker. The remaining Phase 4 work is platform-specific:
 
-- Linux: Android NDK r21d (`21.3.6528147`), API 21; Emscripten `2.0.19`; and the matching Rust targets.
+- Linux WebGL: Emscripten `2.0.19` (LLVM 13) crashes with `unknown symbol kind` while linking Rust 1.97.1 WebAssembly runtime objects. This is a verified compiler/linker incompatibility, not a missing SDK.
 - Windows: an MSVC-capable Windows host for Windows x64.
 - macOS: Xcode tooling for macOS arm64/x64/universal and iOS arm64.
 
 ## Next authoritative action
 
-1. Provision the Linux Phase 4 SDKs/targets, then build Android ARM64 and WebGL from the Phase-3-verified source.
+1. Decide the supported WebGL compatibility path: update the Emscripten baseline after Unity compatibility validation, or explicitly allow a WebGL-specific Rust compatibility toolchain.
 2. Build Windows x64 on Windows and macOS/iOS targets on macOS from the same source tree.
-3. Collect the target directories and run `python3 build/build.py verify-phase4`.
+3. Collect all target directories and run `python3 build/build.py verify-phase4`.
 4. Only then mark Phase 4 complete and begin Phase 5 Unity-ready native payload staging.

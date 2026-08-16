@@ -171,7 +171,14 @@ def ensure_target_installed(triple: str) -> None:
 def find_android_ndk() -> Path:
     raw = os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")
     if not raw:
-        raise SystemExit(f"ANDROID_NDK_HOME must point to Unity-compatible Android NDK r21d ({ANDROID_NDK_REVISION}).")
+        local_ndk = ROOT / ".toolchain" / "android-ndk-r21d"
+        if (local_ndk / "source.properties").is_file():
+            raw = str(local_ndk)
+    if not raw:
+        raise SystemExit(
+            f"ANDROID_NDK_HOME must point to Unity-compatible Android NDK r21d ({ANDROID_NDK_REVISION}), "
+            "or install it at .toolchain/android-ndk-r21d."
+        )
     ndk = Path(raw).resolve()
     props = ndk / "source.properties"
     if not props.exists():

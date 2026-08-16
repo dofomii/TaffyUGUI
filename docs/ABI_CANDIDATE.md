@@ -1,8 +1,8 @@
 # TaffyUGUI Production C ABI Candidate
 
-This document describes the **Phase 2 ABI candidate** implemented by `native/src/ffi.rs` and mirrored in `include/taffy_ugui.h`.
+This document describes the production C ABI implemented by `native/src/ffi.rs` and mirrored by the authoritative cbindgen output in `include/taffy_ugui.h`.
 
-It is not the final ABI v1 promise. The interface remains an ABI candidate until the Phase 3 native verification gate locks an ABI-v1-RC and Phase 6 managed conformance later proves the final binary contract.
+The complete Phase 3 native verification gate has passed and the interface is locked as **ABI-v1-RC (version 1, stage 1)** for cross-platform native compilation. This is still not the final ABI v1 promise: Phase 6 managed conformance must prove the P/Invoke binary contract before final ABI v1 is frozen and every native artifact is rebuilt.
 
 ## Binary rules
 
@@ -15,11 +15,11 @@ It is not the final ABI v1 promise. The interface remains an ABI candidate until
 - No Rust pointer, `usize`, Rust `bool`, `Vec`, `String`, reference, or Taffy `NodeId` is a persistent ABI value.
 - ABI booleans are `uint8_t` and accept only `0` or `1`.
 
-## Candidate version handshake
+## ABI-v1-RC version handshake
 
-`tu_get_abi_version()` remains `0` while the contract is an unfrozen candidate, and `tu_get_abi_stage()` reports the candidate stage. Callers must also inspect `tu_get_capabilities()` before assuming an optional feature is available.
+`tu_get_abi_version()` reports `1` and `tu_get_abi_stage()` reports `1`, identifying the verified **ABI-v1-RC** contract used by Phase 4 platform builds. Callers must also inspect `tu_get_capabilities()` before assuming an optional feature is available.
 
-Phase 3 may lock this interface as an ABI-v1 release candidate after native verification; the final ABI v1 designation is owned by the Phase 6 managed-conformance freeze.
+The RC lock means all Phase 4 artifacts must expose this same binary contract. Final ABI v1 remains owned by Phase 6 managed conformance and the subsequent full native rebuild.
 
 ## Error contract
 
@@ -97,7 +97,7 @@ Results are copied through `tu_get_layout` or `tu_get_layouts_bulk` and include 
 
 `cbindgen.toml` contains an explicit production allowlist and `python build/build.py header` is the authoritative header-generation command.
 
-The checked-in `include/taffy_ugui.h` in this local Phase 2 work is a manually synchronized candidate mirror because this execution environment has no `cbindgen`. It is compiled as both C11 and C++17 by the static preflight. It must be regenerated with cbindgen and diff-checked in a Rust/cbindgen-enabled environment before P2.13 can be marked verified.
+The checked-in `include/taffy_ugui.h` is authoritative cbindgen output. CI installs pinned cbindgen `0.29.2`, regenerates the header, fails on drift, and compiles the consumer surface as both C11 and C++17 before the ABI-RC gate can pass.
 
 ## Phase 3 verification and RC lock
 

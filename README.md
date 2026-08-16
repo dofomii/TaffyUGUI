@@ -14,7 +14,7 @@ This software is provided **"AS IS", without warranty or guarantee of any kind**
 
 ## Status
 
-**Active native engine development.** Phase 0 — Rust Project and Toolchain Foundation is complete. The formal tracker remains in **Phase 1 stabilization — Complete Rust/Taffy 0.13 Engine** because the mandatory Rust verification gate cannot run in the current detached environment. By explicit project-owner direction, the complete **Phase 2 production C ABI candidate implementation has also been prepared locally** without formally advancing the phase gate. User-facing Unity feature development remains intentionally gated until the native verification, cross-platform ABI release candidate, managed ABI conformance, final ABI v1 freeze, and native artifact rebuild are complete.
+**Active native engine development.** Phases 0–3 are complete and verified. The Rust/Taffy 0.13 engine, production fixed-width C ABI, authoritative generated C/C++ header, golden/safety/lifecycle suites, host release builds, true Rust 1.82 MSRV lane, cbindgen drift check, and linked C11/C++17 smoke tests are green. The native interface is locked as **ABI-v1-RC (version 1, stage 1)** and **Phase 4 — Cross-Platform Native Compilation is active**. Windows x64, macOS universal, and iOS ARM64 native RC artifacts are verified in CI. Android ARM64 and WebGL remain active Phase 4 compatibility work. User-facing Unity feature development remains gated until managed ABI conformance freezes final ABI v1 and all native artifacts are rebuilt.
 
 Current fixed baseline:
 
@@ -24,7 +24,7 @@ Current fixed baseline:
 - primary Unity baseline `2021.3 LTS`.
 - Android primary ABI `arm64-v8a`, using Unity 2021.3-compatible NDK r21d.
 - Unity 2021.3 WebGL toolchain baseline: bundled/matched Emscripten 2.0.19.
-- current production `tu_*` ABI candidate reports version `0` while unfrozen; final ABI v1 is frozen only after managed conformance testing.
+- current production `tu_*` interface is **ABI-v1-RC**, version `1`, stage `1`; final ABI v1 is frozen only after managed conformance testing in Phase 6.
 
 The normative engineering decisions are in **[docs/PROJECT_DECISIONS.md](docs/PROJECT_DECISIONS.md)**. If another planning document ever appears to conflict with that file, `PROJECT_DECISIONS.md` is the controlling contract until the conflict is corrected.
 

@@ -1,9 +1,9 @@
 # TaffyUGUI — Development Task Tracker
 
-**Purpose:** Single operational source of truth for current progress, next task, blockers, phase gates, and regression obligations.  
-**Development model:** Native engine first; managed ABI proof second; user-facing Unity features only after frozen ABI v1 artifacts are rebuilt.  
-**Normative decisions:** [PROJECT_DECISIONS.md](PROJECT_DECISIONS.md)  
-**Master plan:** [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)  
+**Purpose:** Single operational source of truth for current progress, next task, blockers, phase gates, and regression obligations.
+**Development model:** Native engine first; managed ABI proof second; user-facing Unity features only after frozen ABI v1 artifacts are rebuilt.
+**Normative decisions:** [PROJECT_DECISIONS.md](PROJECT_DECISIONS.md)
+**Master plan:** [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
 **Native build contract:** [NATIVE_LIBRARY_BUILD_PLAN.md](NATIVE_LIBRARY_BUILD_PLAN.md)
 
 ---
@@ -81,14 +81,17 @@ No user-facing Unity layout feature work begins before Phase 6 freezes ABI v1 an
 
 # 3. Current state
 
-**Current phase:** Phase 1 — Complete Rust/Taffy 0.13 Engine  
-**Phase state:** IN PROGRESS  
-**Current dependency baseline:** Taffy `0.13.0` exact pin  
-**Project MSRV:** Rust `1.82.0`  
-**Pinned normal/release toolchain:** Rust `1.97.1`  
-**Bootstrap ABI:** `0` (explicitly unstable)  
-**Unity feature development:** PAUSED  
-**NEXT TASK:** **P1.1 — implement the production context registry/arena.**
+**Current phase:** Phase 4 — Cross-Platform Native Compilation (ABI RC)
+**Phase state:** IN PROGRESS
+**Current dependency baseline:** Taffy `0.13.0` exact pin
+**Project MSRV:** Rust `1.82.0`
+**Pinned normal/release toolchain:** Rust `1.97.1`
+**Native ABI:** **ABI-v1-RC — version `1`, stage `1`**
+**Phase 3 evidence:** canonical `python build/build.py verify-abi-rc`, Linux/Windows/macOS host lanes, true Rust 1.82 MSRV, generated-header diff, and linked C11/C++17 smoke tests are green.
+**Verified Phase 4 native targets:** Windows x64, macOS arm64/x64 + universal, iOS ARM64.
+**Active Phase 4 blockers:** Android ARM64 Rust 1.97 / Unity NDK r21d unwind compatibility; WebGL Rust 1.97/LLVM 22 / Unity Emscripten 2.0.19 compatibility.
+**Unity feature development:** PAUSED until Phase 6 managed ABI conformance, final ABI v1 freeze, and final native rebuild.
+**NEXT TASK:** **Resolve P4.9 Android ARM64 without inventing or silently substituting an unverified runtime; then resolve P4.13 WebGL against the pinned Unity toolchain.**
 
 ### Pre-development decisions now closed
 
@@ -121,10 +124,10 @@ There are currently **no unresolved architecture decisions that block implementa
 | Phase | Name | Stable outcome | State |
 |---|---|---|---|
 | 0 | Rust Project and Toolchain Foundation | Clean reproducible Rust project with fixed dependency/toolchain policy | **COMPLETE** |
-| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | **IN PROGRESS** |
-| 2 | Production C ABI Candidate | Safe fixed-width C ABI exposes the complete native engine | NOT STARTED |
-| 3 | Native Verification + ABI RC | Golden/safety/header/smoke tests prove an ABI release candidate | NOT STARTED |
-| 4 | Cross-Platform Native Compilation | ABI RC builds for Windows/macOS/Android/iOS/WebGL | NOT STARTED |
+| 1 | Complete Rust/Taffy Engine | Full intended Taffy 0.13 native layout surface works without Unity | **COMPLETE** |
+| 2 | Production C ABI Candidate | Safe fixed-width C ABI exposes the complete native engine | **COMPLETE** |
+| 3 | Native Verification + ABI RC | Golden/safety/header/smoke tests prove an ABI release candidate | **COMPLETE** |
+| 4 | Cross-Platform Native Compilation | ABI RC builds for Windows/macOS/Android/iOS/WebGL | **IN PROGRESS** |
 | 5 | Unity-Ready Native RC Payload | Verified ABI RC artifacts staged under final Unity plugin layout | NOT STARTED |
 | 6 | Managed ABI Conformance + ABI v1 | P/Invoke contract proven; ABI v1 frozen; all native artifacts rebuilt | NOT STARTED |
 | 7 | Minimal Working uGUI Product | Existing uGUI panel uses Rust/Taffy end-to-end | NOT STARTED |
@@ -169,140 +172,144 @@ There are currently **no unresolved architecture decisions that block implementa
 
 # Phase 1 — Complete Rust/Taffy 0.13 Engine
 
-**State:** IN PROGRESS
+**State:** COMPLETE
 
 ## Context/tree/handles
 
-- [ ] **P1.1 — NEXT TASK** Production context registry/arena.
-- [ ] **P1.2** Generation-safe opaque `uint64` context handles.
-- [ ] **P1.3** Generation-safe opaque `uint64` node/resource handles.
-- [ ] **P1.4** Persistent `TaffyTree` topology: create/remove/clear/set children.
-- [ ] **P1.5** Dirty state and persistent cached native state.
+- [x] **P1.1** Production context registry/arena.
+- [x] **P1.2** Generation-safe opaque `uint64` context handles.
+- [x] **P1.3** Generation-safe opaque `uint64` node/resource handles.
+- [x] **P1.4** Persistent `TaffyTree` topology: create/remove/clear/set children.
+- [x] **P1.5** Dirty state and persistent cached native state.
 
 ## Core styles
 
-- [ ] **P1.6** display / box generation / `Display::None`.
-- [ ] **P1.7** box sizing and direction.
-- [ ] **P1.8** Auto/Length/Percent and typed Calc resource/value model.
-- [ ] **P1.9** size, min/max, aspect ratio.
-- [ ] **P1.10** margin, padding, border geometry.
-- [ ] **P1.11** relative/absolute position and insets.
-- [ ] **P1.12** overflow and scrollbar reservation.
-- [ ] **P1.13** content-size result exposure required for scrolling/diagnostics.
+- [x] **P1.6** display / box generation / `Display::None`.
+- [x] **P1.7** box sizing and direction.
+- [x] **P1.8** Auto/Length/Percent and typed Calc resource/value model.
+- [x] **P1.9** size, min/max, aspect ratio.
+- [x] **P1.10** margin, padding, border geometry.
+- [x] **P1.11** relative/absolute position and insets.
+- [x] **P1.12** overflow and scrollbar reservation.
+- [x] **P1.13** content-size result exposure required for scrolling/diagnostics.
 
 ## Flexbox
 
-- [ ] **P1.14** row/column/reverse directions.
-- [ ] **P1.15** wrap/no-wrap/wrap-reverse.
-- [ ] **P1.16** grow/shrink/basis.
-- [ ] **P1.17** align-items/self/content.
-- [ ] **P1.18** justify-content and gap.
+- [x] **P1.14** row/column/reverse directions.
+- [x] **P1.15** wrap/no-wrap/wrap-reverse.
+- [x] **P1.16** grow/shrink/basis.
+- [x] **P1.17** align-items/self/content.
+- [x] **P1.18** justify-content and gap.
 
 ## Block / FlowRoot / Float
 
-- [ ] **P1.19** Block layout mapping.
-- [ ] **P1.20** FlowRoot mapping.
-- [ ] **P1.21** float/clear geometry supported by Taffy `float_layout`.
+- [x] **P1.19** Block layout mapping.
+- [x] **P1.20** FlowRoot mapping.
+- [x] **P1.21** float/clear geometry supported by Taffy `float_layout`.
 
 ## Grid
 
-- [ ] **P1.22** grid track/resource representation.
-- [ ] **P1.23** explicit/implicit rows and columns.
-- [ ] **P1.24** fixed/percent/auto/fr/minmax/repeat tracks supported by Taffy.
-- [ ] **P1.25** auto-flow and auto tracks.
-- [ ] **P1.26** row/column placement and spans.
-- [ ] **P1.27** align/justify content.
-- [ ] **P1.28** align/justify items and self.
-- [ ] **P1.29** named lines.
-- [ ] **P1.30** named areas/template areas using Taffy 0.13 representation.
-- [ ] **P1.31** detailed Grid layout info required by diagnostics.
+- [x] **P1.22** grid track/resource representation.
+- [x] **P1.23** explicit/implicit rows and columns.
+- [x] **P1.24** fixed/percent/auto/fr/minmax/repeat tracks supported by Taffy.
+- [x] **P1.25** auto-flow and auto tracks.
+- [x] **P1.26** row/column placement and spans.
+- [x] **P1.27** align/justify content.
+- [x] **P1.28** align/justify items and self.
+- [x] **P1.29** named lines.
+- [x] **P1.30** named areas/template areas using Taffy 0.13 representation.
+- [x] **P1.31** detailed Grid layout info required by diagnostics.
 
 ## Measurement and transfer
 
-- [ ] **P1.32** native cached measurement-record model supplied by callers.
-- [ ] **P1.33** known/available size and intrinsic/replaced-element data.
-- [ ] **P1.34** measurement invalidation without Rust→C# per-node callbacks.
-- [ ] **P1.35** bulk style upload.
-- [ ] **P1.36** bulk measurement upload.
-- [ ] **P1.37** bulk topology operations where profiling/design justifies them.
-- [ ] **P1.38** one compute call per root/generation.
-- [ ] **P1.39** bulk layout/content result retrieval.
+- [x] **P1.32** native cached measurement-record model supplied by callers.
+- [x] **P1.33** known/available size and intrinsic/replaced-element data.
+- [x] **P1.34** measurement invalidation without Rust→C# per-node callbacks.
+- [x] **P1.35** bulk style upload.
+- [x] **P1.36** bulk measurement upload.
+- [x] **P1.37** bulk topology operations where profiling/design justifies them.
+- [x] **P1.38** one compute call per root/generation.
+- [x] **P1.39** bulk layout/content result retrieval.
 
-### Phase 1 gate
+### Phase 1 gate — PASSED
 
-All intended native v1 Taffy features have deterministic native tests and can execute without Unity.
+All intended native v1 Taffy features have deterministic native tests and execute without Unity.
 
 ---
 
 # Phase 2 — Production C ABI Candidate and Safety
 
-**State:** NOT STARTED
+**State:** COMPLETE
 
-- [ ] **P2.1** Move all exports to canonical `tu_*` names.
-- [ ] **P2.2** Use only fixed-width ABI types; remove persistent raw pointers/`usize`/ABI bools.
-- [ ] **P2.3** version/build/Taffy/capability queries.
-- [ ] **P2.4** stable error-code enum and last-error diagnostics.
-- [ ] **P2.5** context/node/resource API for complete Phase 1 surface.
-- [ ] **P2.6** pointer+`uint32` buffer contracts for caller-owned temporary arrays.
-- [ ] **P2.7** validate all enums, counts, pointers and numerical inputs.
-- [ ] **P2.8** stale/cross-context handle rejection.
-- [ ] **P2.9** common FFI panic boundary; no Rust unwind crosses C.
-- [ ] **P2.10** document every unsafe function with exact `# Safety` contract.
-- [ ] **P2.11** implement main-thread ownership diagnostics/policy.
-- [ ] **P2.12** configure cbindgen public surface.
-- [ ] **P2.13** generate authoritative `include/taffy_ugui.h`.
+- [x] **P2.1** Move all exports to canonical `tu_*` names.
+- [x] **P2.2** Use only fixed-width ABI types; remove persistent raw pointers/`usize`/ABI bools.
+- [x] **P2.3** version/build/Taffy/capability queries.
+- [x] **P2.4** stable error-code enum and last-error diagnostics.
+- [x] **P2.5** context/node/resource API for complete Phase 1 surface.
+- [x] **P2.6** pointer+`uint32` buffer contracts for caller-owned temporary arrays.
+- [x] **P2.7** validate all enums, counts, pointers and numerical inputs.
+- [x] **P2.8** stale/cross-context handle rejection.
+- [x] **P2.9** common FFI panic boundary; no Rust unwind crosses C.
+- [x] **P2.10** document every unsafe function with exact `# Safety` contract.
+- [x] **P2.11** implement main-thread ownership diagnostics/policy.
+- [x] **P2.12** configure cbindgen public surface.
+- [x] **P2.13** generate authoritative `include/taffy_ugui.h`.
 
-### Phase 2 gate
+### Phase 2 gate — PASSED
 
-The full engine is callable through one deterministic C ABI candidate and generated header.
+The complete engine is callable through the verified fixed-width `tu_*` C ABI and authoritative generated header.
 
 ---
 
 # Phase 3 — Native Verification and ABI Release-Candidate Lock
 
-**State:** NOT STARTED
+**State:** COMPLETE
 
-- [ ] **P3.1** unit tests for contexts/handles/styles/resources/errors/versions.
-- [ ] **P3.2** golden Flex geometry suite.
-- [ ] **P3.3** golden Block/FlowRoot/Float suite.
-- [ ] **P3.4** golden Grid/named-area/placement suite.
-- [ ] **P3.5** Calc and measurement golden suite.
-- [ ] **P3.6** struct size/alignment and enum numeric contract tests.
-- [ ] **P3.7** invalid/stale/cross-context/malformed-input tests.
-- [ ] **P3.8** repeated lifecycle/topology stress tests.
-- [ ] **P3.9** C/C++ smoke harness compiled against generated header.
-- [ ] **P3.10** compiled host shared-library smoke test.
-- [ ] **P3.11** cbindgen regeneration/diff CI check.
-- [ ] **P3.12** lock interface as `ABI-v1-RC` for platform compilation; do **not** claim final ABI v1 yet.
+- [x] **P3.1** unit tests for contexts/handles/styles/resources/errors/versions.
+- [x] **P3.2** golden Flex geometry suite.
+- [x] **P3.3** golden Block/FlowRoot/Float suite.
+- [x] **P3.4** golden Grid/named-area/placement suite.
+- [x] **P3.5** Calc and measurement golden suite.
+- [x] **P3.6** struct size/alignment and enum numeric contract tests.
+- [x] **P3.7** invalid/stale/cross-context/malformed-input tests.
+- [x] **P3.8** repeated lifecycle/topology stress tests.
+- [x] **P3.9** C/C++ smoke harness compiled against generated header.
+- [x] **P3.10** compiled host shared-library smoke test.
+- [x] **P3.11** cbindgen regeneration/diff CI check.
+- [x] **P3.12** lock interface as `ABI-v1-RC` for platform compilation; do **not** claim final ABI v1 yet.
+
+### Phase 3 gate — PASSED
+
+`python build/build.py verify-abi-rc` passes at ABI version/stage `1/1`, including golden/safety/lifecycle suites, generated-header drift verification, locked release build, and linked C11/C++17 smoke executables.
 
 ---
 
 # Phase 4 — Cross-Platform Native Compilation (ABI RC)
 
-**State:** NOT STARTED
+**State:** IN PROGRESS
 
 ## Build system
 
-- [ ] **P4.1** extend `build/build.py` target registry/prerequisite detection.
-- [ ] **P4.2** deterministic `dist/native/<platform>/<arch>` staging.
-- [ ] **P4.3** artifact manifest with target, source SHA, Taffy, package/native version, ABI RC and checksum.
-- [ ] **P4.4** symbol/file-format/architecture verification.
-- [ ] **P4.5** CI artifact upload.
+- [x] **P4.1** extend `build/build.py` target registry/prerequisite detection.
+- [x] **P4.2** deterministic `dist/native/<platform>/<arch>` staging.
+- [x] **P4.3** artifact manifest with target, source SHA, Taffy, package/native version, ABI RC and checksum.
+- [x] **P4.4** symbol/file-format/architecture verification.
+- [x] **P4.5** CI artifact upload.
 
 ## Targets
 
-- [ ] **P4.6** Windows x64 MSVC DLL.
-- [ ] **P4.7** macOS Apple Silicon dylib.
-- [ ] **P4.8** macOS Intel dylib and universal strategy if validated.
-- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d.
+- [x] **P4.6** Windows x64 MSVC DLL.
+- [x] **P4.7** macOS Apple Silicon dylib.
+- [x] **P4.8** macOS Intel dylib and universal strategy if validated.
+- [ ] **P4.9** Android ARM64 `.so` using Unity 2021.3 NDK r21d. — **BLOCKED:** the pinned Rust 1.97 Android target requires unwind compatibility not yet satisfied by the pinned r21d layout; resolve this without fabricating or silently substituting an unverified runtime.
 - [ ] **P4.10** optional Android ARMv7/x86_64 only if support matrix requires them.
-- [ ] **P4.11** iOS ARM64 static library/XCFramework candidate.
+- [x] **P4.11** iOS ARM64 static library/XCFramework candidate.
 - [ ] **P4.12** optional iOS simulator slices.
-- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19.
+- [ ] **P4.13** WebGL static/linkage artifact using Unity 2021.3 bundled Emscripten 2.0.19. — **BLOCKED:** pinned Emscripten 2.0.19 cannot currently consume the Rust 1.97/LLVM 22 output; determine a Unity-compatible build path before claiming WebGL support.
 
-### Phase 4 gate
+### Phase 4 gate — OPEN
 
-Every required platform-family artifact compiles with identical ABI RC symbols/version and passes host/static/link verification appropriate to that target.
+Windows x64, macOS arm64/x64 + universal, and iOS ARM64 compile, verify, and stage as CI artifacts with ABI-v1-RC. Android ARM64 and WebGL remain required open work, so Phase 4 is intentionally not complete yet.
 
 ---
 

@@ -34,31 +34,33 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 1:** native engine implementation COMPLETE.
 - **Phase 2:** production C ABI implementation COMPLETE.
 - **Phase 3:** COMPLETE; ABI-v1-RC `1/1` passed the canonical local compiled gate.
-- **Phase 4:** build/staging infrastructure COMPLETE; **real cross-platform artifact production ACTIVE/BLOCKED** by missing platform toolchains and artifacts.
-- **Phase 5:** NOT STARTED.
+- **Phase 4:** COMPLETE for the active **Android ARM64-only** release scope; other platform targets are deferred and are not advertised/supported by this branch.
+- **Phase 5:** ACTIVE — Android Unity native payload staging and verification.
 - **Phase 6:** PARTIAL EARLY SCAFFOLDING only (production `tu_*` P/Invoke surface already aligned); formal managed conformance NOT STARTED.
 - **Phase 7:** prototype components exist; formal production Unity phase NOT STARTED.
 - **Phase 8–14:** NOT STARTED.
 
 ## Current authoritative boundary
+## Current authoritative boundary
 
-Every Phase 4 artifact-producing host must pass:
+The active v1 release scope is now **Android ARM64 only**. Windows, macOS, iOS, and WebGL target definitions remain in the repository for future work, but they no longer gate this branch and must not be advertised as supported.
+
+Every accepted Android native artifact must still pass the full Phase 3 gate on the exact clean source tree:
 
 ```bash
 python3 build/build.py verify-abi-rc
 ```
 
-on the same clean Git tree.
-
-The provider-independent local gate currently passes:
+Phase 4 closes only when the Android ARM64 artifact is accepted by:
 
 ```bash
-python3 build/build.py static-gate
+python3 build/build.py verify-phase4
 ```
 
-The local Linux host has passed the full compiled Phase 3 gate. It still needs Android NDK r21d/API 21 and Emscripten 2.0.19 before it can build its assigned Android/WebGL artifacts; Windows and macOS artifacts require their assigned hosts.
+and `dist/native/phase4-index.json` records `android-arm64` as the sole release target.
 
-**Next authoritative task:** provision the Phase 4 platform SDKs and execute P4.1–P4.10 on the canonical Windows/macOS/Linux hosts.
+**Next authoritative task:** stage and verify that Phase-4-accepted Android ARM64 binary under `UnityPackage/Plugins/Android/arm64-v8a/`, including deterministic Unity importer metadata and provenance.
+
 
 ---
 
@@ -247,47 +249,43 @@ Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact
 
 ---
 
-# Phase 4 — Cross-Platform Native Builds and Artifact Staging
+# Phase 4 — Native Build and Artifact Staging
 
-**Status:** ACTIVE / ANDROID ARM64 ACCEPTED / REMAINING ARTIFACTS BLOCKED OR PENDING
+**Status:** COMPLETE FOR ACTIVE ANDROID ARM64-ONLY RELEASE SCOPE
 
-**Goal:** produce reproducible native libraries from ABI-v1-RC before Unity plugin payload packaging.
+**Goal:** produce the reproducible ABI-v1-RC native library required by the currently supported release target before Unity plugin payload packaging.
 
 ## Build infrastructure — complete
 
 - [x] Phase 4 builds require clean Phase 3 evidence for the exact source tree.
-- [x] Canonical host ownership is explicit and enforced.
-- [x] Full 31-function public export contract checked per artifact.
+- [x] Full 31-function public export contract checked per accepted artifact.
 - [x] Target manifests record source tree, ABI, Taffy/Rust target, checksum, size, exports, architecture evidence and toolchain evidence.
 - [x] `SHA256SUMS` verification is part of artifact acceptance.
-- [x] Windows architecture verification cannot silently skip.
-- [x] iOS requires device ARM64 `lipo` evidence.
-- [x] WebGL requires Emscripten/Wasm archive evidence.
 - [x] Android records canonical NDK/API evidence without leaking machine-local SDK paths.
-- [x] macOS universal verification requires both slices and export parity.
-- [x] Final `verify-phase4` requires all targets from the same source tree/ABI/export contract.
 - [x] Final Phase 4 index generation implemented.
-- [x] One-command Windows/macOS/Linux host runners implemented.
-- [x] Final aggregation/finalizer command implemented.
+- [x] Active release target set is explicitly Android ARM64 only.
 
-## Required real artifacts
+## Active release artifact
 
-- [ ] P4.1 Windows x64 `taffy_ugui.dll` builds and verifies.
-- [ ] P4.2 macOS ARM64 `libtaffy_ugui.dylib` builds and verifies.
-- [ ] P4.3 macOS x64 `libtaffy_ugui.dylib` builds and verifies.
-- [ ] P4.4 macOS universal dylib assembles and verifies both slices.
 - [x] P4.5 Android ARM64 `libtaffy_ugui.so` builds with NDK r21d `21.3.6528147`, API 21, and verifies.
-- [ ] P4.6 iOS ARM64 `libtaffy_ugui.a` builds and verifies as a device ARM64 archive.
-- [ ] P4.7 WebGL `libtaffy_ugui.a` builds with Emscripten `2.0.19` and verifies.
-- [ ] P4.8 Every artifact has accepted `manifest.json` + `SHA256SUMS`.
-- [ ] P4.9 Every target exposes the same required ABI export set.
-- [ ] P4.10 Run final `python3 build/build.py verify-phase4` and produce `dist/native/phase4-index.json`.
+- [x] P4.8 The active Android artifact has accepted `manifest.json` + `SHA256SUMS`.
+- [x] P4.9 The active Android artifact exposes the complete required 31-function ABI export set.
+- [ ] P4.10 Run final `python3 build/build.py verify-phase4` for the Android-only scope and produce `dist/native/phase4-index.json`.
 
-**Current WebGL blocker:** the pinned Emscripten 2.0.19 LLVM 13 linker aborts on Rust 1.97.1 WebAssembly runtime objects (`unknown symbol kind`). This is a toolchain compatibility decision, not an uninstalled dependency.
+## Deferred targets — outside active branch release scope
+
+- P4.1 Windows x64 — deferred.
+- P4.2 macOS ARM64 — deferred.
+- P4.3 macOS x64 — deferred.
+- P4.4 macOS universal — deferred.
+- P4.6 iOS ARM64 — deferred.
+- P4.7 WebGL — deferred; the existing Emscripten 2.0.19/Rust 1.97.1 compatibility investigation is retained for future work.
+
+These targets may be revived later, but they are not required for Phase 4 completion on this Android-only branch and must not be presented as supported platforms.
 
 ### Phase 4 exit gate
 
-All required target artifacts exist, are locally architecture/export/checksum verified, share the same source-tree fingerprint and ABI contract, and are accepted by `verify-phase4`.
+The Android ARM64 artifact exists, is locally architecture/export/checksum verified, matches the Phase-3-verified source tree/ABI contract, and is accepted by Android-only `verify-phase4`.
 
 **Documentation:** `PHASE4_PLATFORM_BUILDS.md`
 
@@ -295,20 +293,19 @@ All required target artifacts exist, are locally architecture/export/checksum ve
 
 # Phase 5 — Unity-Ready Native Payload Staging
 
-**Status:** NOT STARTED — gated by Phase 4
+**Status:** ACTIVE — Android ARM64 only
 
-**Goal:** convert verified `dist/native/**` outputs into the native payload actually shipped by the Unity package.
+**Goal:** convert the verified Android `dist/native/**` output into the native payload actually shipped by the Unity package.
 
-- [ ] P5.1 Define/confirm canonical `UnityPackage/Plugins/**` directory structure.
-- [ ] P5.2 Copy only Phase-4-verified binaries into package plugin paths.
-- [ ] P5.3 Create/verify Unity `.meta` importer configuration for each platform/CPU.
-- [ ] P5.4 Preserve source/ABI/checksum provenance for staged binaries.
-- [ ] P5.5 Verify no debug/unverified artifact is packaged.
-- [ ] P5.6 Verify Git/UPM package path includes all required native binaries.
-- [ ] P5.7 Verify package-native payload can be reproduced from `dist/native/phase4-index.json`.
-- [ ] P5.8 Declare **Native Engine Candidate Complete** only after staging verification.
+- [ ] P5.1 Define/confirm canonical `UnityPackage/Plugins/Android/arm64-v8a/` structure.
+- [ ] P5.2 Copy only the Phase-4-verified Android ARM64 binary into the package plugin path.
+- [ ] P5.3 Create/verify Unity `.meta` importer configuration for Android ARM64 and disable unsupported platforms/editor loading.
+- [ ] P5.4 Preserve source/ABI/checksum provenance for the staged binary.
+- [ ] P5.5 Verify no debug, unverified, or non-Android native artifact is packaged.
+- [ ] P5.6 Verify Git/UPM package path includes the required Android native binary and metadata.
+- [ ] P5.7 Verify package-native payload is reproducible from `dist/native/phase4-index.json`.
+- [ ] P5.8 Declare **Android Native Engine Candidate Complete** only after staging verification.
 
-### Phase 5 exit gate
 
 A complete, verified Unity-native payload exists for every currently supported platform and can be consumed without changing the public native ABI.
 

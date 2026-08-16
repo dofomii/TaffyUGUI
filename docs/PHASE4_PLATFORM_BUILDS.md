@@ -1,8 +1,12 @@
-# Phase 4 — Local Cross-Platform Native Builds
+# Phase 4 — Native Builds and Artifact Staging
 
 **Infrastructure status:** COMPLETE
-**Artifact status:** 1/7 required native target artifacts accepted (Android ARM64)
-**Phase gate:** OPEN / BLOCKED by the WebGL compiler/linker compatibility decision, unavailable Windows/macOS hosts, and required remaining artifacts
+**Active artifact status:** Android ARM64 accepted
+**Phase gate:** Android ARM64-only release scope; Windows/macOS/iOS/WebGL are deferred
+
+The active v1 branch intentionally releases **Android ARM64 only**. The additional target definitions and toolchain notes below are retained for future platform branches, but they are not required by `PHASE4_REQUIRED_TARGETS` and are not advertised as supported.
+
+Phase 4 remains a **local release build**, not a GitHub Actions workflow. GitHub may store source backups, but it is not a build or verification authority.
 
 Phase 4 is a **local multi-host release build**, not a GitHub Actions workflow. GitHub may store source backups, but it is not a build or verification authority.
 
@@ -167,26 +171,23 @@ The manifest records:
 
 All host builds must be made from the **same clean source tree**. Copy the generated `dist/native/...` target directories from the Windows, macOS, and Linux build machines into one local project checkout without modifying their contents.
 
-Then run:
+For the active Android-only release, run:
 
 ```bash
 python3 build/build.py verify-phase4
 ```
 
-The final gate verifies:
-
-1. every required target exists;
-2. every artifact checksum matches both `manifest.json` and `SHA256SUMS`;
-3. every manifest is ABI-v1-RC `1/1` and Taffy `0.13.0`;
-4. all artifacts carry the same Phase-3-verified Git tree SHA (commit SHAs are also recorded for traceability);
-5. every target records the exact same complete public ABI export set;
-6. platform/architecture/crate-type metadata and build-host architecture evidence are correct;
-7. iOS carries ARM64 `lipo` evidence and WebGL carries Emscripten archive-member evidence;
-8. all artifacts are explicitly recorded as local builds.
-
-A successful gate writes:
+The gate verifies the Android ARM64 artifact checksum, manifest, ABI-v1-RC state, exact Taffy baseline, source-tree fingerprint, ELF/AArch64 evidence, and complete public export contract. A successful gate writes:
 
 ```text
+dist/native/phase4-index.json
+```
+
+The index contains `android-arm64` as the sole required release target and is the authoritative input to Phase 5 staging. The historical multi-host aggregation workflow remains available only if those deferred targets are restored to the required release target set.
+
+## No advertising before verification
+
+Only Android ARM64 is in the active release scope. A deferred platform is not supported merely because its target definition exists; it must be explicitly restored to the release scope and pass its own real artifact and Unity validation gates before being advertised.
 dist/native/phase4-index.json
 ```
 

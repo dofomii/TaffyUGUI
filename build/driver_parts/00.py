@@ -74,22 +74,15 @@ PUBLIC_ABI_EXPORTS = (
     "tu_nodes_set_styles",
 )
 
+# Active v1 native release scope. Other target definitions remain available for
+# future compatibility branches, but they are not release-gating targets.
 PHASE4_REQUIRED_TARGETS = (
-    "windows-x64",
-    "macos-arm64",
-    "macos-x64",
-    "macos-universal",
     "android-arm64",
-    "ios-arm64",
-    "webgl",
 )
-
 PHASE3_EVIDENCE = ROOT / ".build" / "evidence" / "phase3-local.json"
 
 PHASE4_HOST_TARGETS = {
-    "windows": ("windows-x64",),
-    "darwin": ("macos-universal", "ios-arm64"),
-    "linux": ("android-arm64", "webgl"),
+    "linux": ("android-arm64",),
 }
 
 

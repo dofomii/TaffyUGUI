@@ -48,15 +48,130 @@ def verify_phase4() -> None:
     print(f"\nPHASE 4 LOCAL GATE: PASS — index written to {index_path.relative_to(ROOT)}")
 
 
+PHASE5_ANDROID_DIR = ROOT / "UnityPackage" / "Plugins" / "Android" / "arm64-v8a"
+PHASE5_ANDROID_PLUGIN = PHASE5_ANDROID_DIR / "libtaffy_ugui.so"
+PHASE5_ANDROID_META = PHASE5_ANDROID_DIR / "libtaffy_ugui.so.meta"
+PHASE5_ANDROID_PROVENANCE = PHASE5_ANDROID_DIR / "taffy_ugui.provenance.json"
+PHASE5_ANDROID_META_TEXT = """fileFormatVersion: 2
+guid: 4e8aa0f9ef154b56a50b8c302f27fe56
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  iconMap: {}
+  executionOrder: {}
+  defineConstraints: []
+  isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
+  platformData:
+  - first:
+      Any: 
+    second:
+      enabled: 0
+      settings: {}
+  - first:
+      Android: Android
+    second:
+      enabled: 1
+      settings:
+        CPU: ARM64
+  - first:
+      Editor: Editor
+    second:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
+        DefaultValueInitialized: true
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
+
+def require_phase4_index() -> dict[str, object]:
+    index_path = DIST_NATIVE / "phase4-index.json"
+    if not index_path.exists():
+        raise SystemExit("Phase 4 completion index is missing. Run 'python3 build/build.py verify-phase4' first.")
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    if index.get("status") != "complete" or set(index.get("targets", {}).keys()) != {"android-arm64"}:
+        raise SystemExit("Phase 5 requires the completed Android-only Phase 4 index.")
+    return index
+
+
+def stage_phase5() -> None:
+    index = require_phase4_index()
+    manifest = verify_staged("android-arm64", recheck_symbols=True)
+    source = TARGETS["android-arm64"].stage_dir / TARGETS["android-arm64"].artifact
+    expected_sha = str(manifest["sha256"])
+    target_entry = index["targets"]["android-arm64"]
+    if target_entry.get("artifact_sha256") != expected_sha:
+        raise SystemExit("Phase 4 index and Android artifact manifest checksum disagree.")
+
+    PHASE5_ANDROID_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, PHASE5_ANDROID_PLUGIN)
+    PHASE5_ANDROID_META.write_text(PHASE5_ANDROID_META_TEXT, encoding="utf-8")
+    provenance = {
+        "schema": 1,
+        "phase": 5,
+        "platform": "android",
+        "architecture": "arm64-v8a",
+        "artifact": PHASE5_ANDROID_PLUGIN.name,
+        "sha256": expected_sha,
+        "source_manifest": str((TARGETS["android-arm64"].stage_dir / "manifest.json").relative_to(ROOT)),
+        "phase4_index": str((DIST_NATIVE / "phase4-index.json").relative_to(ROOT)),
+        "source_revision": str(manifest["source_revision"]),
+        "source_tree": str(manifest["source_tree"]),
+        "abi": manifest["abi"],
+        "taffy_version": manifest["taffy_version"],
+    }
+    PHASE5_ANDROID_PROVENANCE.write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    verify_phase5()
+    print("\nPHASE 5 ANDROID PAYLOAD: STAGED — UnityPackage/Plugins/Android/arm64-v8a")
+
+
+def verify_phase5() -> None:
+    index = require_phase4_index()
+    manifest = verify_staged("android-arm64")
+    required = (PHASE5_ANDROID_PLUGIN, PHASE5_ANDROID_META, PHASE5_ANDROID_PROVENANCE)
+    missing = [str(path.relative_to(ROOT)) for path in required if not path.exists()]
+    if missing:
+        raise SystemExit(f"Phase 5 Android payload is incomplete: {', '.join(missing)}")
+    expected_sha = str(manifest["sha256"])
+    if sha256(PHASE5_ANDROID_PLUGIN) != expected_sha:
+        raise SystemExit("Packaged Android plug-in checksum does not match the verified Phase 4 artifact.")
+    if PHASE5_ANDROID_META.read_text(encoding="utf-8") != PHASE5_ANDROID_META_TEXT:
+        raise SystemExit("Android PluginImporter metadata drifted from the canonical ARM64/Android-only configuration.")
+    provenance = json.loads(PHASE5_ANDROID_PROVENANCE.read_text(encoding="utf-8"))
+    for key, expected in (
+        ("sha256", expected_sha),
+        ("source_revision", manifest["source_revision"]),
+        ("source_tree", manifest["source_tree"]),
+        ("platform", "android"),
+        ("architecture", "arm64-v8a"),
+    ):
+        if provenance.get(key) != expected:
+            raise SystemExit(f"Phase 5 provenance mismatch for {key}: {provenance.get(key)!r} != {expected!r}")
+    if index["targets"]["android-arm64"].get("artifact_sha256") != expected_sha:
+        raise SystemExit("Packaged payload does not match the Phase 4 index checksum.")
+
+    native_suffixes = {".dll", ".dylib", ".so", ".a"}
+    packaged_native = [path for path in (ROOT / "UnityPackage" / "Plugins").rglob("*") if path.is_file() and path.suffix in native_suffixes]
+    if packaged_native != [PHASE5_ANDROID_PLUGIN]:
+        names = [str(path.relative_to(ROOT)) for path in packaged_native]
+        raise SystemExit(f"Unexpected native binaries in Unity package: {names}")
+    print("PHASE 5 ANDROID PAYLOAD VERIFY: PASS")
+
+
 def phase4_driver_selftest() -> None:
     expected = set(PHASE4_REQUIRED_TARGETS)
-    assigned = set(PHASE4_HOST_TARGETS["windows"]) | set(PHASE4_HOST_TARGETS["darwin"]) | set(PHASE4_HOST_TARGETS["linux"])
-    # macos-universal deterministically builds and stages both thin slices first.
+    assigned = set()
+    for targets in PHASE4_HOST_TARGETS.values():
+        assigned.update(targets)
     if "macos-universal" in assigned:
         assigned.update(("macos-arm64", "macos-x64"))
     if assigned != expected:
         raise SystemExit(f"Phase 4 host assignment does not cover the required target set: {sorted(assigned)} != {sorted(expected)}")
-
     validate_manifest_architecture_evidence(
         TARGETS["ios-arm64"], {"method": "lipo -info", "detail": "Non-fat file: libtaffy_ugui.a is architecture: arm64"}
     )
@@ -117,6 +232,8 @@ def main() -> int:
     sub.add_parser("verify-msrv", help="Run local Cargo check/test using Rust 1.82.0")
     sub.add_parser("header", help="Regenerate the public ABI header locally with pinned cbindgen")
     sub.add_parser("verify-header", help="Fail if checked-in public header differs from local cbindgen output")
+    sub.add_parser("stage-phase5", help="Stage the verified Android ARM64 native payload into the Unity package")
+    sub.add_parser("verify-phase5", help="Verify the Android-only Unity native payload and provenance")
     sub.add_parser("host-smoke", help="Build and execute local linked C/C++ smoke programs")
     sub.add_parser("verify-abi-rc", help="Run the complete local Phase 3 ABI-v1-RC gate")
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")
@@ -135,6 +252,8 @@ def main() -> int:
     elif args.command == "quality": quality()
     elif args.command == "verify-msrv": verify_msrv()
     elif args.command == "header": header()
+    elif args.command == "stage-phase5": stage_phase5()
+    elif args.command == "verify-phase5": verify_phase5()
     elif args.command == "verify-header": verify_header()
     elif args.command == "host-smoke": host_smoke()
     elif args.command == "verify-abi-rc": verify_abi_rc()

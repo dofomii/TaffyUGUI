@@ -6,22 +6,21 @@
 
 ## Executive status
 
-TaffyUGUI has completed the **native architecture, production C ABI candidate, and local ABI release-candidate verification work**. The native interface is locked as **ABI-v1-RC (`version=1`, `stage=1`)** on exact Taffy **0.13.0**.
+TaffyUGUI has completed the **native architecture, production C ABI candidate, local ABI release-candidate verification, and the Android ARM64 native release gate**. The native interface is locked as **ABI-v1-RC (`version=1`, `stage=1`)** on exact Taffy **0.13.0**.
 
-The project is currently in **Phase 4 (cross-platform native artifact production)**:
+The active release scope is now intentionally **Android ARM64 only**:
 
 - Phase 0 foundation: **complete**.
 - Phase 1 native engine implementation: **complete**.
 - Phase 2 production C ABI implementation: **complete**.
 - Phase 3 ABI/verification gate: **complete** on the local Linux host.
-- Phase 4 build/staging infrastructure: **complete**; Android ARM64 is built and locally accepted, while the remaining targets are pending.
-- Phase 5 and later product/package phases: **not started**, except for explicitly documented scaffolding that was implemented early.
+- Phase 4: **complete for Android ARM64-only scope**; Windows/macOS/iOS/WebGL are deferred and are not advertised by this branch.
+- Phase 5: **active**, staging the verified Android native library into the Unity package.
+- Phase 6 and later product/package phases: not formally started, except for explicitly documented early scaffolding.
 
-The local Linux host can run the full compiled Phase 3 gate and has staged a real Android ARM64 artifact. Phase 4 remains incomplete until every assigned host produces its required artifact from the same clean source tree.
+The local Linux host can run the full compiled Phase 3 gate and has staged and re-verified a real Android ARM64 artifact. Phase 5 may proceed from an Android-only `phase4-index.json`.
 
 ## Progress model
-
-A phase is tracked using three separate states:
 
 1. **Implementation** — the source code/build tooling for the phase exists.
 2. **Verification** — the required tests/builds have actually executed on the canonical local environment.
@@ -43,19 +42,20 @@ The local provider-independent gate currently proves:
 - The complete Phase 3 suite passes locally: formatting, Clippy with warnings denied, 44 Rust unit/integration tests, release build, cbindgen header-drift check, and linked C11/C++17 ABI smoke executables.
 - Android ARM64 `libtaffy_ugui.so` has been built with NDK r21d (`21.3.6528147`), API 21, and the pinned Rust target; its ELF architecture, 31 ABI exports, checksum, and manifest were locally re-verified.
 
-See `LOCAL_VERIFICATION_STATUS.md` for the exact distinction between passed and unavailable checks.
+## Deferred platform work
 
-## Current blockers
+The following targets remain implemented as future build definitions but are outside the active release gate:
 
-Phase 3 is no longer the blocker. The remaining Phase 4 work is platform-specific:
+- Windows x64.
+- macOS arm64/x64/universal.
+- iOS arm64.
+- WebGL, including the retained Emscripten `2.0.19` / Rust `1.97.1` compatibility investigation.
 
-- Linux WebGL: Emscripten `2.0.19` (LLVM 13) crashes with `unknown symbol kind` while linking Rust 1.97.1 WebAssembly runtime objects. This is a verified compiler/linker incompatibility, not a missing SDK.
-- Windows: an MSVC-capable Windows host for Windows x64.
-- macOS: Xcode tooling for macOS arm64/x64/universal and iOS arm64.
+They must not be advertised as supported until they are explicitly restored to the required target set and pass their real platform validation gates.
 
 ## Next authoritative action
 
-1. Decide the supported WebGL compatibility path: update the Emscripten baseline after Unity compatibility validation, or explicitly allow a WebGL-specific Rust compatibility toolchain.
-2. Build Windows x64 on Windows and macOS/iOS targets on macOS from the same source tree.
-3. Collect all target directories and run `python3 build/build.py verify-phase4`.
-4. Only then mark Phase 4 complete and begin Phase 5 Unity-ready native payload staging.
+1. Re-run the Phase 3 gate on the exact clean Android-only release tree.
+2. Rebuild and verify Android ARM64 from that tree.
+3. Run `python3 build/build.py verify-phase4` to create the Android-only Phase 4 index.
+4. Run `python3 build/build.py stage-phase5` and `verify-phase5` to stage the Unity Android payload with importer metadata and provenance.

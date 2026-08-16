@@ -155,9 +155,16 @@ def require(name: str, install_hint: str | None = None) -> str:
 
 def base_env() -> dict[str, str]:
     env = os.environ.copy()
-    local_bin = ROOT / ".toolchain" / "bin"
+    local_toolchain = ROOT / ".toolchain"
+    local_bin = local_toolchain / "bin"
     if local_bin.exists():
         env["PATH"] = str(local_bin) + os.pathsep + env.get("PATH", "")
+    # Rustup proxy binaries resolve the active installation through CARGO_HOME and
+    # RUSTUP_HOME. Set both whenever the project-local bootstrap owns rustup;
+    # merely prepending .toolchain/bin is otherwise insufficient.
+    if (local_bin / ("rustup.exe" if os.name == "nt" else "rustup")).exists():
+        env["CARGO_HOME"] = str(local_toolchain)
+        env["RUSTUP_HOME"] = str(local_toolchain / "rustup")
     env["CARGO_TARGET_DIR"] = str(CARGO_TARGET_DIR)
     return env
 

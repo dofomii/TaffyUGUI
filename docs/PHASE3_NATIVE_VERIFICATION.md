@@ -2,7 +2,7 @@
 
 **Implementation:** COMPLETE
 **ABI source state:** ABI-v1-RC (`version=1`, `stage=1`)
-**Canonical local gate:** PENDING / BLOCKED BY CURRENT SANDBOX TOOLCHAIN AVAILABILITY
+**Canonical local gate:** COMPLETE on the local Linux host
 
 ## Goal
 
@@ -45,17 +45,13 @@ The command requires and performs:
 8. linked C and C++ smoke execution against the produced native library;
 9. local Phase 3 evidence recording for the exact clean Git tree.
 
-## What currently passes locally in this sandbox
+## Local verification result
 
 ```bash
 python3 build/build.py static-gate
 ```
 
-passes, including the public-header C/C++ compile and Phase 4 build-driver contract tests.
-
-## What is currently unavailable
-
-The current sandbox does not contain Rust/rustup/rustfmt/Clippy/cbindgen and cannot download binary toolchains. Therefore the complete compiled command above cannot be truthfully reported as passing in this environment.
+passes, including the public-header C/C++ compile and Phase 4 build-driver contract tests. The complete compiled Phase 3 suite also passes: `cargo fmt --check`, Clippy with warnings denied, 44 Rust tests, release build, pinned-cbindgen header drift verification, and linked C/C++ smoke execution.
 
 ## Gate rule
 

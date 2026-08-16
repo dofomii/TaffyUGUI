@@ -33,8 +33,8 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 0:** COMPLETE.
 - **Phase 1:** native engine implementation COMPLETE.
 - **Phase 2:** production C ABI implementation COMPLETE.
-- **Phase 3:** implementation COMPLETE and ABI source locked at `1/1`; **canonical local compiled verification PENDING**.
-- **Phase 4:** build/staging infrastructure COMPLETE; **real cross-platform artifact production PENDING/BLOCKED** by Phase 3 local evidence and missing platform toolchains.
+- **Phase 3:** COMPLETE; ABI-v1-RC `1/1` passed the canonical local compiled gate.
+- **Phase 4:** build/staging infrastructure COMPLETE; **real cross-platform artifact production ACTIVE/BLOCKED** by missing platform toolchains and artifacts.
 - **Phase 5:** NOT STARTED.
 - **Phase 6:** PARTIAL EARLY SCAFFOLDING only (production `tu_*` P/Invoke surface already aligned); formal managed conformance NOT STARTED.
 - **Phase 7:** prototype components exist; formal production Unity phase NOT STARTED.
@@ -42,7 +42,7 @@ A later-phase prototype or early scaffold does not automatically mean that later
 
 ## Current authoritative boundary
 
-Before any Phase 4 artifact is accepted, every artifact-producing host must pass:
+Every Phase 4 artifact-producing host must pass:
 
 ```bash
 python3 build/build.py verify-abi-rc
@@ -56,9 +56,9 @@ The provider-independent local gate currently passes:
 python3 build/build.py static-gate
 ```
 
-The current sandbox cannot execute the full compiled Phase 3 gate because Rust/rustup/rustfmt/Clippy/cbindgen and the required platform SDKs are unavailable and outbound binary downloads are blocked.
+The local Linux host has passed the full compiled Phase 3 gate. It still needs Android NDK r21d/API 21 and Emscripten 2.0.19 before it can build its assigned Android/WebGL artifacts; Windows and macOS artifacts require their assigned hosts.
 
-**Next authoritative task:** obtain a local build host with the pinned Rust/toolchain prerequisites, run the full Phase 3 gate, then execute P4.1–P4.10 on the canonical Windows/macOS/Linux hosts.
+**Next authoritative task:** provision the Phase 4 platform SDKs and execute P4.1–P4.10 on the canonical Windows/macOS/Linux hosts.
 
 ---
 
@@ -210,7 +210,7 @@ The current sandbox cannot execute the full compiled Phase 3 gate because Rust/r
 
 # Phase 3 — Native Verification and ABI Release-Candidate Lock
 
-**Status:** IMPLEMENTATION COMPLETE / CANONICAL LOCAL VERIFICATION PENDING
+**Status:** COMPLETE
 
 **Goal:** prove the native engine/ABI release candidate before using it for platform artifacts.
 
@@ -229,17 +229,17 @@ The current sandbox cannot execute the full compiled Phase 3 gate because Rust/r
 - [x] P3.13 One canonical local `verify-abi-rc` command.
 - [x] P3.14 ABI source promoted to release-candidate state `1/1`.
 - [x] P3.15 Provider-independent local static gate passes.
-- [ ] P3.16 Run `cargo fmt --check` locally on current canonical machine/source.
-- [ ] P3.17 Run Clippy with `-D warnings` locally.
-- [ ] P3.18 Run full Rust test inventory locally.
-- [ ] P3.19 Build host release native library locally.
-- [ ] P3.20 Regenerate/diff public header with pinned cbindgen locally.
-- [ ] P3.21 Link and execute C/C++ smoke programs against the built Rust library locally.
-- [ ] P3.22 Record Phase 3 evidence for the clean source tree.
+- [x] P3.16 Run `cargo fmt --check` locally on current canonical machine/source.
+- [x] P3.17 Run Clippy with `-D warnings` locally.
+- [x] P3.18 Run full Rust test inventory locally.
+- [x] P3.19 Build host release native library locally.
+- [x] P3.20 Regenerate/diff public header with pinned cbindgen locally.
+- [x] P3.21 Link and execute C/C++ smoke programs against the built Rust library locally.
+- [x] P3.22 Record Phase 3 evidence for the clean source tree.
 
 ### Current Phase 3 gate
 
-**BLOCKED in this sandbox by missing Rust/rustup/rustfmt/Clippy/cbindgen and blocked binary downloads.**
+**COMPLETE on the local Linux host.**
 
 Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact-producing source tree/host as required by the build driver.
 

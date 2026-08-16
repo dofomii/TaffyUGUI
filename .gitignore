@@ -3,6 +3,7 @@
 /.build/
 /native/target/
 /dist/
+/.toolchain/
 
 # Unity generated project folders
 [Ll]ibrary/

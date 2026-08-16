@@ -9,8 +9,8 @@ This document describes the remaining gated path from the current native release
 | 0 | Rust Project and Toolchain Foundation | Complete |
 | 1 | Complete Rust/Taffy Native Engine | Complete implementation |
 | 2 | Production C ABI Candidate and Safety | Complete implementation |
-| 3 | Native Verification and ABI RC Lock | ABI locked; canonical local compiled gate pending |
-| 4 | Cross-Platform Native Builds | Active build infrastructure; artifacts pending |
+| 3 | Native Verification and ABI RC Lock | Complete locally; ABI-v1-RC `1/1` verified |
+| 4 | Cross-Platform Native Builds | Active; platform artifacts pending |
 | 5 | Unity-Ready Native Artifact Staging | Not started |
 | 6 | Minimal Managed ABI Conformance and Final ABI v1 Freeze | Partial early P/Invoke scaffolding only |
 | 7 | Minimal Working Unity uGUI Product | Prototype scaffolding exists; gated/not started |

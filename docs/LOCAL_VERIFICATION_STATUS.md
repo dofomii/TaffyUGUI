@@ -7,6 +7,7 @@ This document records only checks executed in the local project environment. Rem
 ## Passed locally
 
 - `python3 build/build.py static-gate`
+- Rust 1.97.1, rustfmt, Clippy, and cbindgen 0.29.2 installed in the ignored project-local `.toolchain` directory.
 - Rust source delimiter/integrity sanity pass.
 - C# source delimiter/preprocessor sanity pass.
 - ABI-v1-RC source lock check (`1/1`).
@@ -20,25 +21,25 @@ This document records only checks executed in the local project environment. Rem
 - Python build/preflight scripts compile successfully.
 - Shell helper scripts pass `bash -n`.
 - No GitHub Actions workflow exists in the local canonical project.
+- `cargo fmt --check` with the pinned Rust toolchain.
+- Clippy with `-D warnings`.
+- Full Rust test inventory: 44 tests passed.
+- Host release build of `libtaffy_ugui.so`.
+- Pinned cbindgen public-header regeneration/drift check.
+- Linked C11 and C++17 ABI smoke programs against the host library.
 
-## Not executable in this sandbox
+## Not executable on this host yet
 
-The sandbox currently has no `cargo`, `rustc`, `rustup`, `rustfmt`, Clippy, `cbindgen`, Unity Editor, or C# compiler. Therefore the following checks are deliberately **not claimed as passed here**:
+The local host does not have the Phase 4 Android/WebGL SDKs or the non-Linux artifact hosts. Therefore the following checks are deliberately **not claimed as passed here**:
 
-- `cargo fmt --check`
-- Clippy with warnings denied
-- Rust unit/integration tests
-- Rust release build
-- cbindgen regeneration/drift check
-- linked C/C++ smoke execution against the built Rust shared library
-- Unity Editor compilation / EditMode / PlayMode tests
-- Phase 4 platform SDK builds
+- Android ARM64 build: requires Android NDK r21d (`21.3.6528147`), API 21, and the Rust target.
+- WebGL build: requires Emscripten `2.0.19` and the Rust target.
+- Windows x64, macOS, and iOS builds: require their assigned Windows/macOS hosts.
+- Unity Editor compilation / EditMode / PlayMode tests.
 
-The canonical local command for the compiled Phase 3 gate is:
+The completed canonical local Phase 3 command is:
 
 ```bash
-scripts/bootstrap-local-toolchain.sh
-python3 build/build.py prepare
 python3 build/build.py verify-abi-rc
 ```
 

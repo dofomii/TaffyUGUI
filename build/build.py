@@ -261,7 +261,11 @@ def target_environment(spec: TargetSpec) -> dict[str, str]:
         # Unity 2021.3 pins NDK r21d, whose AArch64 unwinder is libgcc.
         # Panics must never cross TaffyUGUI's C ABI, so Android uses abort.
         existing_rustflags = env.get("RUSTFLAGS", "").strip()
-        env["RUSTFLAGS"] = f"{existing_rustflags} -C panic=abort".strip()
+        unwind_dir = ndk / "sources" / "cxx-stl" / "llvm-libc++" / "libs" / "arm64-v8a"
+        unwind_library = unwind_dir / "libunwind.a"
+        if not unwind_library.exists():
+            raise SystemExit(f"Android NDK r21d ARM64 libunwind was not found: {unwind_library}")
+        env["RUSTFLAGS"] = f"{existing_rustflags} -C panic=abort -L native={unwind_dir}".strip()
         env["TAFFY_UGUI_PANIC_STRATEGY"] = "abort"
     elif spec.name == "webgl":
         emcc = require_emscripten()
@@ -400,6 +404,26 @@ def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
     else:
         args += ["-g"]
     args.append(str(artifact))
+    if spec.platform == "ios":
+        print("+", " ".join(str(arg) for arg in args), flush=True)
+        completed = subprocess.run(
+            args,
+            cwd=ROOT,
+            check=False,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        output = completed.stdout or ""
+        if completed.returncode != 0:
+            if output:
+                print(output, flush=True)
+            print(
+                f"Apple nm returned {completed.returncode} for the Rust iOS archive; validating required tu_* exports from emitted symbols.",
+                flush=True,
+            )
+        return output
     return run(*args, capture=True, env=env)
 
 

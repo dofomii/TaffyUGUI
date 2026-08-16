@@ -54,13 +54,13 @@ The authoritative C header is generated from Rust using cbindgen into:
 include/taffy_ugui.h
 ```
 
-The current bootstrap interface is ABI version `0` and is intentionally unstable.
+The Phase 2 production `tu_*` interface remains ABI version `0` while it is an unfrozen candidate. The older bootstrap ABI-0 names are no longer exported by the native candidate; existing Unity bootstrap code is intentionally dormant until managed conformance.
 
 ---
 
 ## Native thread ownership and context registry
 
-Taffy 0.13's selected compact style representation makes `TaffyTree` non-`Send`. TaffyUGUI therefore **does not** force `Send`/`Sync` with unsafe implementations.
+Taffy 0.13's compact style/Calc representation is intentionally thread-bound. TaffyUGUI therefore **does not** force `Send`/`Sync` with unsafe implementations. Phase 1 uses a persistent project-owned `NativeTree` implementing Taffy's low-level layout traits so Calc resolution, cached measurement, dirty state, and detailed Grid diagnostics remain under TaffyUGUI control.
 
 Native runtime ownership is intentionally main-thread friendly:
 
@@ -73,20 +73,21 @@ generation-safe ContextHandle
         ↓
 Context
         ↓
-persistent TaffyTree
+persistent NativeTree
+        (Taffy low-level layout traits + cache)
 ```
 
 Rules:
 
-- each `Context` and `TaffyTree` remains on the thread that created it;
+- each `Context` and its `NativeTree` remain on the thread that created them;
 - the registry/arena itself is thread-local;
 - context handles use a process-wide generation sequence in addition to a local slot index;
 - a context handle from another thread cannot accidentally resolve to an unrelated context occupying the same local slot;
-- cross-thread context use fails rather than moving the Taffy tree;
+- cross-thread context use fails rather than moving native layout state;
 - production Unity integration creates, uses, and disposes the native context from the Unity layout/main thread;
 - Phase 2 turns wrong-thread use into an explicit production status/diagnostic.
 
-ABI 0 currently keeps a pointer-shaped compatibility token so the bootstrap Unity code does not define the production ABI. The token only contains the generation-safe context handle; it does not contain the Taffy tree itself.
+The historical ABI-0 bootstrap used a pointer-shaped compatibility token. The Phase 2 candidate removes that export model and exposes fixed-width `uint64_t` context handles through canonical `tu_*` symbols. Existing bootstrap Unity code is not a compatibility contract and remains paused until Phase 6.
 
 ---
 

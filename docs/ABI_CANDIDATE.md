@@ -98,3 +98,17 @@ Results are copied through `tu_get_layout` or `tu_get_layouts_bulk` and include 
 `cbindgen.toml` contains an explicit production allowlist and `python build/build.py header` is the authoritative header-generation command.
 
 The checked-in `include/taffy_ugui.h` in this local Phase 2 work is a manually synchronized candidate mirror because this execution environment has no `cbindgen`. It is compiled as both C11 and C++17 by the static preflight. It must be regenerated with cbindgen and diff-checked in a Rust/cbindgen-enabled environment before P2.13 can be marked verified.
+
+## Phase 3 verification and RC lock
+
+Phase 3 adds a single canonical candidate-verification command:
+
+```bash
+python build/build.py verify-abi-rc
+```
+
+It runs all Phase 1–3 static preflights, rustfmt, Clippy with warnings denied, locked Rust tests (including golden geometry, ABI layout/numeric contracts, malformed-input and lifecycle stress coverage), a locked release build, cbindgen regeneration/diff verification, and linked C11/C++17 smoke executables against the compiled host shared library.
+
+The Linux CI lane installs pinned `cbindgen 0.29.2` and runs that same command. Windows/macOS and Rust 1.82 lanes remain independent regression coverage.
+
+The source continues to report ABI version/stage `0/0` until this complete Phase 3 gate passes. Only after that verified gate may the constants be changed to ABI version/stage `1/1` and described as **ABI-v1-RC**. Final ABI v1 is still reserved for Phase 6 managed conformance and the subsequent full native rebuild.

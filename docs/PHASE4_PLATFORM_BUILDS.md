@@ -2,7 +2,7 @@
 
 **Infrastructure status:** COMPLETE
 **Artifact status:** 0/7 required native target artifacts accepted
-**Phase gate:** OPEN / BLOCKED by canonical local Phase 3 evidence and unavailable platform toolchains in the current sandbox
+**Phase gate:** OPEN / BLOCKED by unavailable Phase 4 platform toolchains and required real artifacts
 
 Phase 4 is a **local multi-host release build**, not a GitHub Actions workflow. GitHub may store source backups, but it is not a build or verification authority.
 

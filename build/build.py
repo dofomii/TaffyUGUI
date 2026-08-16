@@ -257,6 +257,12 @@ def target_environment(spec: TargetSpec) -> dict[str, str]:
         linker = android_linker(ndk)
         env["CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"] = str(linker)
         env["CC_aarch64_linux_android"] = str(linker)
+        # Rust 1.97 Android std expects LLVM libunwind in unwind mode, while
+        # Unity 2021.3 pins NDK r21d, whose AArch64 unwinder is libgcc.
+        # Panics must never cross TaffyUGUI's C ABI, so Android uses abort.
+        existing_rustflags = env.get("RUSTFLAGS", "").strip()
+        env["RUSTFLAGS"] = f"{existing_rustflags} -C panic=abort".strip()
+        env["TAFFY_UGUI_PANIC_STRATEGY"] = "abort"
     elif spec.name == "webgl":
         emcc = require_emscripten()
         env["CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_LINKER"] = emcc
@@ -331,9 +337,55 @@ def inspect_artifact(spec: TargetSpec, artifact: Path) -> str:
     return description
 
 
+def find_dumpbin() -> str:
+    direct = shutil.which("dumpbin") or shutil.which("dumpbin.exe")
+    if direct:
+        return direct
+
+    vswhere_candidates: list[Path] = []
+    for variable in ("ProgramFiles(x86)", "ProgramFiles"):
+        root = os.environ.get(variable)
+        if root:
+            vswhere_candidates.append(Path(root) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe")
+
+    for vswhere in vswhere_candidates:
+        if not vswhere.exists():
+            continue
+        installation = run(
+            str(vswhere),
+            "-latest",
+            "-products",
+            "*",
+            "-requires",
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "-property",
+            "installationPath",
+            capture=True,
+        ).strip()
+        if not installation:
+            continue
+        candidates = sorted(
+            (Path(installation) / "VC" / "Tools" / "MSVC").glob("*/bin/Hostx64/x64/dumpbin.exe"),
+            reverse=True,
+        )
+        if candidates:
+            return str(candidates[0])
+
+    fallback: list[Path] = []
+    for variable in ("ProgramFiles", "ProgramFiles(x86)"):
+        root = os.environ.get(variable)
+        if root:
+            fallback.extend(Path(root).glob("Microsoft Visual Studio/*/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"))
+    if fallback:
+        return str(sorted(fallback, reverse=True)[0])
+
+    raise SystemExit(
+        "Required Visual Studio tool 'dumpbin.exe' was not found. Install the VC x64 build tools or expose dumpbin on PATH."
+    )
+
 def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
     if spec.name == "windows-x64":
-        dumpbin = require("dumpbin")
+        dumpbin = find_dumpbin()
         return run(dumpbin, "/exports", str(artifact), capture=True, env=env)
     if spec.name == "android-arm64":
         ndk = find_android_ndk()
@@ -343,7 +395,7 @@ def symbol_output(spec: TargetSpec, artifact: Path, env: dict[str, str]) -> str:
         return run(str(bins[0]), "-D", "--defined-only", str(artifact), capture=True, env=env)
     nm = require("nm")
     args = [nm]
-    if spec.platform == "macos":
+    if spec.platform in ("macos", "ios"):
         args += ["-gU"]
     else:
         args += ["-g"]

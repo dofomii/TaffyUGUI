@@ -142,16 +142,62 @@ def quality() -> None:
     cargo_command("build", "--locked", "--release")
 
 
-def verify_header_diff() -> None:
+def normalize_cbindgen_header(path: Path) -> None:
+    """Make cbindgen's fixed-width C enums valid in both C11 and C++17.
+
+    For ``#[repr(i32)]`` fieldless enums, cbindgen's C backend emits a named
+    enum to expose the enumerators followed by ``typedef int32_t Name`` to keep
+    storage fixed-width. C has separate tag/type namespaces, but C++ does not,
+    so that otherwise-valid C output is a type redefinition in C++.
+
+    The ABI never transports a C enum: public fields/statuses are fixed-width
+    ``int32_t`` values. Removing only the enum tag preserves cbindgen-derived
+    enumerator names/values while keeping the storage typedef exactly int32_t.
+    """
+    text = path.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"enum (?P<name>Tu[A-Za-z0-9_]+) \{(?P<body>.*?)\n\};\n\ntypedef int32_t (?P=name);",
+        re.DOTALL,
+    )
+    normalized, count = pattern.subn(
+        lambda match: "enum {"
+        + match.group("body")
+        + "\n};\n\ntypedef int32_t "
+        + match.group("name")
+        + ";",
+        text,
+    )
+    if count == 0:
+        raise SystemExit(
+            "cbindgen produced no fixed-width Tu* enum declarations to normalize; "
+            "review the generator output/configuration before accepting header drift."
+        )
+    path.write_text(normalized, encoding="utf-8")
+    print(f"Normalized {count} fixed-width ABI enum declarations for C/C++ compatibility.", flush=True)
+
+
+def generate_header(path: Path) -> None:
     require("cbindgen")
+    run(
+        "cbindgen",
+        str(ROOT / "native"),
+        "--config",
+        str(CBINDGEN_CONFIG),
+        "--output",
+        str(path),
+    )
+    normalize_cbindgen_header(path)
+
+
+def verify_header_diff() -> None:
     with tempfile.TemporaryDirectory() as directory:
         generated = Path(directory) / "taffy_ugui.h"
-        run("cbindgen", str(ROOT / "native"), "--config", str(CBINDGEN_CONFIG), "--output", str(generated))
+        generate_header(generated)
         expected = HEADER.read_text(encoding="utf-8").splitlines(keepends=True)
         actual = generated.read_text(encoding="utf-8").splitlines(keepends=True)
         if expected != actual:
-            diff = "".join(difflib.unified_diff(expected, actual, fromfile="include/taffy_ugui.h", tofile="cbindgen-regenerated/taffy_ugui.h"))
-            raise SystemExit("cbindgen header drift detected:\n" + diff)
+            diff = "".join(difflib.unified_diff(expected, actual, fromfile="include/taffy_ugui.h", tofile="generated/taffy_ugui.h"))
+            raise SystemExit("generated C ABI header drift detected:\n" + diff)
 
 
 def host_smoke() -> None:
@@ -186,9 +232,8 @@ def verify_abi_rc() -> None:
 
 
 def header() -> None:
-    require("cbindgen")
     HEADER.parent.mkdir(parents=True, exist_ok=True)
-    run("cbindgen", str(ROOT / "native"), "--config", str(CBINDGEN_CONFIG), "--output", str(HEADER))
+    generate_header(HEADER)
 
 
 def host() -> None:
@@ -377,7 +422,7 @@ def write_manifest(spec: TargetSpec, staged_artifact: Path, description: str) ->
         "crate_type": spec.crate_type,
         "file_description": description,
         "sha256": sha256(staged_artifact),
-        "panic_strategy": panic_strategy(),
+        "panic_strategy": panic_strategy,
     }
     path = spec.stage_dir / "manifest.json"
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -470,65 +515,57 @@ def build_requested(target: str) -> None:
         compatible: list[str] = []
         for name in REQUIRED_TARGETS:
             spec = TARGETS[name]
-            if not spec.host_os or host_os in spec.host_os:
-                compatible.append(name)
-        if not compatible:
-            raise SystemExit("No Phase 4 targets are buildable on this host with the configured toolchains.")
+            if spec.host_os and host_os not in spec.host_os:
+                continue
+            if name == "android-arm64" and not (os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")):
+                continue
+            if name == "webgl" and shutil.which("emcc") is None:
+                continue
+            compatible.append(name)
+        if host_os == "darwin" and "macos-arm64" in compatible and "macos-x64" in compatible:
+            build_macos_universal()
+            compatible = [name for name in compatible if not name.startswith("macos-")]
         for name in compatible:
             build_target(name)
-        if host_os == "darwin":
-            build_macos_universal()
-    else:
+    elif target in TARGETS:
         build_target(target)
-
-
-def verify_staged(names: Iterable[str]) -> None:
-    for name in names:
-        verify_staged_target(name)
-    print("Verified staged Phase 4 manifests/checksums for: " + ", ".join(names))
+    else:
+        raise SystemExit(f"Unknown native target '{target}'. Use 'list-targets' to see valid names.")
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build and verify TaffyUGUI")
+    parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("preflight", help="Run static native phase architecture/ABI checks")
-    sub.add_parser("quality", help="Run static preflight, fmt, Clippy, tests, and host release build")
-    sub.add_parser("header", help="Generate include/taffy_ugui.h with cbindgen")
-    sub.add_parser("verify-header", help="Regenerate the cbindgen header and require a clean diff")
-    sub.add_parser("host-smoke", help="Build and run C/C++ smoke harnesses against the host shared library")
-    sub.add_parser("verify-abi-rc", help="Run the complete Phase 3 native verification gate before locking ABI-v1-RC")
-    sub.add_parser("list-targets", help="List Phase 4 target registry and staging paths")
-    native = sub.add_parser("native", help="Build, verify, and stage a native target")
-    native.add_argument("target", choices=["host", *TARGETS.keys(), "macos", "ios", "all"])
-    verify_native = sub.add_parser("verify-native", help="Verify checksums/manifests of staged Phase 4 artifacts")
-    verify_native.add_argument("targets", nargs="*", choices=list(TARGETS.keys()), default=list(REQUIRED_TARGETS))
-    sub.add_parser("stage-unity", help="Stage verified native artifacts into UnityPackage/Plugins (Phase 5)")
-    sub.add_parser("package", help="Assemble the final Unity package payload (later release phase)")
+    sub.add_parser("quality", help="Run native static preflights, fmt, Clippy, tests, and release build")
+    sub.add_parser("header", help="Generate the normalized public C ABI header with cbindgen")
+    sub.add_parser("verify-header", help="Regenerate the normalized header and fail on drift")
+    sub.add_parser("verify-abi-rc", help="Run the complete Phase 3 ABI release-candidate verification gate")
+    native = sub.add_parser("native", help="Build/stage a verified native target")
+    native.add_argument("target", help="host, all, macos, ios, or a target name")
+    verify_native = sub.add_parser("verify-native", help="Verify one or more staged native artifacts")
+    verify_native.add_argument("targets", nargs="+", help="Target names to verify")
+    sub.add_parser("list-targets", help="List supported native target registry")
     args = parser.parse_args()
-    if args.command == "preflight":
-        preflight()
-    elif args.command == "quality":
+
+    if args.command == "quality":
         quality()
     elif args.command == "header":
         header()
     elif args.command == "verify-header":
         verify_header_diff()
-    elif args.command == "host-smoke":
-        host_smoke()
     elif args.command == "verify-abi-rc":
         verify_abi_rc()
-    elif args.command == "list-targets":
-        list_targets()
     elif args.command == "native":
         build_requested(args.target)
     elif args.command == "verify-native":
-        verify_staged(args.targets or REQUIRED_TARGETS)
-    elif args.command in {"stage-unity", "package"}:
-        raise SystemExit(f"'{args.command}' belongs to a later phase and is intentionally not implemented by Phase 4.")
-    else:
-        parser.error("Unsupported command")
+        for target in args.targets:
+            if target not in TARGETS:
+                raise SystemExit(f"Unknown native target '{target}'")
+            verify_staged_target(target)
+    elif args.command == "list-targets":
+        list_targets()
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

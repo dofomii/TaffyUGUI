@@ -124,7 +124,7 @@ macOS:    ./scripts/phase4-build-host.sh
 Linux:    ./scripts/phase4-build-host.sh
 ```
 
-The wrapper installs/activates the pinned project-local Rust toolchain, adds the canonical Rust target(s), runs `prepare`, executes the complete local Phase 3 gate, builds every Phase 4 artifact assigned to that host, and prints `phase4-status`. Linux still requires NDK r21d and Emscripten 2.0.19 to already be installed/selected; macOS still requires Xcode; Windows still requires the MSVC developer environment.
+The wrapper installs/activates the pinned project-local Rust toolchain, adds the canonical Rust target(s), runs `prepare`, executes the complete local Phase 3 gate, builds every Phase 4 artifact assigned to that host, and prints `phase4-status`. On Linux it automatically discovers `.toolchain/android-ndk-r21d` and `.toolchain/emsdk` when present; macOS still requires Xcode and Windows still requires the MSVC developer environment.
 
 After copying all three hosts' `dist/native/...` outputs into one clean aggregation checkout, run:
 

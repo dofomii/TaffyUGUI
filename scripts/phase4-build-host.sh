@@ -11,6 +11,14 @@ case "$(uname -s)" in
     rustup target add aarch64-apple-darwin x86_64-apple-darwin aarch64-apple-ios
     ;;
   Linux)
+    if [[ -z "${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}" && -f "$ROOT/.toolchain/android-ndk-r21d/source.properties" ]]; then
+      export ANDROID_NDK_HOME="$ROOT/.toolchain/android-ndk-r21d"
+    fi
+    if [[ -f "$ROOT/.toolchain/emsdk/emsdk_env.sh" ]]; then
+      export EM_CONFIG="${EM_CONFIG:-$ROOT/.toolchain/emsdk/.emscripten}"
+      # shellcheck source=/dev/null
+      source "$ROOT/.toolchain/emsdk/emsdk_env.sh" >/dev/null 2>&1
+    fi
     rustup target add aarch64-linux-android wasm32-unknown-emscripten
     if [[ -z "${ANDROID_NDK_HOME:-${ANDROID_NDK_ROOT:-}}" ]]; then
       echo "ANDROID_NDK_HOME or ANDROID_NDK_ROOT must point to NDK 21.3.6528147 (r21d)." >&2

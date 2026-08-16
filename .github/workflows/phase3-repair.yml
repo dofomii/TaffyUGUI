@@ -20,7 +20,7 @@ jobs:
         with:
           toolchain: 1.97.1
           components: rustfmt
-      - name: Apply deterministic Phase 3 repairs
+      - name: Apply deterministic Phase 3 source repairs
         shell: bash
         run: |
           python - <<'PY'
@@ -40,14 +40,6 @@ jobs:
           if text.count(unused) != 1:
               raise SystemExit(f"expected exactly one unused auto_value helper, found {text.count(unused)}")
           verification.write_text(text.replace(unused, ""), encoding="utf-8")
-
-          workflow = Path(".github/workflows/native-ci.yml")
-          text = workflow.read_text(encoding="utf-8")
-          old = "      - name: Check MSRV\n        run: cargo check --locked --manifest-path native/Cargo.toml --all-targets\n      - name: Test MSRV\n        run: cargo test --locked --manifest-path native/Cargo.toml\n"
-          new = "      - name: Check MSRV\n        run: cargo +1.82.0 check --locked --manifest-path native/Cargo.toml --all-targets\n      - name: Test MSRV\n        run: cargo +1.82.0 test --locked --manifest-path native/Cargo.toml\n"
-          if text.count(old) != 1:
-              raise SystemExit(f"expected exactly one MSRV job block, found {text.count(old)}")
-          workflow.write_text(text.replace(old, new), encoding="utf-8")
           PY
       - name: Canonical Rust formatting
         run: cargo fmt --manifest-path native/Cargo.toml --all
@@ -56,7 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add native/src native/tests .github/workflows/native-ci.yml
+          git add native/src native/tests
           git diff --cached --check
           if git diff --cached --quiet; then
             echo "No repair changes were needed."

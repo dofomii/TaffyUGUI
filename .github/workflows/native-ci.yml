@@ -123,6 +123,7 @@ jobs:
         with:
           toolchain: 1.97.1
           targets: aarch64-apple-ios
+          components: llvm-tools-preview
       - run: python build/build.py native ios-arm64
       - run: python build/build.py verify-native ios-arm64
       - uses: actions/upload-artifact@v4

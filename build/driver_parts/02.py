@@ -13,6 +13,9 @@ def target_env(spec: TargetSpec) -> dict[str, str]:
             raise SystemExit(f"Android API {ANDROID_API} linker missing: {linker}")
         env["CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"] = str(linker)
         env["CC_aarch64_linux_android"] = str(linker)
+        unwind_shim = android_unwind_shim(ndk)
+        link_flag = f"-C link-arg=-L{unwind_shim}"
+        env["RUSTFLAGS"] = f"{env.get('RUSTFLAGS', '').strip()} {link_flag}".strip()
     elif spec.name == "webgl":
         emcc = require("emcc", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
         require("emar", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")

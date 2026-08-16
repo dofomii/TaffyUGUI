@@ -180,3 +180,24 @@ def find_android_ndk() -> Path:
     if f"Pkg.Revision = {ANDROID_NDK_REVISION}" not in text:
         raise SystemExit(f"Android NDK must be {ANDROID_NDK_REVISION}; found:\n{text.strip()}")
     return ndk
+
+
+def android_unwind_shim(ndk: Path) -> Path:
+    """Expose r21d's AArch64 unwinder under Rust's expected library name."""
+    prebuilt_root = ndk / "toolchains" / "llvm" / "prebuilt"
+    prebuilts = sorted(prebuilt_root.glob("*/"))
+    if not prebuilts:
+        raise SystemExit("Android NDK LLVM prebuilt directory not found.")
+    source = prebuilts[0] / "lib" / "gcc" / "aarch64-linux-android" / "4.9.x" / "libgcc_real.a"
+    if not source.is_file():
+        raise SystemExit(f"Android NDK r21d AArch64 unwinder archive is missing: {source}")
+
+    shim_dir = ROOT / ".toolchain" / "android-link-shims" / "aarch64-linux-android"
+    shim_dir.mkdir(parents=True, exist_ok=True)
+    shim = shim_dir / "libunwind.a"
+    if shim.exists() or shim.is_symlink():
+        if not shim.is_symlink() or shim.resolve() != source.resolve():
+            raise SystemExit(f"Android unwind shim has an unexpected target: {shim}")
+    else:
+        shim.symlink_to(source)
+    return shim_dir

@@ -78,6 +78,7 @@ The universal dylib must contain both `arm64` and `x86_64` slices and expose the
 - `aarch64-linux-android`
 - Unity 2021.3-compatible Android NDK **r21d**, exact revision `21.3.6528147`
 - API level **21**
+- The local build driver maps r21d's AArch64 `libgcc_real.a` unwinder to Rust's expected `libunwind.a` name through an ignored, non-copying `.toolchain` symlink.
 - manifest records the NDK revision/API and Android Clang version, but not the machine-local NDK path
 - `ANDROID_NDK_HOME` or `ANDROID_NDK_ROOT` pointing to that exact NDK
 

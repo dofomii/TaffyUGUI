@@ -11,49 +11,65 @@ This document records checks actually executed locally. Remote CI is not build a
 - All 44 maintained Rust tests pass.
 - Host release build passes.
 - Pinned-cbindgen public-header drift verification passes.
-- Complete 31-function `tu_*` contract is aligned across Rust FFI, C header, and managed P/Invoke.
-- `tu_copy_last_error` regression is fixed and covered.
+- Complete 31-function `tu_*` contract remains aligned across Rust FFI, C header, and managed P/Invoke.
+- Native cached-measurement tests remain green, including callback-free width-dependent measurement behavior.
 
-## Accepted Phase 6 Android release verification
+## Current Android release/provenance verification
 
-- `python3 build/build.py verify-abi-final` — PASS for the Phase 6 release snapshot.
-- Android ARM64 native build/Phase 4 acceptance — PASS.
-- Phase 5 Unity native staging/verification — PASS.
-- Phase 6 source snapshot: `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`.
-- Accepted Android ARM64 library SHA-256: `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
+Phase 8 changed tracked `UnityPackage/Runtime` inputs, which are part of the content-addressed release snapshot. The native artifact was therefore rebuilt/reaccepted and the Unity payload restaged rather than leaving Phase 4/5 evidence stale.
+
+- `python3 build/build.py verify-abi-final` — **PASS**.
+- `python3 build/build.py native android-arm64` — **PASS**.
+- `python3 build/build.py verify-phase4` — **PASS**.
+- `python3 build/build.py stage-phase5` — **PASS**.
+- `python3 build/build.py verify-phase5` — **PASS**.
+- Current source snapshot: `sha256:0eb0a1c56f841cebf48758d6af045533ab69e68e9e76b8f05611712ce282c8f4`.
+- Android ARM64 library SHA-256: `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
 - ABI recorded by Phase 3/4/5 evidence: `1/2`.
-- Earlier physical-device execution on CPH2723 / Android 16 proved native loading, managed/native round trips, and last-error diagnostics for the frozen Phase 6 ABI/native payload.
+- The library bytes remain unchanged from the historical Phase 6 accepted engine binary.
 
-## Phase 7 Unity verification
+Earlier physical-device execution on CPH2723 / Android 16 proved final native loading, managed/native round trips, and last-error diagnostics for the frozen ABI/runtime path.
 
-The Phase 7 runtime was validated with Unity `6000.4.3f1` on Linux using the real package plus a local-only host native library in an ignored temporary Unity project.
+## Phase 8 Unity verification
 
-Permanent package tests:
+The final Phase 8 runtime was validated with Unity `6000.4.3f1` using the real local package and temporary validation material only under ignored `.build/` paths.
 
-- Edit Mode: **4 total, 4 passed, 0 failed, 0 skipped**.
-- Play Mode: **1 total, 1 passed, 0 failed, 0 skipped**.
+Permanent Edit Mode package suite:
 
-The tests cover:
+- **14 total, 14 passed, 0 failed, 0 skipped**.
 
-- intrinsic min/preferred size reporting;
-- `LayoutElement` sizing and `ignoreLayout` preservation;
-- stable/incremental topology through sibling reorder and same-count child replacement;
-- nested groups;
-- native context recreation after disable/enable;
-- runtime container resizing and flexible child layout.
+Permanent Play Mode package suite:
 
-Additional regression checks:
+- **3 total, 3 passed, 0 failed, 0 skipped**.
 
-- VS Code Problems for Phase 7 runtime/tests: **0 diagnostics**.
-- `python3 build/build.py quality`: **PASS** after Phase 7 managed changes; native 44/44 tests remain green.
-- Unity Android ARM64 IL2CPP development APK build: **PASS**.
-- APK contains `lib/arm64-v8a/libtaffy_ugui.so`.
-- APK Taffy library program headers and both runtime-loaded ELF `PT_LOAD` segments are byte-identical to the accepted Phase 6 native payload.
+The permanent suite covers Phase 7 lifecycle/topology/nesting regressions plus:
 
-No Android device was available during the final Phase 7 validation, so the Phase 7 APK was **not** executed on physical hardware. That does not block the Phase 7 minimal Edit/Play gate; comprehensive real-platform validation remains Phase 12.
+- core min/max sizing;
+- content-box padding/border behavior;
+- Flex grow and wrapping;
+- Block/FlowRoot/Float/Clear;
+- absolute positioning, insets, and aspect ratio;
+- RTL direction and overflow mode execution;
+- custom managed measurement caching and explicit invalidation;
+- TextMeshPro intrinsic measurement;
+- uGUI Text measurement and text/font-size/style changes;
+- Image/replaced-element intrinsic sizing;
+- repeated cached axis application without managed-provider re-entry.
+
+Additional checks:
+
+- VS Code Problems for runtime/tests: **0 diagnostics**.
+- `verify-abi-final`: **PASS**, including 44/44 Rust tests.
+- Fresh Unity Android ARM64 IL2CPP development APK build: **PASS**.
+- IL2CPP conversion includes `TaffyUGUI.Runtime.dll` and `Unity.TextMeshPro.dll`.
+- APK contains `lib/arm64-v8a/libtaffy_ugui.so` and `lib/arm64-v8a/libil2cpp.so`.
+- APK Taffy library program headers match the accepted staged library.
+- Both runtime-loaded ELF `PT_LOAD` segments are byte-identical to the accepted staged library.
+
+No Android device was attached during the final Phase 8 APK validation, so that APK was not launched on physical hardware. Dedicated physical Unity Player validation remains Phase 12.
 
 ## Phase status
 
-**Phase 7 is complete. Phase 8 is active; P8.1 is next.**
+**Phase 8 is complete. Phase 9 is active; P9.1 is next.**
 
 Permanent Unity regression tests are tracked product tests. Disposable validation harnesses/probes remain local-only under ignored `.build/` paths and are excluded from Git by project policy.

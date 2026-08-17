@@ -38,8 +38,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 5:** COMPLETE for Android ARM64 at final ABI v1 `1/2`; package provenance matches the accepted Phase 4 artifact.
 - **Phase 6:** COMPLETE; final ABI v1 `1/2` is frozen, the final Android artifact/payload were rebuilt/restaged, and the final native payload gate passed.
 - **Phase 7:** COMPLETE; persistent Unity/uGUI integration, incremental native synchronization, nested groups, LayoutElement semantics, and permanent Unity regression tests are verified.
-- **Phase 8:** ACTIVE; P8.1 is the next authoritative task.
-- **Phase 9–14:** NOT STARTED.
+- **Phase 8:** COMPLETE; production Flex/Block/Float authoring and callback-free cached Unity measurement adapters are verified.
+- **Phase 9:** ACTIVE; P9.1 is the next authoritative task.
+- **Phase 10–14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -57,7 +58,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 8 P8.1 — complete Unity authoring for core size/min/max/box model.
+**Next authoritative task:** Phase 9 P9.1 — implement the serializable Grid track/unit data model.
 
 
 ---
@@ -381,26 +382,38 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 8 — Production Flex / Block / Float / Measurement Unity Integration
 
-**Status:** ACTIVE — Phase 7 gate complete; P8.1 is next
+**Status:** COMPLETE — production Flex/Block/Float/measurement gate passed
 
-- [ ] P8.1 Complete Unity authoring for core size/min/max/box model.
-- [ ] P8.2 Complete Flex container authoring.
-- [ ] P8.3 Complete Flex item authoring.
-- [ ] P8.4 Block/FlowRoot/Float/Clear Unity authoring.
-- [ ] P8.5 Position/inset/overflow/box-sizing/direction/aspect integration.
-- [ ] P8.6 Managed measurement cache orchestration.
-- [ ] P8.7 TextMeshPro measurement adapter.
-- [ ] P8.8 Unity Text adapter where retained.
-- [ ] P8.9 Image/replaced-element measurement adapter.
-- [ ] P8.10 No managed callback during native Taffy computation.
-- [ ] P8.11 Measurement invalidation on text/font/size/style changes.
-- [ ] P8.12 Production regression tests for Flex/Block/Float/measurement behavior.
+- [x] P8.1 Complete Unity authoring for core size/min/max/box model.
+- [x] P8.2 Complete Flex container authoring.
+- [x] P8.3 Complete Flex item authoring.
+- [x] P8.4 Block/FlowRoot/Float/Clear Unity authoring.
+- [x] P8.5 Position/inset/overflow/box-sizing/direction/aspect integration.
+- [x] P8.6 Managed measurement cache orchestration.
+- [x] P8.7 TextMeshPro measurement adapter.
+- [x] P8.8 Unity Text adapter where retained.
+- [x] P8.9 Image/replaced-element measurement adapter.
+- [x] P8.10 No managed callback during native Taffy computation.
+- [x] P8.11 Measurement invalidation on text/font/size/style changes.
+- [x] P8.12 Production regression tests for Flex/Block/Float/measurement behavior.
+
+### Phase 8 validation note
+
+- VS Code Problems: 0 diagnostics for runtime/tests.
+- Final ABI/native regression: 44/44 Rust tests, rustfmt, Clippy, release build, and cbindgen drift gate pass.
+- Unity `6000.4.3f1` Edit Mode: 14/14 permanent package tests pass.
+- Unity `6000.4.3f1` Play Mode: 3/3 permanent package tests pass.
+- Android ARM64 artifact/provenance was rebuilt/restaged for current source snapshot `sha256:0eb0a1c56f841cebf48758d6af045533ab69e68e9e76b8f05611712ce282c8f4`; Phase 4/5 gates pass.
+- Fresh Android ARM64 IL2CPP APK build passes with `TaffyUGUI.Runtime` + TextMeshPro and byte-identical runtime-loaded Taffy ELF segments.
+- No physical Android device was attached for the final Phase 8 APK run; comprehensive Unity Player device coverage remains Phase 12.
+
+**Documentation:** `PHASE8_FLEX_BLOCK_MEASUREMENT.md`
 
 ---
 
 # Phase 9 — Complete Grid and Calc Unity Authoring
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 8 gate complete; P9.1 is next
 **Note:** native Grid/Calc engine support is already implemented in Phase 1.
 
 - [ ] P9.1 Serializable Grid track/unit data model.
@@ -518,8 +531,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 7 is complete. Phase 8 is now authoritative.
+Phase 8 is complete. Phase 9 is now authoritative.
 
-**Next task:** P8.1 — complete Unity authoring for core size/min/max/box model.
+**Next task:** P9.1 — implement the serializable Grid track/unit data model.
 
-Phase 8 then expands the minimal Phase 7 bridge into the production Flex/Block/Float/measurement integration, including full authoring and managed measurement adapters.
+Phase 9 exposes the already-implemented native Grid/Calc engine safely through Unity authoring and diagnostics.

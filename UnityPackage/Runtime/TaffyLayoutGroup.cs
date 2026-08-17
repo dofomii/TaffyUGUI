@@ -9,12 +9,25 @@ namespace TaffyUGUI
     [DisallowMultipleComponent]
     public sealed class TaffyLayoutGroup : LayoutGroup
     {
+        [Header("Formatting Context")]
+        public TaffyContainerDisplay containerDisplay = TaffyContainerDisplay.Flex;
+        public TaffyBoxSizing boxSizing = TaffyBoxSizing.BorderBox;
+        public TaffyWritingDirection writingDirection = TaffyWritingDirection.LeftToRight;
+        public TaffyOverflow overflowX = TaffyOverflow.Visible;
+        public TaffyOverflow overflowY = TaffyOverflow.Visible;
+        [Min(0)] public float scrollbarWidth;
+        public TaffyEdges border = default;
+        public TaffyTextAlign textAlign = TaffyTextAlign.Auto;
+
+        [Header("Flex Container")]
         public TaffyFlexDirection direction = TaffyFlexDirection.Row;
         public TaffyFlexWrap wrap = TaffyFlexWrap.NoWrap;
         [Min(0)] public float horizontalGap;
         [Min(0)] public float verticalGap;
         public TaffyJustify justifyContent = TaffyJustify.Start;
         public TaffyAlign alignItems = TaffyAlign.Stretch;
+        public TaffyAlignContent alignContent = TaffyAlignContent.Auto;
+        public TaffyAlign justifyItems = TaffyAlign.Auto;
 
         private enum NativePass
         {
@@ -28,6 +41,14 @@ namespace TaffyUGUI
             internal ulong handle;
             internal TaffyNative.Style style;
             internal bool hasStyle;
+
+            internal readonly Dictionary<int, TaffyMeasurementData> measurementCache = new Dictionary<int, TaffyMeasurementData>();
+            internal bool measurementResolved;
+            internal bool measurementDirty = true;
+            internal int measurementSignature;
+            internal TaffyMeasurementData measurementData;
+            internal bool nativeHasMeasurement;
+            internal int nativeMeasurementSignature;
         }
 
         private ulong _context;
@@ -42,7 +63,6 @@ namespace TaffyUGUI
         private TaffyNative.Layout[] _layoutResults = Array.Empty<TaffyNative.Layout>();
         private bool _abiValidated;
         private bool _applying;
-        private bool _measurementsValid;
         private bool _arrangedLayoutValid;
         private Vector2 _minimumSize;
         private Vector2 _preferredSize;
@@ -56,25 +76,46 @@ namespace TaffyUGUI
                 LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
         }
 
+        public void InvalidateMeasurement(RectTransform child = null)
+        {
+            if (child)
+            {
+                if (_nodes.TryGetValue(child, out NodeRecord record))
+                {
+                    record.measurementDirty = true;
+                    record.measurementCache.Clear();
+                }
+            }
+            else
+            {
+                foreach (NodeRecord record in _nodes.Values)
+                {
+                    record.measurementDirty = true;
+                    record.measurementCache.Clear();
+                }
+            }
+            SetLayoutDirty();
+        }
         protected override void OnEnable()
         {
             base.OnEnable();
+            TaffyMeasurementInvalidationHub.Register(this);
             EnsureContext();
             SetLayoutDirty();
         }
 
         protected override void OnDisable()
         {
+            TaffyMeasurementInvalidationHub.Unregister(this);
             DestroyContext();
             base.OnDisable();
         }
-
         protected override void OnDestroy()
         {
+            TaffyMeasurementInvalidationHub.Unregister(this);
             DestroyContext();
             base.OnDestroy();
         }
-
 #if UNITY_EDITOR
         protected override void OnValidate()
         {
@@ -82,6 +123,12 @@ namespace TaffyUGUI
             SetLayoutDirty();
         }
 #endif
+
+        protected override void OnDidApplyAnimationProperties()
+        {
+            base.OnDidApplyAnimationProperties();
+            SetLayoutDirty();
+        }
 
         protected override void OnTransformChildrenChanged()
         {
@@ -104,12 +151,10 @@ namespace TaffyUGUI
 
         public override void CalculateLayoutInputVertical()
         {
-            // Refresh after the horizontal phase so nested groups have had a chance
-            // to publish their own vertical layout inputs before we consume them.
+            // Refresh after horizontal calculation so nested groups have published vertical inputs.
             MeasureLayoutInputs();
             SetLayoutInputForAxis(_minimumSize.y, _preferredSize.y, 0f, 1);
         }
-
 
         public override void SetLayoutHorizontal()
         {
@@ -123,7 +168,6 @@ namespace TaffyUGUI
 
         private void InvalidateLayout()
         {
-            _measurementsValid = false;
             _arrangedLayoutValid = false;
         }
 
@@ -152,7 +196,6 @@ namespace TaffyUGUI
 
             _rootStyle = initialStyle;
             _hasRootStyle = true;
-            _measurementsValid = false;
             _arrangedLayoutValid = false;
         }
 
@@ -166,7 +209,6 @@ namespace TaffyUGUI
             _orderedHandles.Clear();
             _seenChildren.Clear();
             _hasRootStyle = false;
-            _measurementsValid = false;
             _arrangedLayoutValid = false;
 
             if (context == 0)
@@ -197,13 +239,13 @@ namespace TaffyUGUI
             _preferredSize = new Vector2(
                 Mathf.Max(_minimumSize.x, preferred.width),
                 Mathf.Max(_minimumSize.y, preferred.height));
-            _measurementsValid = true;
             _arrangedLayoutValid = false;
         }
 
         private TaffyNative.Layout ComputeRootLayout(NativePass pass, float width, float height)
         {
-            SynchronizeNativeTree(pass);
+            SynchronizeNativeTree(pass, width);
+            // Managed measurement providers have completed and their records are uploaded before this call.
             TaffyNative.Check(TaffyNative.tu_compute_layout(_context, _root, width, height), "compute root layout");
             TaffyNative.Check(TaffyNative.tu_get_layout(_context, _root, out var layout), "get root layout");
             return layout;
@@ -218,12 +260,13 @@ namespace TaffyUGUI
             try
             {
                 EnsureContext();
-                SynchronizeNativeTree(NativePass.Arrange);
-
                 float width = Mathf.Max(0f, rectTransform.rect.width);
                 float height = Mathf.Max(0f, rectTransform.rect.height);
+                SynchronizeNativeTree(NativePass.Arrange, width);
+
                 if (!_arrangedLayoutValid || !SameFloat(_arrangedWidth, width) || !SameFloat(_arrangedHeight, height))
                 {
+                    // No managed callbacks are reachable from the ABI compute function.
                     TaffyNative.Check(TaffyNative.tu_compute_layout(_context, _root, width, height), "compute arranged layout");
                     ReadChildLayouts();
                     _arrangedWidth = width;
@@ -248,12 +291,12 @@ namespace TaffyUGUI
             }
         }
 
-        private void SynchronizeNativeTree(NativePass pass)
+        private void SynchronizeNativeTree(NativePass pass, float availableWidth)
         {
             EnsureContext();
 
             var rootStyle = BuildRootStyle(pass);
-            if (!_hasRootStyle || !RootStyleEquals(_rootStyle, rootStyle))
+            if (!_hasRootStyle || !StyleEquals(_rootStyle, rootStyle))
             {
                 TaffyNative.Check(TaffyNative.tu_node_set_style(_context, _root, ref rootStyle), "update root style");
                 _rootStyle = rootStyle;
@@ -288,19 +331,27 @@ namespace TaffyUGUI
             for (int i = 0; i < rectChildren.Count; i++)
             {
                 RectTransform child = rectChildren[i];
-                var style = BuildChildStyle(child, pass);
-
                 if (!_nodes.TryGetValue(child, out NodeRecord record))
+                    record = new NodeRecord();
+
+                TaffyLayoutItem item = child.GetComponent<TaffyLayoutItem>();
+                bool hasMeasurement = ResolveMeasurement(child, item, record, availableWidth);
+                TaffyMeasurementData measurement = record.measurementData;
+                var style = BuildChildStyle(child, item, pass, hasMeasurement, measurement);
+
+                if (record.handle == 0)
                 {
                     TaffyNative.Check(TaffyNative.tu_node_create(_context, ref style, out ulong handle), "create child node");
                     if (handle == 0)
                         throw new InvalidOperationException("TaffyUGUI native child creation returned a null handle.");
-                    record = new NodeRecord { handle = handle, style = style, hasStyle = true };
+                    record.handle = handle;
+                    record.style = style;
+                    record.hasStyle = true;
                     _nodes.Add(child, record);
                     topologyChanged = true;
                     _arrangedLayoutValid = false;
                 }
-                else if (!record.hasStyle || !ChildStyleEquals(record.style, style))
+                else if (!record.hasStyle || !StyleEquals(record.style, style))
                 {
                     TaffyNative.Check(TaffyNative.tu_node_set_style(_context, record.handle, ref style), "update child style");
                     record.style = style;
@@ -308,6 +359,7 @@ namespace TaffyUGUI
                     _arrangedLayoutValid = false;
                 }
 
+                SynchronizeNativeMeasurement(record);
                 _orderedChildren.Add(child);
                 _orderedHandles.Add(record.handle);
             }
@@ -329,7 +381,6 @@ namespace TaffyUGUI
                 }
             }
 
-
             if (topologyChanged)
             {
                 EnsureLayoutBuffers(_orderedHandles.Count);
@@ -340,6 +391,71 @@ namespace TaffyUGUI
                     "synchronize child topology");
                 _arrangedLayoutValid = false;
             }
+        }
+
+        private bool ResolveMeasurement(
+            RectTransform child,
+            TaffyLayoutItem item,
+            NodeRecord record,
+            float availableWidth)
+        {
+            bool enabled = !item || item.MeasurementEnabled;
+            if (!enabled || !TaffyMeasurementResolver.TryGetSignature(child, availableWidth, out int signature))
+            {
+                record.measurementResolved = false;
+                record.measurementDirty = false;
+                record.measurementCache.Clear();
+                return false;
+            }
+
+            if (record.measurementDirty)
+            {
+                record.measurementCache.Clear();
+                record.measurementDirty = false;
+            }
+
+            if (record.measurementCache.TryGetValue(signature, out TaffyMeasurementData cached))
+            {
+                record.measurementData = cached;
+                record.measurementSignature = signature;
+                record.measurementResolved = true;
+                return true;
+            }
+
+            if (!TaffyMeasurementResolver.TryResolve(child, availableWidth, out TaffyMeasurementData measurement, out signature))
+            {
+                record.measurementResolved = false;
+                return false;
+            }
+
+            record.measurementData = measurement;
+            record.measurementSignature = signature;
+            record.measurementResolved = true;
+            record.measurementCache[signature] = measurement;
+            return true;
+        }
+
+        private void SynchronizeNativeMeasurement(NodeRecord record)
+        {
+            if (record.measurementResolved)
+            {
+                if (!record.nativeHasMeasurement || record.nativeMeasurementSignature != record.measurementSignature)
+                {
+                    TaffyMeasurementResolver.Upload(_context, record.handle, record.measurementData);
+                    record.nativeHasMeasurement = true;
+                    record.nativeMeasurementSignature = record.measurementSignature;
+                    _arrangedLayoutValid = false;
+                }
+                return;
+            }
+
+            if (!record.nativeHasMeasurement)
+                return;
+
+            TaffyNative.Check(TaffyNative.tu_node_clear_measurement(_context, record.handle, IntPtr.Zero), "clear cached measurement");
+            record.nativeHasMeasurement = false;
+            record.nativeMeasurementSignature = 0;
+            _arrangedLayoutValid = false;
         }
 
         private void ReadChildLayouts()
@@ -376,8 +492,13 @@ namespace TaffyUGUI
 
         private TaffyNative.Style BuildRootStyle(NativePass pass)
         {
-            var style = TaffyNative.Style.FlexDefaults();
-            style.display = (int)TaffyNative.Display.Flex;
+            var style = TaffyNative.Style.Defaults((TaffyNative.Display)(int)containerDisplay);
+            style.display = (int)containerDisplay;
+            style.boxSizing = (int)boxSizing;
+            style.direction = (int)writingDirection;
+            style.overflowX = (int)overflowX;
+            style.overflowY = (int)overflowY;
+            style.scrollbarWidth = Mathf.Max(0f, scrollbarWidth);
             style.flexDirection = (int)direction;
             style.flexWrap = (int)wrap;
             style.gapX = TaffyNative.Value.Points(Mathf.Max(0f, horizontalGap));
@@ -386,8 +507,15 @@ namespace TaffyUGUI
             style.paddingRight = TaffyNative.Value.Points(Mathf.Max(0f, padding.right));
             style.paddingTop = TaffyNative.Value.Points(Mathf.Max(0f, padding.top));
             style.paddingBottom = TaffyNative.Value.Points(Mathf.Max(0f, padding.bottom));
+            style.borderLeft = border.left.ToNonNegativeLengthPercentage();
+            style.borderRight = border.right.ToNonNegativeLengthPercentage();
+            style.borderTop = border.top.ToNonNegativeLengthPercentage();
+            style.borderBottom = border.bottom.ToNonNegativeLengthPercentage();
             style.alignItems = (int)alignItems;
+            style.alignContent = (int)alignContent;
             style.justifyContent = ToNativeJustify(justifyContent);
+            style.justifyItems = (int)justifyItems;
+            style.textAlign = (int)textAlign;
 
             if (pass == NativePass.Arrange)
             {
@@ -398,37 +526,67 @@ namespace TaffyUGUI
             return style;
         }
 
-        private TaffyNative.Style BuildChildStyle(RectTransform child, NativePass pass)
+        private TaffyNative.Style BuildChildStyle(
+            RectTransform child,
+            TaffyLayoutItem item,
+            NativePass pass,
+            bool hasMeasurement,
+            TaffyMeasurementData measurement)
         {
             var style = TaffyNative.Style.FlexDefaults();
+            LayoutElement element = child.GetComponent<LayoutElement>();
+            bool explicitPreferredWidth = element && !element.ignoreLayout && element.preferredWidth >= 0f;
+            bool explicitPreferredHeight = element && !element.ignoreLayout && element.preferredHeight >= 0f;
 
-            float minWidth = Mathf.Max(0f, LayoutUtility.GetMinWidth(child));
-            float minHeight = Mathf.Max(0f, LayoutUtility.GetMinHeight(child));
-            float preferredWidth = Mathf.Max(minWidth, LayoutUtility.GetPreferredWidth(child));
-            float preferredHeight = Mathf.Max(minHeight, LayoutUtility.GetPreferredHeight(child));
+            float layoutMinWidth = Mathf.Max(0f, LayoutUtility.GetMinWidth(child));
+            float layoutMinHeight = Mathf.Max(0f, LayoutUtility.GetMinHeight(child));
+            float layoutPreferredWidth = Mathf.Max(layoutMinWidth, LayoutUtility.GetPreferredWidth(child));
+            float layoutPreferredHeight = Mathf.Max(layoutMinHeight, LayoutUtility.GetPreferredHeight(child));
 
+            float minimumWidth = hasMeasurement ? Mathf.Max(layoutMinWidth, measurement.minContent.x) : layoutMinWidth;
+            float minimumHeight = hasMeasurement ? Mathf.Max(layoutMinHeight, measurement.minContent.y) : layoutMinHeight;
+            float preferredWidth = hasMeasurement && !explicitPreferredWidth
+                ? Mathf.Max(minimumWidth, measurement.preferred.x)
+                : layoutPreferredWidth;
+            float preferredHeight = hasMeasurement && !explicitPreferredHeight
+                ? Mathf.Max(minimumHeight, measurement.preferred.y)
+                : layoutPreferredHeight;
 
-            style.minWidth = TaffyNative.Value.Points(minWidth);
-            style.minHeight = TaffyNative.Value.Points(minHeight);
+            // LayoutElement minima remain hard constraints during arrangement. Intrinsic min-content
+            // participates in our own minimum-size report without preventing normal Flex shrink/wrap.
+            style.minWidth = TaffyNative.Value.Points(layoutMinWidth);
+            style.minHeight = TaffyNative.Value.Points(layoutMinHeight);
 
             if (pass == NativePass.Minimum)
             {
-                style.width = TaffyNative.Value.Points(minWidth);
-                style.height = TaffyNative.Value.Points(minHeight);
+                style.width = TaffyNative.Value.Points(minimumWidth);
+                style.height = TaffyNative.Value.Points(minimumHeight);
                 style.flexGrow = 0f;
                 style.flexShrink = 0f;
             }
+            else if (pass == NativePass.Preferred)
+            {
+                style.width = preferredWidth > 0f ? TaffyNative.Value.Points(preferredWidth) : TaffyNative.Value.Auto;
+                style.height = preferredHeight > 0f ? TaffyNative.Value.Points(preferredHeight) : TaffyNative.Value.Auto;
+                style.flexGrow = MainAxisFlexible(child);
+                style.flexShrink = 1f;
+            }
             else
             {
-                style.width = TaffyNative.Value.Points(preferredWidth);
-                style.height = TaffyNative.Value.Points(preferredHeight);
+                style.width = hasMeasurement && !explicitPreferredWidth
+                    ? TaffyNative.Value.Auto
+                    : preferredWidth > 0f ? TaffyNative.Value.Points(preferredWidth) : TaffyNative.Value.Auto;
+                style.height = hasMeasurement && !explicitPreferredHeight
+                    ? TaffyNative.Value.Auto
+                    : preferredHeight > 0f ? TaffyNative.Value.Points(preferredHeight) : TaffyNative.Value.Auto;
                 style.flexGrow = MainAxisFlexible(child);
                 style.flexShrink = 1f;
             }
 
-            TaffyLayoutItem item = child.GetComponent<TaffyLayoutItem>();
             if (item)
-                style = item.ApplyTo(style);
+                style = item.ApplyTo(style, hasMeasurement && measurement.isReplaced);
+            else if (hasMeasurement && measurement.isReplaced)
+                style.itemIsReplaced = 1;
 
             return style;
         }
@@ -456,41 +614,67 @@ namespace TaffyUGUI
                 case TaffyJustify.SpaceBetween: return (int)TaffyNative.AlignContent.SpaceBetween;
                 case TaffyJustify.SpaceAround: return (int)TaffyNative.AlignContent.SpaceAround;
                 case TaffyJustify.SpaceEvenly: return (int)TaffyNative.AlignContent.SpaceEvenly;
+                case TaffyJustify.FlexStart: return (int)TaffyNative.AlignContent.FlexStart;
+                case TaffyJustify.FlexEnd: return (int)TaffyNative.AlignContent.FlexEnd;
+                case TaffyJustify.SafeStart: return (int)TaffyNative.AlignContent.SafeStart;
+                case TaffyJustify.SafeEnd: return (int)TaffyNative.AlignContent.SafeEnd;
+                case TaffyJustify.SafeCenter: return (int)TaffyNative.AlignContent.SafeCenter;
+                case TaffyJustify.SafeFlexStart: return (int)TaffyNative.AlignContent.SafeFlexStart;
+                case TaffyJustify.SafeFlexEnd: return (int)TaffyNative.AlignContent.SafeFlexEnd;
                 default: return (int)TaffyNative.AlignContent.Start;
             }
         }
 
-        private static bool RootStyleEquals(TaffyNative.Style a, TaffyNative.Style b)
+        private static bool StyleEquals(TaffyNative.Style a, TaffyNative.Style b)
         {
             return a.display == b.display &&
-                   a.flexDirection == b.flexDirection &&
-                   a.flexWrap == b.flexWrap &&
-                   a.alignItems == b.alignItems &&
-                   a.justifyContent == b.justifyContent &&
-                   SameValue(a.gapX, b.gapX) &&
-                   SameValue(a.gapY, b.gapY) &&
-                   SameValue(a.paddingLeft, b.paddingLeft) &&
-                   SameValue(a.paddingRight, b.paddingRight) &&
-                   SameValue(a.paddingTop, b.paddingTop) &&
-                   SameValue(a.paddingBottom, b.paddingBottom) &&
-                   SameValue(a.width, b.width) &&
-                   SameValue(a.height, b.height);
-        }
-
-        private static bool ChildStyleEquals(TaffyNative.Style a, TaffyNative.Style b)
-        {
-            return a.display == b.display &&
+                   a.boxSizing == b.boxSizing &&
+                   a.direction == b.direction &&
+                   a.overflowX == b.overflowX &&
+                   a.overflowY == b.overflowY &&
+                   SameFloat(a.scrollbarWidth, b.scrollbarWidth) &&
+                   a.position == b.position &&
+                   SameValue(a.insetLeft, b.insetLeft) &&
+                   SameValue(a.insetRight, b.insetRight) &&
+                   SameValue(a.insetTop, b.insetTop) &&
+                   SameValue(a.insetBottom, b.insetBottom) &&
                    SameValue(a.width, b.width) &&
                    SameValue(a.height, b.height) &&
                    SameValue(a.minWidth, b.minWidth) &&
                    SameValue(a.minHeight, b.minHeight) &&
                    SameValue(a.maxWidth, b.maxWidth) &&
                    SameValue(a.maxHeight, b.maxHeight) &&
+                   SameFloat(a.aspectRatio, b.aspectRatio) &&
+                   SameValue(a.marginLeft, b.marginLeft) &&
+                   SameValue(a.marginRight, b.marginRight) &&
+                   SameValue(a.marginTop, b.marginTop) &&
+                   SameValue(a.marginBottom, b.marginBottom) &&
+                   SameValue(a.paddingLeft, b.paddingLeft) &&
+                   SameValue(a.paddingRight, b.paddingRight) &&
+                   SameValue(a.paddingTop, b.paddingTop) &&
+                   SameValue(a.paddingBottom, b.paddingBottom) &&
+                   SameValue(a.borderLeft, b.borderLeft) &&
+                   SameValue(a.borderRight, b.borderRight) &&
+                   SameValue(a.borderTop, b.borderTop) &&
+                   SameValue(a.borderBottom, b.borderBottom) &&
+                   a.flexDirection == b.flexDirection &&
+                   a.flexWrap == b.flexWrap &&
                    SameValue(a.flexBasis, b.flexBasis) &&
                    SameFloat(a.flexGrow, b.flexGrow) &&
                    SameFloat(a.flexShrink, b.flexShrink) &&
+                   a.alignItems == b.alignItems &&
                    a.alignSelf == b.alignSelf &&
-                   SameFloat(a.aspectRatio, b.aspectRatio);
+                   a.alignContent == b.alignContent &&
+                   a.justifyContent == b.justifyContent &&
+                   a.justifyItems == b.justifyItems &&
+                   a.justifySelf == b.justifySelf &&
+                   SameValue(a.gapX, b.gapX) &&
+                   SameValue(a.gapY, b.gapY) &&
+                   a.itemIsTable == b.itemIsTable &&
+                   a.itemIsReplaced == b.itemIsReplaced &&
+                   a.floatMode == b.floatMode &&
+                   a.clearMode == b.clearMode &&
+                   a.textAlign == b.textAlign;
         }
 
         private static bool SameValue(TaffyNative.Value a, TaffyNative.Value b)

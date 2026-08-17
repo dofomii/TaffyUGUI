@@ -1,6 +1,6 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the gated production path from the current completed Phase 7 Unity bridge to v1.0.
+This document describes the gated production path from the current completed Phase 8 Flex/Block/measurement integration to v1.0.
 
 ## Phase sequence
 
@@ -14,8 +14,8 @@ This document describes the gated production path from the current completed Pha
 | 5 | Unity-Ready Native Artifact Staging | Complete for Android ARM64 |
 | 6 | Managed ABI Conformance and Final ABI v1 Freeze | Complete; ABI v1 `1/2` |
 | 7 | Minimal Working Unity uGUI Product | Complete |
-| 8 | Production Flex/Block/Float/Measurement Unity Integration | Active; P8.1 next |
-| 9 | Complete Grid and Calc Unity Authoring | Native support exists; Unity authoring not started |
+| 8 | Production Flex/Block/Float/Measurement Unity Integration | Complete |
+| 9 | Complete Grid and Calc Unity Authoring | Active; P9.1 next |
 | 10 | Responsive and Integration Hardening | Not started |
 | 11 | Editor Tooling and Migration | Not started |
 | 12 | Real Unity Platform Validation | Not started |
@@ -55,14 +55,19 @@ The Phase 7 gate passed 4/4 Edit Mode and 1/1 Play Mode tests on Unity `6000.4.3
 
 ## Phase 8 — Production Flex/Block/Float/Measurement Unity Integration
 
-- expose full production Flex authoring;
-- Block/FlowRoot/Float authoring and behavior;
-- complete box-model fields;
-- positioning, overflow, direction, box-sizing, aspect-ratio integration;
-- managed cached measurement pipeline;
-- TextMeshPro adapter;
-- Unity Text/Image/replaced-element adapters as appropriate;
-- no managed callbacks from inside native layout.
+**Complete.** The production Unity bridge now includes:
+
+- full Phase 8 Flex container/item authoring;
+- Block/FlowRoot/Float/Clear authoring and behavior;
+- core size/min/max/margin/padding/border and box-sizing fields;
+- positioning, insets, overflow, direction, and aspect-ratio integration;
+- per-node multi-signature managed measurement caching;
+- TextMeshPro, uGUI Text, Image/RawImage, and custom-provider adapters;
+- source-aware measurement invalidation;
+- a callback-free native Taffy compute boundary;
+- maintained Edit Mode and Play Mode regression coverage.
+
+The Phase 8 gate passed 14/14 Edit Mode and 3/3 Play Mode tests on Unity `6000.4.3f1`, refreshed the Phase 4/5 Android provenance for the current content-addressed source snapshot, and passed a fresh Android ARM64 IL2CPP build. See [PHASE8_FLEX_BLOCK_MEASUREMENT.md](PHASE8_FLEX_BLOCK_MEASUREMENT.md).
 
 ## Phase 9 — Complete Grid and Calc Unity Authoring
 

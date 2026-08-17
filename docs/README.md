@@ -7,7 +7,7 @@
 - [LOCAL_VERIFICATION_STATUS.md](LOCAL_VERIFICATION_STATUS.md) — checks actually executed in the current local environment.
 - [ROADMAP.md](ROADMAP.md) — gated production roadmap through v1.0.
 
-## Completed foundation, native, ABI, and minimal Unity phases
+## Completed foundation, native, ABI, and Unity integration phases
 
 - [PHASE0_FOUNDATION.md](PHASE0_FOUNDATION.md)
 - [PHASE1_NATIVE_ENGINE.md](PHASE1_NATIVE_ENGINE.md)
@@ -16,10 +16,11 @@
 - [PHASE4_PLATFORM_BUILDS.md](PHASE4_PLATFORM_BUILDS.md)
 - [PHASE6_MANAGED_ABI.md](PHASE6_MANAGED_ABI.md)
 - [PHASE7_MINIMAL_UGUI.md](PHASE7_MINIMAL_UGUI.md)
+- [PHASE8_FLEX_BLOCK_MEASUREMENT.md](PHASE8_FLEX_BLOCK_MEASUREMENT.md)
 
 ## Active phase
 
-Phase 8 — Production Flex / Block / Float / Measurement Unity Integration. See [TASK_TRACKER.md](TASK_TRACKER.md); **P8.1** is next.
+Phase 9 — Complete Grid and Calc Unity Authoring. See [TASK_TRACKER.md](TASK_TRACKER.md); **P9.1** is next.
 
 ## Local development
 

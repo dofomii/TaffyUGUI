@@ -1,7 +1,7 @@
 {
   "name": "TaffyUGUI.Tests.EditMode",
   "rootNamespace": "TaffyUGUI.Tests",
-  "references": ["TaffyUGUI.Runtime", "Unity.ugui"],
+  "references": ["TaffyUGUI.Runtime", "Unity.ugui", "Unity.TextMeshPro"],
   "includePlatforms": ["Editor"],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

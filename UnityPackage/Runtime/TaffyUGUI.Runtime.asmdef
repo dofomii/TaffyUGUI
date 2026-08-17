@@ -1,7 +1,7 @@
 {
   "name": "TaffyUGUI.Runtime",
   "rootNamespace": "TaffyUGUI",
-  "references": ["Unity.ugui"],
+  "references": ["Unity.ugui", "Unity.TextMeshPro"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

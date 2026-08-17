@@ -1,7 +1,7 @@
 {
   "name": "TaffyUGUI.Tests.PlayMode",
   "rootNamespace": "TaffyUGUI.Tests",
-  "references": ["TaffyUGUI.Runtime", "Unity.ugui"],
+  "references": ["TaffyUGUI.Runtime", "Unity.ugui", "Unity.TextMeshPro"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

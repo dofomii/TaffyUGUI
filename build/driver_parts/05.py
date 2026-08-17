@@ -66,7 +66,7 @@ PluginImporter:
   validateReferences: 1
   platformData:
   - first:
-      Any: 
+      Any:
     second:
       enabled: 0
       settings: {}
@@ -83,9 +83,9 @@ PluginImporter:
       settings:
         CPU: AnyCPU
         DefaultValueInitialized: true
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
+  userData:
+  assetBundleName:
+  assetBundleVariant:
 """
 
 

@@ -22,9 +22,10 @@ The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.
 | 7 — Minimal working Unity uGUI product | **Complete** |
 | 8 — Production Flex/Block/Float/measurement integration | **Complete** |
 | 9 — Grid/Calc Unity authoring | **Complete** |
-| 10 — Responsive and integration hardening | **Active; P10.1 is next** |
+| 10 — Responsive and integration hardening | **Complete** |
+| 11 — Editor tooling and migration | **Active; P11.1 is next** |
 
-Phase 9 is complete. The Unity bridge now exposes production Grid authoring for explicit/implicit tracks, `fr`, minmax/content sizing, repeat/count/auto-fill/auto-fit, named lines/spans/template areas, auto-flow, item placement/alignment, typed Calc expressions, validation, and detailed native Grid diagnostics. Permanent Unity tests pass 22/22 in Edit Mode and 5/5 in Play Mode on Unity `6000.4.3f1`. Phase 10 is active with P10.1 next. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
+Phase 10 is complete. The Unity bridge now adds responsive breakpoint profiles, Canvas/rect responsiveness, safe-area padding, ScrollRect content sizing, ContentSizeFitter/AspectRatioFitter ownership rules, animation invalidation, edge-based pixel rounding, rebuild-loop protection, and runtime profile/safe-area overrides. Permanent Unity tests pass 29/29 in Edit Mode and 9/9 in Play Mode on Unity `6000.4.3f1`, and the final Android ARM64 IL2CPP runtime smoke gate passes on physical `CPH2723` hardware running Android 16 / API 36. Phase 11 is active with P11.1 next. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
 
 
 For the full current state, use:
@@ -45,6 +46,7 @@ For the full current state, use:
 - [Phase 7 — Minimal Unity uGUI product](docs/PHASE7_MINIMAL_UGUI.md)
 - [Phase 8 — Flex/Block/Float/measurement integration](docs/PHASE8_FLEX_BLOCK_MEASUREMENT.md)
 - [Phase 9 — Grid/Calc Unity authoring](docs/PHASE9_GRID_CALC_UNITY.md)
+- [Phase 10 — Responsive/integration hardening](docs/PHASE10_RESPONSIVE_INTEGRATION.md)
 
 
 ## Local-first development

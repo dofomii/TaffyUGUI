@@ -40,8 +40,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 7:** COMPLETE; persistent Unity/uGUI integration, incremental native synchronization, nested groups, LayoutElement semantics, and permanent Unity regression tests are verified.
 - **Phase 8:** COMPLETE; production Flex/Block/Float authoring and callback-free cached Unity measurement adapters are verified.
 - **Phase 9:** COMPLETE; production Grid/Calc Unity authoring, diagnostics, lifecycle, and regression gates are verified.
-- **Phase 10:** ACTIVE; P10.1 is the next authoritative task.
-- **Phase 11–14:** NOT STARTED.
+- **Phase 10:** COMPLETE; responsive/integration hardening and permanent regression gates are verified.
+- **Phase 11:** ACTIVE; P11.1 is the next authoritative task.
+- **Phase 12–14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -59,7 +60,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 10 P10.1 — implement the responsive profile/breakpoint system.
+**Next authoritative task:** Phase 11 P11.1 — implement the `TaffyLayoutGroup` custom inspector.
 
 
 ---
@@ -445,24 +446,35 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 10 — Responsive and Integration Hardening
 
-**Status:** ACTIVE — Phase 9 gate complete; P10.1 is next
+**Status:** COMPLETE — responsive/integration production gate passed
 
-- [ ] P10.1 Responsive profile/breakpoint system.
-- [ ] P10.2 Intrinsic resize/CanvasScaler responsiveness.
-- [ ] P10.3 Safe-area integration.
-- [ ] P10.4 ScrollRect content/viewport bridge.
-- [ ] P10.5 ContentSizeFitter interaction rules.
-- [ ] P10.6 AspectRatioFitter interaction rules.
-- [ ] P10.7 Animation-driven dirty invalidation.
-- [ ] P10.8 Pixel rounding strategy.
-- [ ] P10.9 Layout rebuild-loop protection.
-- [ ] P10.10 Runtime override API where required.
+- [x] P10.1 Responsive profile/breakpoint system.
+- [x] P10.2 Intrinsic resize/CanvasScaler responsiveness.
+- [x] P10.3 Safe-area integration.
+- [x] P10.4 ScrollRect content/viewport bridge.
+- [x] P10.5 ContentSizeFitter interaction rules.
+- [x] P10.6 AspectRatioFitter interaction rules.
+- [x] P10.7 Animation-driven dirty invalidation.
+- [x] P10.8 Pixel rounding strategy.
+- [x] P10.9 Layout rebuild-loop protection.
+- [x] P10.10 Runtime override API where required.
+
+### Phase 10 validation note
+
+- VS Code Problems: 0 diagnostics for runtime/tests.
+- Native quality regression: rustfmt, Clippy `-D warnings`, 44/44 Rust tests, and release build pass.
+- Unity `6000.4.3f1` Edit Mode: 29/29 permanent package tests pass.
+- Unity `6000.4.3f1` Play Mode: 9/9 permanent package tests pass.
+- Final ABI/Phase 4/Phase 5 provenance and fresh Android ARM64 IL2CPP package checks are bound to `sha256:3228f12128c07fd6c470a7bc9119a4ba810f7718d98c6ae9537086030beaa0fc`.
+- Physical Android smoke execution passes on `CPH2723` (Android 16 / API 36, ARM64-v8a) with Unity `6000.4.3f1` IL2CPP. Device marker: `TAFFY_PHASE10_DEVICE_PASS:profile=phone:height=328.0:suppressed=4`; native load succeeds and no Unity/AndroidRuntime/native fatal errors are present. Comprehensive platform coverage remains Phase 12.
+
+**Documentation:** `PHASE10_RESPONSIVE_INTEGRATION.md`
 
 ---
 
 # Phase 11 — Editor Tooling and Migration
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 10 gate complete; P11.1 is next
 
 - [ ] P11.1 `TaffyLayoutGroup` custom inspector.
 - [ ] P11.2 `TaffyLayoutItem` custom inspector.
@@ -543,8 +555,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 9 is complete. Phase 10 is now authoritative.
+Phase 10 is complete. Phase 11 is now authoritative.
 
-**Next task:** P10.1 — implement the responsive profile/breakpoint system.
+**Next task:** P11.1 — implement the `TaffyLayoutGroup` custom inspector.
 
-Phase 10 hardens the production bridge for responsive profiles, CanvasScaler/intrinsic resizing, safe areas, ScrollRect integration, fitter interaction rules, animation invalidation, pixel rounding, rebuild-loop protection, and runtime overrides.
+Phase 11 builds production editor authoring, property drawers, Grid tooling, diagnostics/visualization, and migration workflows on top of the completed runtime integration.

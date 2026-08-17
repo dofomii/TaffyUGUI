@@ -12,45 +12,43 @@ This document records checks actually executed locally. Remote CI is not build a
 - Host release build passes.
 - Pinned-cbindgen public-header drift verification passes.
 - Complete 31-function `tu_*` contract remains aligned across Rust FFI, C header, and managed P/Invoke.
-- Phase 9 required no native ABI expansion.
+- Phase 10 required no native ABI expansion.
 
-## Phase 9 Unity verification
+## Phase 10 Unity verification
 
-The Phase 9 runtime was validated with Unity `6000.4.3f1` on Linux using the real package plus a local-only host native library in an ignored temporary Unity project.
+The Phase 10 runtime was validated with Unity `6000.4.3f1` on Linux using the real package plus a local-only host native library in an ignored temporary Unity project.
 
 Permanent package tests:
 
-- Edit Mode: **22 total, 22 passed, 0 failed, 0 skipped**.
-- Play Mode: **5 total, 5 passed, 0 failed, 0 skipped**.
+- Edit Mode: **29 total, 29 passed, 0 failed, 0 skipped**.
+- Play Mode: **9 total, 9 passed, 0 failed, 0 skipped**.
 
-The complete suite retains the prior Phase 7/8 coverage and adds:
+The complete suite retains Phase 7–9 coverage and adds:
 
-- explicit Grid rows/columns and numeric placement geometry;
-- detailed Grid track/item diagnostics;
-- implicit/auto tracks and grid-auto-flow;
-- `fr`, minmax, min-content, and max-content sizing;
-- fixed Repeat, auto-fill, and auto-fit;
-- named lines, named spans, and named template areas;
-- justify-items/justify-self Grid alignment;
-- typed Calc-backed dimensions and Grid tracks;
-- Calc expression mutation and native-context recreation;
-- runtime Grid reconfiguration across frames;
-- invalid Repeat, template-area, placement, and cyclic Calc validation.
+- responsive profile serialization, validation, priority, breakpoint switching, and runtime forcing;
+- rect/Canvas-scale responsive observation;
+- safe-area padding and runtime safe-area overrides;
+- ScrollRect viewport/content sizing and runtime child changes;
+- ContentSizeFitter axis ownership diagnostics;
+- AspectRatioFitter aspect handoff and conflict diagnostics;
+- animation-property dirty invalidation;
+- edge-based pixel rounding;
+- same-frame rebuild suppression and self-sizing loop protection.
 
-Additional checks executed during Phase 9:
+Additional checks executed during Phase 10:
 
-- existing Phase 7/8 Edit Mode regression before new tests: **14/14 passed**;
-- existing Phase 7/8 Play Mode regression before new tests: **3/3 passed**;
+- existing Phase 0–9 Edit Mode regression before Phase 10 tests: **22/22 passed**;
+- existing Phase 0–9 Play Mode regression before Phase 10 tests: **5/5 passed**;
 - VS Code Problems for package runtime/tests: **0 diagnostics**;
 - `python3 build/build.py quality`: **PASS**, including all 44 native tests.
 
-## Phase 9 Android release verification
+## Phase 10 Android release verification
 
 Final content-addressed source snapshot:
 
-`sha256:c9f0607bc7808c2e3fb857c5785780d31b9b1112fbe39275b8b23b6088cb9698`
+`sha256:3228f12128c07fd6c470a7bc9119a4ba810f7718d98c6ae9537086030beaa0fc`
 
-Final checks recorded after the exact Phase 9 source state is closed:
+Final checks recorded after the exact Phase 10 source state is closed:
 
 - `python3 build/build.py verify-abi-final` — PASS;
 - `python3 build/build.py native android-arm64` — PASS;
@@ -65,10 +63,10 @@ Android ARM64 native library SHA-256 remains:
 
 `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`
 
-No Android device was attached during the final Phase 9 validation, so the Phase 9 APK was **not** executed on physical hardware. Comprehensive real-platform Unity Player validation remains Phase 12; the project retains earlier hardware proof for the frozen native ABI/runtime path.
+Physical Android execution: **PASS** on `CPH2723`, Android 16 / API 36, ARM64-v8a, using Unity `6000.4.3f1` IL2CPP. The device log reports successful `libtaffy_ugui.so` loading and `TAFFY_PHASE10_DEVICE_PASS:profile=phone:height=328.0:suppressed=4`; `328.0` matches three 100 px items, two 8 px profile gaps, and 12 px vertical safe-area padding. The Player remained alive and targeted `Unity:E`, `AndroidRuntime:E`, `libc:F`, and native `DEBUG:F` log scans were empty. Comprehensive real-platform validation remains Phase 12.
 
 ## Phase status
 
-**Phase 9 is complete. Phase 10 is active; P10.1 is next.**
+**Phase 10 is complete. Phase 11 is active; P11.1 is next.**
 
-Permanent Unity regression tests are tracked product tests. Disposable validation harnesses/probes remain local-only under ignored `.build/` paths and are excluded from Git by project policy.
+Permanent Unity regression tests are tracked product tests. Disposable validation material remains local-only under ignored `.build/` paths and is excluded from Git by project policy.

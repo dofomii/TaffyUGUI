@@ -17,58 +17,53 @@
 - Phase 7 minimal Unity uGUI product: **complete**.
 - Phase 8 production Flex/Block/Float/measurement integration: **complete**.
 - Phase 9 Grid/Calc Unity authoring: **complete**.
-- Phase 10 responsive/integration hardening: **active; P10.1 is next**.
-- Phases 11–14: **not started**.
+- Phase 10 responsive/integration hardening: **complete**.
+- Phase 11 editor tooling/migration: **active; P11.1 is next**.
+- Phases 12–14: **not started**.
 
-## Phase 9 production boundary
+## Phase 10 production boundary
 
-The Unity runtime now exposes the native Grid/Calc engine through production authoring:
+The runtime bridge now includes production integration hardening for:
 
-- explicit and implicit/auto Grid rows and columns;
-- points, percentages, `fr`, minmax, min-content, max-content, and Calc track sizing;
-- fixed Repeat, auto-fill, and auto-fit;
-- named row/column lines;
-- named template areas;
-- row/column numeric lines and spans;
-- named lines and named spans;
-- grid-auto-flow Row/Column/Dense modes;
-- justify-items and justify-self Grid alignment;
-- serializable typed Calc expressions for dimensions and Grid sizing;
-- managed Grid/Calc validation and detailed native Grid diagnostics.
+- serializable responsive profiles with width/height breakpoints and priority;
+- runtime profile forcing without mutating serialized data;
+- rect/Canvas-scale observation for responsive rebuilds;
+- safe-area-to-padding integration plus runtime safe-area overrides;
+- ScrollRect content sizing against viewport and Taffy preferred size;
+- ContentSizeFitter axis ownership rules;
+- AspectRatioFitter aspect handoff and conflict diagnostics;
+- animation-property dirty invalidation;
+- edge-based pixel rounding, including Canvas-pixel mode;
+- same-frame and re-entrant rebuild-loop protection;
+- runtime integration diagnostics and override APIs.
 
-Typed Calc resources are cached per persistent native context. Equivalent expressions are canonicalized and reused; dependencies are created before dependents, and unused resources are released in reverse creation order only after current styles/templates no longer reference them. Context teardown clears the managed cache and native context ownership handles remaining native resources.
+The native ABI and Rust engine did not change. All Phase 10 behavior is implemented in the Unity runtime layer over the frozen ABI v1 `1/2`.
 
-Grid arrays and UTF-8 strings are pinned only for the duration of individual ABI calls. Cached native style structs do not retain transient managed string pointers.
-
-The Phase 9 implementation required **no ABI expansion**. It uses the final Phase 6 ABI v1 `1/2` Grid/Calc calls and style fields already present in the package.
-
-Responsive profiles/CanvasScaler/safe-area/ScrollRect/fitter/rebuild-loop hardening remains Phase 10. Editor tooling and migration remain Phase 11.
-
-## Phase 9 verification
+## Phase 10 verification
 
 Final local Unity `6000.4.3f1` package verification:
 
 - VS Code Problems: **0 diagnostics** for runtime/tests;
-- native `quality` regression: **PASS**, including rustfmt, Clippy `-D warnings`, 44/44 maintained Rust tests, and release build;
-- Edit Mode: **22/22 tests passed**;
-- Play Mode: **5/5 tests passed**;
-- all previous Phase 7/8 regression tests remain green;
-- Phase 9 tests cover explicit/implicit Grid, `fr`, minmax/content sizing, Repeat/count/auto-fill/auto-fit, named lines/spans/areas, auto-flow, placement/alignment, typed Calc mutation/lifecycle, detailed diagnostics, validation failures, and runtime reconfiguration.
+- native quality regression: **PASS**, including rustfmt, Clippy `-D warnings`, 44/44 maintained Rust tests, and release build;
+- Edit Mode: **29/29 tests passed**;
+- Play Mode: **9/9 tests passed**;
+- all Phase 7–9 regression coverage remains green;
+- Phase 10 tests cover responsive serialization/validation/switching, runtime overrides, safe area, ScrollRect dynamics, fitter ownership, aspect integration, Canvas-scale observation, animation invalidation, pixel rounding, and rebuild suppression.
 
-Final ABI/Android provenance and fresh Android ARM64 IL2CPP packaging are bound to the exact Phase 9 source snapshot:
+Final ABI/Android provenance and fresh Android ARM64 IL2CPP packaging are bound to the exact Phase 10 source snapshot:
 
-`sha256:c9f0607bc7808c2e3fb857c5785780d31b9b1112fbe39275b8b23b6088cb9698`
+`sha256:3228f12128c07fd6c470a7bc9119a4ba810f7718d98c6ae9537086030beaa0fc`
 
-The Android ARM64 native library remains:
+Android ARM64 native library SHA-256 remains:
 
 `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`
 
-No physical Android device was attached for the final Phase 9 APK run; comprehensive Unity Player/device validation remains Phase 12. Earlier physical-device proof for the frozen native ABI/runtime path remains valid.
+Physical Android execution now also passes on device `CPH2723` (Android 16 / API 36, ARM64-v8a) using Unity `6000.4.3f1`, IL2CPP, and the final Phase 10 Android payload. The runtime marker `TAFFY_PHASE10_DEVICE_PASS:profile=phone:height=328.0:suppressed=4` confirms responsive-profile selection, safe-area padding, ScrollRect content sizing, native Taffy layout, and rebuild-loop protection on hardware; Android loaded `libtaffy_ugui.so` successfully and the Player remained alive with no Unity/AndroidRuntime/native fatal errors. Comprehensive cross-platform Unity Player validation remains Phase 12.
 
-Disposable validation harness/probe material remains local-only under ignored `.build/` paths and is never tracked project source.
+Disposable validation material remains local-only under ignored `.build/` paths and is never tracked project source.
 
 ## Next authoritative work
 
-**Phase 10 P10.1 — implement the responsive profile/breakpoint system.**
+**Phase 11 P11.1 — implement the `TaffyLayoutGroup` custom inspector.**
 
 Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope.

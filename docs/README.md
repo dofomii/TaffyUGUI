@@ -18,10 +18,11 @@
 - [PHASE7_MINIMAL_UGUI.md](PHASE7_MINIMAL_UGUI.md)
 - [PHASE8_FLEX_BLOCK_MEASUREMENT.md](PHASE8_FLEX_BLOCK_MEASUREMENT.md)
 - [PHASE9_GRID_CALC_UNITY.md](PHASE9_GRID_CALC_UNITY.md)
+- [PHASE10_RESPONSIVE_INTEGRATION.md](PHASE10_RESPONSIVE_INTEGRATION.md)
 
 ## Active phase
 
-Phase 10 — Responsive and Integration Hardening. See [TASK_TRACKER.md](TASK_TRACKER.md); **P10.1** is next.
+Phase 11 — Editor Tooling and Migration. See [TASK_TRACKER.md](TASK_TRACKER.md); **P11.1** is next.
 
 ## Local development
 

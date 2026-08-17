@@ -41,6 +41,13 @@ namespace TaffyUGUI
         [Min(0)] public int gridAreaRows;
         [Min(0)] public int gridAreaColumns;
 
+        [Header("Responsive / Integration")]
+        public List<TaffyResponsiveProfile> responsiveProfiles = new List<TaffyResponsiveProfile>();
+        public TaffySafeAreaMode safeAreaMode = TaffySafeAreaMode.Disabled;
+        public TaffyScrollRectContentMode scrollRectContentMode = TaffyScrollRectContentMode.AutoExpandContent;
+        public TaffyPixelRounding pixelRounding = TaffyPixelRounding.None;
+        [Min(1)] public int maxRebuildRequestsPerFrame = 8;
+
         private enum NativePass
         {
             Minimum,
@@ -78,7 +85,142 @@ namespace TaffyUGUI
         private readonly List<ulong> _orderedHandles = new List<ulong>();
         private readonly HashSet<RectTransform> _seenChildren = new HashSet<RectTransform>();
         private ulong[] _layoutHandles = Array.Empty<ulong>();
+        private string _runtimeProfileOverride;
+        private bool _hasRuntimeSafeAreaOverride;
+        private TaffyPixelInsets _runtimeSafeAreaInsets;
+        private string _activeResponsiveProfileName;
+        private TaffyFlexDirection _resolvedDirection = TaffyFlexDirection.Row;
+        private TaffyContainerDisplay _resolvedDisplay = TaffyContainerDisplay.Flex;
+        private bool _selfSizingFromScrollBridge;
+        private bool _pendingDirtyAfterApply;
+        private int _dirtyFrame = -1;
+        private int _dirtyRequestsThisFrame;
+        private int _suppressedRebuildRequests;
+        private bool _hasObservedResponsiveState;
+        private Vector2 _lastObservedRectSize;
+        private float _lastObservedCanvasScale;
+        private Rect _lastObservedSafeArea;
+        private int _lastObservedScreenWidth;
+        private int _lastObservedScreenHeight;
+
+        public string ActiveResponsiveProfileName => _activeResponsiveProfileName;
+        public string RuntimeResponsiveProfileOverride => _runtimeProfileOverride;
+        public int SuppressedRebuildRequestCount => _suppressedRebuildRequests;
         public string GridValidationError => _gridValidationError;
+
+        public bool SetRuntimeResponsiveProfile(string profileName, out string error)
+        {
+            error = null;
+            if (string.IsNullOrWhiteSpace(profileName))
+            {
+                _runtimeProfileOverride = null;
+                SetLayoutDirty();
+                return true;
+            }
+
+            for (int i = 0; i < responsiveProfiles.Count; i++)
+            {
+                TaffyResponsiveProfile profile = responsiveProfiles[i];
+                if (profile != null && string.Equals(profile.name, profileName, StringComparison.Ordinal))
+                {
+                    _runtimeProfileOverride = profileName;
+                    SetLayoutDirty();
+                    return true;
+                }
+            }
+
+            error = $"Responsive profile '{profileName}' does not exist on {name}.";
+            return false;
+        }
+
+        public void ClearRuntimeResponsiveProfile()
+        {
+            if (string.IsNullOrEmpty(_runtimeProfileOverride))
+                return;
+            _runtimeProfileOverride = null;
+            SetLayoutDirty();
+        }
+
+        public void SetRuntimeSafeAreaInsets(TaffyPixelInsets insets)
+        {
+            _runtimeSafeAreaInsets = insets.ClampNonNegative();
+            _hasRuntimeSafeAreaOverride = true;
+            SetLayoutDirty();
+        }
+
+        public void ClearRuntimeSafeAreaInsets()
+        {
+            if (!_hasRuntimeSafeAreaOverride)
+                return;
+            _hasRuntimeSafeAreaOverride = false;
+            _runtimeSafeAreaInsets = default;
+            SetLayoutDirty();
+        }
+
+        public void ClearRuntimeOverrides()
+        {
+            bool changed = !string.IsNullOrEmpty(_runtimeProfileOverride) || _hasRuntimeSafeAreaOverride;
+            _runtimeProfileOverride = null;
+            _hasRuntimeSafeAreaOverride = false;
+            _runtimeSafeAreaInsets = default;
+            if (changed)
+                SetLayoutDirty();
+        }
+
+        public string[] GetIntegrationWarnings()
+        {
+            return TaffyResponsiveUtility.CollectIntegrationWarnings(this);
+        }
+
+        public void ResetRebuildDiagnostics()
+        {
+            _suppressedRebuildRequests = 0;
+            _dirtyFrame = -1;
+            _dirtyRequestsThisFrame = 0;
+        }
+
+
+        public bool ValidateResponsiveProfiles(out string error)
+        {
+            error = null;
+            if (responsiveProfiles == null)
+                return true;
+
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < responsiveProfiles.Count; i++)
+            {
+                TaffyResponsiveProfile profile = responsiveProfiles[i];
+                if (profile == null)
+                    continue;
+                if (string.IsNullOrWhiteSpace(profile.name))
+                {
+                    error = $"Responsive profile at index {i} requires a non-empty name.";
+                    return false;
+                }
+                if (!names.Add(profile.name))
+                {
+                    error = $"Responsive profile name '{profile.name}' is duplicated.";
+                    return false;
+                }
+                if (!IsFiniteNonNegative(profile.minWidth) || !IsFiniteNonNegative(profile.maxWidth) ||
+                    !IsFiniteNonNegative(profile.minHeight) || !IsFiniteNonNegative(profile.maxHeight))
+                {
+                    error = $"Responsive profile '{profile.name}' contains an invalid breakpoint bound.";
+                    return false;
+                }
+                if (profile.maxWidth > 0f && profile.maxWidth < profile.minWidth)
+                {
+                    error = $"Responsive profile '{profile.name}' maxWidth must be zero/unbounded or >= minWidth.";
+                    return false;
+                }
+                if (profile.maxHeight > 0f && profile.maxHeight < profile.minHeight)
+                {
+                    error = $"Responsive profile '{profile.name}' maxHeight must be zero/unbounded or >= minHeight.";
+                    return false;
+                }
+            }
+            return true;
+        }
 
         public bool ValidateGridAuthoring(out string error)
         {
@@ -107,7 +249,7 @@ namespace TaffyUGUI
         {
             diagnostics = null;
             error = null;
-            if (containerDisplay != TaffyContainerDisplay.Grid)
+            if (ResolveContainerSettings().display != TaffyContainerDisplay.Grid)
             {
                 error = "Detailed Grid diagnostics require containerDisplay = Grid.";
                 return false;
@@ -156,8 +298,30 @@ namespace TaffyUGUI
         public void SetLayoutDirty()
         {
             InvalidateLayout();
-            if (isActiveAndEnabled && rectTransform)
-                LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
+            if (_applying)
+            {
+                _pendingDirtyAfterApply = true;
+                return;
+            }
+            if (!isActiveAndEnabled || !rectTransform)
+                return;
+
+            int frame = Time.frameCount;
+            if (_dirtyFrame != frame)
+            {
+                _dirtyFrame = frame;
+                _dirtyRequestsThisFrame = 0;
+            }
+
+            int limit = Mathf.Max(1, maxRebuildRequestsPerFrame);
+            if (_dirtyRequestsThisFrame >= limit)
+            {
+                _suppressedRebuildRequests++;
+                return;
+            }
+
+            _dirtyRequestsThisFrame++;
+            LayoutRebuilder.MarkLayoutForRebuild(rectTransform);
         }
 
         public void InvalidateMeasurement(RectTransform child = null)
@@ -184,6 +348,7 @@ namespace TaffyUGUI
         {
             base.OnEnable();
             TaffyMeasurementInvalidationHub.Register(this);
+            _hasObservedResponsiveState = false;
             EnsureContext();
             SetLayoutDirty();
         }
@@ -208,22 +373,56 @@ namespace TaffyUGUI
         }
 #endif
 
-        protected override void OnDidApplyAnimationProperties()
-        {
-            base.OnDidApplyAnimationProperties();
-            SetLayoutDirty();
-        }
-
         protected override void OnTransformChildrenChanged()
         {
             base.OnTransformChildrenChanged();
             SetLayoutDirty();
         }
 
+
+        protected override void OnDidApplyAnimationProperties()
+        {
+            base.OnDidApplyAnimationProperties();
+            SetLayoutDirty();
+        }
+
         protected override void OnRectTransformDimensionsChange()
         {
             base.OnRectTransformDimensionsChange();
-            InvalidateLayout();
+            if (_selfSizingFromScrollBridge)
+                InvalidateLayout();
+            else
+                SetLayoutDirty();
+        }
+
+        private void LateUpdate()
+        {
+            if (!isActiveAndEnabled || !rectTransform)
+                return;
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            float scale = canvas ? canvas.rootCanvas.scaleFactor : 1f;
+            Vector2 rectSize = rectTransform.rect.size;
+            Rect safe = Screen.safeArea;
+            int screenWidth = Screen.width;
+            int screenHeight = Screen.height;
+
+            bool changed = !_hasObservedResponsiveState ||
+                           !SameFloat(_lastObservedRectSize.x, rectSize.x) ||
+                           !SameFloat(_lastObservedRectSize.y, rectSize.y) ||
+                           !SameFloat(_lastObservedCanvasScale, scale) ||
+                           (safeAreaMode != TaffySafeAreaMode.Disabled &&
+                            (_lastObservedSafeArea != safe || _lastObservedScreenWidth != screenWidth || _lastObservedScreenHeight != screenHeight));
+
+            _hasObservedResponsiveState = true;
+            _lastObservedRectSize = rectSize;
+            _lastObservedCanvasScale = scale;
+            _lastObservedSafeArea = safe;
+            _lastObservedScreenWidth = screenWidth;
+            _lastObservedScreenHeight = screenHeight;
+
+            if (changed)
+                SetLayoutDirty();
         }
 
         public override void CalculateLayoutInputHorizontal()
@@ -242,11 +441,13 @@ namespace TaffyUGUI
 
         public override void SetLayoutHorizontal()
         {
+            ApplyScrollRectContentSize(0);
             ApplyLayout(0);
         }
 
         public override void SetLayoutVertical()
         {
+            ApplyScrollRectContentSize(1);
             ApplyLayout(1);
         }
 
@@ -320,7 +521,22 @@ namespace TaffyUGUI
             EnsureContext();
 
             TaffyNative.Layout minimum = ComputeRootLayout(NativePass.Minimum, float.PositiveInfinity, float.PositiveInfinity);
-            TaffyNative.Layout preferred = ComputeRootLayout(NativePass.Preferred, float.PositiveInfinity, float.PositiveInfinity);
+            float preferredWidthLimit = float.PositiveInfinity;
+            float preferredHeightLimit = float.PositiveInfinity;
+            ScrollRect scroll = TaffyResponsiveUtility.FindOwningScrollRect(rectTransform);
+            if (scroll)
+            {
+                RectTransform viewport = scroll.viewport ? scroll.viewport : scroll.transform as RectTransform;
+                if (viewport)
+                {
+                    if (scroll.vertical && !scroll.horizontal)
+                        preferredWidthLimit = Mathf.Max(0f, viewport.rect.width);
+                    if (scroll.horizontal && !scroll.vertical)
+                        preferredHeightLimit = Mathf.Max(0f, viewport.rect.height);
+                }
+            }
+
+            TaffyNative.Layout preferred = ComputeRootLayout(NativePass.Preferred, preferredWidthLimit, preferredHeightLimit);
 
             _minimumSize = new Vector2(
                 Mathf.Max(0f, minimum.width),
@@ -331,6 +547,7 @@ namespace TaffyUGUI
             _arrangedLayoutValid = false;
         }
 
+
         private TaffyNative.Layout ComputeRootLayout(NativePass pass, float width, float height)
         {
             SynchronizeNativeTree(pass, width);
@@ -338,6 +555,42 @@ namespace TaffyUGUI
             TaffyNative.Check(TaffyNative.tu_compute_layout(_context, _root, width, height), "compute root layout");
             TaffyNative.Check(TaffyNative.tu_get_layout(_context, _root, out var layout), "get root layout");
             return layout;
+        }
+        private void ApplyScrollRectContentSize(int axis)
+        {
+            if (scrollRectContentMode == TaffyScrollRectContentMode.Disabled || !isActiveAndEnabled || !rectTransform)
+                return;
+
+            ScrollRect scroll = TaffyResponsiveUtility.FindOwningScrollRect(rectTransform);
+            if (!scroll || (axis == 0 && !scroll.horizontal) || (axis == 1 && !scroll.vertical))
+                return;
+
+            ContentSizeFitter contentFitter = GetComponent<ContentSizeFitter>();
+            if (TaffyResponsiveUtility.ContentSizeFitterOwnsAxis(contentFitter, axis))
+                return;
+
+            AspectRatioFitter aspectFitter = GetComponent<AspectRatioFitter>();
+            if (TaffyResponsiveUtility.AspectRatioFitterOwnsSelfSize(aspectFitter))
+                return;
+
+            RectTransform viewport = scroll.viewport ? scroll.viewport : scroll.transform as RectTransform;
+            float viewportSize = viewport ? (axis == 0 ? viewport.rect.width : viewport.rect.height) : 0f;
+            float preferred = axis == 0 ? _preferredSize.x : _preferredSize.y;
+            float target = Mathf.Max(0f, Mathf.Max(viewportSize, preferred));
+            float current = axis == 0 ? rectTransform.rect.width : rectTransform.rect.height;
+            if (SameFloat(current, target))
+                return;
+
+            _selfSizingFromScrollBridge = true;
+            try
+            {
+                rectTransform.SetSizeWithCurrentAnchors(axis == 0 ? RectTransform.Axis.Horizontal : RectTransform.Axis.Vertical, target);
+            }
+            finally
+            {
+                _selfSizingFromScrollBridge = false;
+            }
+            InvalidateLayout();
         }
 
         private void ApplyLayout(int axis)
@@ -363,20 +616,28 @@ namespace TaffyUGUI
                     _arrangedLayoutValid = true;
                 }
 
+                Canvas canvas = GetComponentInParent<Canvas>();
+                float canvasScale = canvas ? canvas.rootCanvas.scaleFactor : 1f;
                 int count = Mathf.Min(_orderedChildren.Count, _layoutResults.Length);
                 for (int i = 0; i < count; i++)
                 {
                     RectTransform child = _orderedChildren[i];
                     TaffyNative.Layout layout = _layoutResults[i];
-                    if (axis == 0)
-                        SetChildAlongAxis(child, 0, layout.x, Mathf.Max(0f, layout.width));
-                    else
-                        SetChildAlongAxis(child, 1, layout.y, Mathf.Max(0f, layout.height));
+                    float start = axis == 0 ? layout.x : layout.y;
+                    float size = axis == 0 ? layout.width : layout.height;
+                    float roundedStart = TaffyResponsiveUtility.RoundEdge(start, pixelRounding, canvasScale);
+                    float roundedEnd = TaffyResponsiveUtility.RoundEdge(start + Mathf.Max(0f, size), pixelRounding, canvasScale);
+                    SetChildAlongAxis(child, axis, roundedStart, Mathf.Max(0f, roundedEnd - roundedStart));
                 }
             }
             finally
             {
                 _applying = false;
+                if (_pendingDirtyAfterApply)
+                {
+                    _pendingDirtyAfterApply = false;
+                    SetLayoutDirty();
+                }
             }
         }
 
@@ -508,7 +769,7 @@ namespace TaffyUGUI
 
         private void SynchronizeGridTemplate()
         {
-            if (containerDisplay != TaffyContainerDisplay.Grid)
+            if (_resolvedDisplay != TaffyContainerDisplay.Grid)
             {
                 _gridValidationError = null;
                 if (_hasGridTemplate)
@@ -728,32 +989,120 @@ namespace TaffyUGUI
                 _layoutResults = new TaffyNative.Layout[count];
         }
 
+        private TaffyResolvedContainerSettings ResolveContainerSettings()
+        {
+            var settings = new TaffyResolvedContainerSettings
+            {
+                display = containerDisplay,
+                direction = direction,
+                wrap = wrap,
+                horizontalGap = Mathf.Max(0f, horizontalGap),
+                verticalGap = Mathf.Max(0f, verticalGap),
+                justifyContent = justifyContent,
+                alignItems = alignItems,
+                alignContent = alignContent,
+                justifyItems = justifyItems,
+                gridAutoFlow = gridAutoFlow,
+                padding = new TaffyPixelInsets(
+                    Mathf.Max(0f, padding.left),
+                    Mathf.Max(0f, padding.right),
+                    Mathf.Max(0f, padding.top),
+                    Mathf.Max(0f, padding.bottom)),
+                profileName = null,
+            };
+
+            TaffyResponsiveProfile selected = null;
+            if (responsiveProfiles != null && responsiveProfiles.Count > 0)
+            {
+                if (!string.IsNullOrEmpty(_runtimeProfileOverride))
+                {
+                    for (int i = 0; i < responsiveProfiles.Count; i++)
+                    {
+                        TaffyResponsiveProfile candidate = responsiveProfiles[i];
+                        if (candidate != null && string.Equals(candidate.name, _runtimeProfileOverride, StringComparison.Ordinal))
+                        {
+                            selected = candidate;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Vector2 size = rectTransform ? rectTransform.rect.size : Vector2.zero;
+                    for (int i = 0; i < responsiveProfiles.Count; i++)
+                    {
+                        TaffyResponsiveProfile candidate = responsiveProfiles[i];
+                        if (candidate == null || !candidate.Matches(size))
+                            continue;
+                        if (selected == null || candidate.priority > selected.priority)
+                            selected = candidate;
+                    }
+                }
+            }
+
+            if (selected != null)
+            {
+                settings.profileName = selected.name;
+                if (selected.overrideContainerDisplay) settings.display = selected.containerDisplay;
+                if (selected.overrideFlexDirection) settings.direction = selected.direction;
+                if (selected.overrideFlexWrap) settings.wrap = selected.wrap;
+                if (selected.overrideGaps)
+                {
+                    settings.horizontalGap = Mathf.Max(0f, selected.horizontalGap);
+                    settings.verticalGap = Mathf.Max(0f, selected.verticalGap);
+                }
+                if (selected.overrideAlignment)
+                {
+                    settings.justifyContent = selected.justifyContent;
+                    settings.alignItems = selected.alignItems;
+                    settings.alignContent = selected.alignContent;
+                    settings.justifyItems = selected.justifyItems;
+                }
+                if (selected.overrideGridAutoFlow) settings.gridAutoFlow = selected.gridAutoFlow;
+                if (selected.overridePadding) settings.padding = selected.padding.ClampNonNegative();
+            }
+
+            if (safeAreaMode == TaffySafeAreaMode.Padding)
+            {
+                TaffyPixelInsets safe = _hasRuntimeSafeAreaOverride
+                    ? _runtimeSafeAreaInsets
+                    : TaffyResponsiveUtility.ResolveScreenSafeArea(rectTransform);
+                settings.padding = TaffyPixelInsets.Add(settings.padding, safe.ClampNonNegative());
+            }
+
+            _activeResponsiveProfileName = settings.profileName;
+            _resolvedDisplay = settings.display;
+            _resolvedDirection = settings.direction;
+            return settings;
+        }
+
         private TaffyNative.Style BuildRootStyle(NativePass pass)
         {
-            var style = TaffyNative.Style.Defaults((TaffyNative.Display)(int)containerDisplay);
-            style.display = (int)containerDisplay;
+            TaffyResolvedContainerSettings settings = ResolveContainerSettings();
+            var style = TaffyNative.Style.Defaults((TaffyNative.Display)(int)settings.display);
+            style.display = (int)settings.display;
             style.boxSizing = (int)boxSizing;
             style.direction = (int)writingDirection;
             style.overflowX = (int)overflowX;
             style.overflowY = (int)overflowY;
             style.scrollbarWidth = Mathf.Max(0f, scrollbarWidth);
-            style.flexDirection = (int)direction;
-            style.flexWrap = (int)wrap;
-            style.gapX = TaffyNative.Value.Points(Mathf.Max(0f, horizontalGap));
-            style.gapY = TaffyNative.Value.Points(Mathf.Max(0f, verticalGap));
-            style.paddingLeft = TaffyNative.Value.Points(Mathf.Max(0f, padding.left));
-            style.paddingRight = TaffyNative.Value.Points(Mathf.Max(0f, padding.right));
-            style.paddingTop = TaffyNative.Value.Points(Mathf.Max(0f, padding.top));
-            style.paddingBottom = TaffyNative.Value.Points(Mathf.Max(0f, padding.bottom));
+            style.flexDirection = (int)settings.direction;
+            style.flexWrap = (int)settings.wrap;
+            style.gapX = TaffyNative.Value.Points(settings.horizontalGap);
+            style.gapY = TaffyNative.Value.Points(settings.verticalGap);
+            style.paddingLeft = TaffyNative.Value.Points(settings.padding.left);
+            style.paddingRight = TaffyNative.Value.Points(settings.padding.right);
+            style.paddingTop = TaffyNative.Value.Points(settings.padding.top);
+            style.paddingBottom = TaffyNative.Value.Points(settings.padding.bottom);
             style.borderLeft = border.left.ToNonNegativeLengthPercentage(_calcResources);
             style.borderRight = border.right.ToNonNegativeLengthPercentage(_calcResources);
             style.borderTop = border.top.ToNonNegativeLengthPercentage(_calcResources);
             style.borderBottom = border.bottom.ToNonNegativeLengthPercentage(_calcResources);
-            style.alignItems = (int)alignItems;
-            style.alignContent = (int)alignContent;
-            style.justifyContent = ToNativeJustify(justifyContent);
-            style.justifyItems = (int)justifyItems;
-            style.gridAutoFlow = (int)gridAutoFlow;
+            style.alignItems = (int)settings.alignItems;
+            style.alignContent = (int)settings.alignContent;
+            style.justifyContent = ToNativeJustify(settings.justifyContent);
+            style.justifyItems = (int)settings.justifyItems;
+            style.gridAutoFlow = (int)settings.gridAutoFlow;
             style.textAlign = (int)textAlign;
 
             if (pass == NativePass.Arrange)
@@ -764,6 +1113,7 @@ namespace TaffyUGUI
 
             return style;
         }
+
 
         private TaffyNative.Style BuildChildStyle(
             RectTransform child,
@@ -837,13 +1187,16 @@ namespace TaffyUGUI
                 if (hasMeasurement && measurement.isReplaced)
                     style.itemIsReplaced = 1;
             }
+            if (style.aspectRatio <= 0f && TaffyResponsiveUtility.TryResolveChildAspectRatio(child, out float fitterAspect, out _))
+                style.aspectRatio = fitterAspect;
+
 
             return style;
         }
 
         private float MainAxisFlexible(RectTransform child)
         {
-            switch (direction)
+            switch (_resolvedDirection)
             {
                 case TaffyFlexDirection.Column:
                 case TaffyFlexDirection.ColumnReverse:
@@ -943,9 +1296,14 @@ namespace TaffyUGUI
             return a.kind == b.kind && SameFloat(a.value, b.value) && a.resource == b.resource;
         }
 
+        private static bool IsFiniteNonNegative(float value)
+        {
+            return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
         private static bool SameFloat(float a, float b)
         {
             return Mathf.Approximately(a, b);
         }
-    }
 }
+    }

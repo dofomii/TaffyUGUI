@@ -1,6 +1,6 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the gated production path from the current completed Phase 9 Grid/Calc Unity integration to v1.0.
+This document describes the gated production path from the current completed Phase 10 responsive/integration hardening to v1.0.
 
 ## Phase sequence
 
@@ -16,8 +16,8 @@ This document describes the gated production path from the current completed Pha
 | 7 | Minimal Working Unity uGUI Product | Complete |
 | 8 | Production Flex/Block/Float/Measurement Unity Integration | Complete |
 | 9 | Complete Grid and Calc Unity Authoring | Complete |
-| 10 | Responsive and Integration Hardening | Active; P10.1 next |
-| 11 | Editor Tooling and Migration | Not started |
+| 10 | Responsive and Integration Hardening | Complete |
+| 11 | Editor Tooling and Migration | Active; P11.1 next |
 | 12 | Real Unity Platform Validation | Not started |
 | 13 | Performance and Reliability Hardening | Not started |
 | 14 | v1.0 Release | Not started |
@@ -88,15 +88,19 @@ The Phase 9 gate passed 22/22 Edit Mode and 5/5 Play Mode tests on Unity `6000.4
 
 ## Phase 10 — Responsive and Integration Hardening
 
-- responsive profiles/breakpoint overrides;
-- CanvasScaler behavior;
-- safe area integration;
-- ScrollRect bridge/content sizing;
-- ContentSizeFitter interaction rules;
-- AspectRatioFitter interaction rules;
-- animation-driven invalidation;
-- pixel rounding;
-- rebuild-loop protection.
+**Complete.** The managed Unity integration now includes:
+
+- serializable responsive profiles with width/height breakpoints, priority, and runtime forcing;
+- rect/Canvas-scale responsive invalidation;
+- additive safe-area padding and runtime safe-area overrides;
+- ScrollRect content/viewport sizing using Taffy preferred size;
+- deterministic ContentSizeFitter and AspectRatioFitter ownership rules;
+- animation-property invalidation;
+- edge-based Round/Floor/Ceil/CanvasPixel geometry application;
+- re-entrant and same-frame rebuild-loop protection;
+- runtime integration diagnostics and override APIs.
+
+The Phase 10 gate passed 29/29 Edit Mode and 9/9 Play Mode tests on Unity `6000.4.3f1`. See [PHASE10_RESPONSIVE_INTEGRATION.md](PHASE10_RESPONSIVE_INTEGRATION.md).
 
 ## Phase 11 — Editor Tooling and Migration
 

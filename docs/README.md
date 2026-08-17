@@ -17,10 +17,11 @@
 - [PHASE6_MANAGED_ABI.md](PHASE6_MANAGED_ABI.md)
 - [PHASE7_MINIMAL_UGUI.md](PHASE7_MINIMAL_UGUI.md)
 - [PHASE8_FLEX_BLOCK_MEASUREMENT.md](PHASE8_FLEX_BLOCK_MEASUREMENT.md)
+- [PHASE9_GRID_CALC_UNITY.md](PHASE9_GRID_CALC_UNITY.md)
 
 ## Active phase
 
-Phase 9 — Complete Grid and Calc Unity Authoring. See [TASK_TRACKER.md](TASK_TRACKER.md); **P9.1** is next.
+Phase 10 — Responsive and Integration Hardening. See [TASK_TRACKER.md](TASK_TRACKER.md); **P10.1** is next.
 
 ## Local development
 

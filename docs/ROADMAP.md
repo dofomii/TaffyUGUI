@@ -1,6 +1,6 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the gated production path from the current completed Phase 8 Flex/Block/measurement integration to v1.0.
+This document describes the gated production path from the current completed Phase 9 Grid/Calc Unity integration to v1.0.
 
 ## Phase sequence
 
@@ -15,8 +15,8 @@ This document describes the gated production path from the current completed Pha
 | 6 | Managed ABI Conformance and Final ABI v1 Freeze | Complete; ABI v1 `1/2` |
 | 7 | Minimal Working Unity uGUI Product | Complete |
 | 8 | Production Flex/Block/Float/Measurement Unity Integration | Complete |
-| 9 | Complete Grid and Calc Unity Authoring | Active; P9.1 next |
-| 10 | Responsive and Integration Hardening | Not started |
+| 9 | Complete Grid and Calc Unity Authoring | Complete |
+| 10 | Responsive and Integration Hardening | Active; P10.1 next |
 | 11 | Editor Tooling and Migration | Not started |
 | 12 | Real Unity Platform Validation | Not started |
 | 13 | Performance and Reliability Hardening | Not started |
@@ -71,17 +71,20 @@ The Phase 8 gate passed 14/14 Edit Mode and 3/3 Play Mode tests on Unity `6000.4
 
 ## Phase 9 — Complete Grid and Calc Unity Authoring
 
-The native engine already supports the required Grid/Calc model. This phase exposes it safely in Unity:
+**Complete.** The final ABI already contained the required Grid/Calc engine, so Phase 9 added the managed Unity product surface without expanding the ABI:
 
-- Grid track authoring;
-- repeat/auto-fill/auto-fit;
-- minmax/fr/content sizing;
-- implicit tracks and auto-flow;
-- named lines/spans;
-- named template areas;
-- Grid item placement;
-- typed Calc authoring/resources;
-- editor-friendly validation and diagnostics.
+- serializable explicit and implicit Grid tracks;
+- point/percent/fr/minmax/min-content/max-content/Calc sizing;
+- Repeat count, auto-fill, and auto-fit;
+- named lines/spans and named template areas;
+- grid-auto-flow;
+- Grid item placement plus justify-items/justify-self alignment;
+- serializable typed Calc expression trees and per-context resource caching/lifecycle;
+- pre-native validation and detailed Grid diagnostics;
+- scoped UTF-8/array ABI marshalling with no retained managed pointers;
+- maintained Edit Mode and Play Mode regression coverage.
+
+The Phase 9 gate passed 22/22 Edit Mode and 5/5 Play Mode tests on Unity `6000.4.3f1`. See [PHASE9_GRID_CALC_UNITY.md](PHASE9_GRID_CALC_UNITY.md).
 
 ## Phase 10 — Responsive and Integration Hardening
 

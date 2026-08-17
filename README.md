@@ -21,9 +21,10 @@ The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.
 | 6 — Managed ABI conformance / final ABI v1 | **Complete** |
 | 7 — Minimal working Unity uGUI product | **Complete** |
 | 8 — Production Flex/Block/Float/measurement integration | **Complete** |
-| 9 — Grid/Calc Unity authoring | **Active; P9.1 is next** |
+| 9 — Grid/Calc Unity authoring | **Complete** |
+| 10 — Responsive and integration hardening | **Active; P10.1 is next** |
 
-Phase 8 is complete. The Unity bridge now exposes production Flex/Block/FlowRoot/Float authoring plus size/min/max/box-model, positioning/insets, overflow, direction, box-sizing, and aspect-ratio fields. Managed intrinsic measurement is cached and uploaded before native compute for TextMeshPro, uGUI Text, Image/RawImage, and custom providers; native Taffy computation remains callback-free. Permanent Unity tests pass 14/14 in Edit Mode and 3/3 in Play Mode on Unity `6000.4.3f1`, and a fresh Android ARM64 IL2CPP development APK builds successfully. Phase 9 is active with P9.1 next. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
+Phase 9 is complete. The Unity bridge now exposes production Grid authoring for explicit/implicit tracks, `fr`, minmax/content sizing, repeat/count/auto-fill/auto-fit, named lines/spans/template areas, auto-flow, item placement/alignment, typed Calc expressions, validation, and detailed native Grid diagnostics. Permanent Unity tests pass 22/22 in Edit Mode and 5/5 in Play Mode on Unity `6000.4.3f1`. Phase 10 is active with P10.1 next. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
 
 
 For the full current state, use:
@@ -43,6 +44,7 @@ For the full current state, use:
 - [Phase 6 — Managed ABI conformance](docs/PHASE6_MANAGED_ABI.md)
 - [Phase 7 — Minimal Unity uGUI product](docs/PHASE7_MINIMAL_UGUI.md)
 - [Phase 8 — Flex/Block/Float/measurement integration](docs/PHASE8_FLEX_BLOCK_MEASUREMENT.md)
+- [Phase 9 — Grid/Calc Unity authoring](docs/PHASE9_GRID_CALC_UNITY.md)
 
 
 ## Local-first development

@@ -35,6 +35,13 @@ namespace TaffyUGUI
         [Min(0)] public float flexShrink = 1f;
         public TaffyAlign alignSelf = TaffyAlign.Auto;
 
+        [Header("Grid Item")]
+        public TaffyGridPlacement gridRowStart = default;
+        public TaffyGridPlacement gridRowEnd = default;
+        public TaffyGridPlacement gridColumnStart = default;
+        public TaffyGridPlacement gridColumnEnd = default;
+        public TaffyAlign justifySelf = TaffyAlign.Auto;
+
         [Header("Block / Float")]
         public TaffyFloat floatMode = TaffyFloat.None;
         public TaffyClear clearMode = TaffyClear.None;
@@ -59,6 +66,8 @@ namespace TaffyUGUI
             position = TaffyPosition.Relative;
             flexShrink = 1f;
             alignSelf = TaffyAlign.Auto;
+            justifySelf = TaffyAlign.Auto;
+            gridRowStart = gridRowEnd = gridColumnStart = gridColumnEnd = TaffyGridPlacement.Auto;
             measurement = TaffyMeasurementMode.Auto;
         }
 
@@ -70,7 +79,12 @@ namespace TaffyUGUI
 
         internal bool MeasurementEnabled => measurement != TaffyMeasurementMode.Disabled;
 
-        internal TaffyNative.Style ApplyTo(TaffyNative.Style style, bool measuredAsReplaced)
+        internal TaffyNative.Style ApplyTo(
+            TaffyNative.Style style,
+            bool measuredAsReplaced,
+            TaffyCalcResourceCache calcResources,
+            TaffyNativeMarshallingScope marshalling,
+            out string gridPlacementSignature)
         {
             style.display = (int)display;
             style.boxSizing = (int)boxSizing;
@@ -80,42 +94,72 @@ namespace TaffyUGUI
             style.scrollbarWidth = Mathf.Max(0f, scrollbarWidth);
             style.position = (int)position;
 
-            style.insetLeft = inset.left.ToLengthPercentageAuto();
-            style.insetRight = inset.right.ToLengthPercentageAuto();
-            style.insetTop = inset.top.ToLengthPercentageAuto();
-            style.insetBottom = inset.bottom.ToLengthPercentageAuto();
+            style.insetLeft = inset.left.ToLengthPercentageAuto(calcResources);
+            style.insetRight = inset.right.ToLengthPercentageAuto(calcResources);
+            style.insetTop = inset.top.ToLengthPercentageAuto(calcResources);
+            style.insetBottom = inset.bottom.ToLengthPercentageAuto(calcResources);
 
-            if (!width.IsAuto) style.width = width.ToDimension();
-            if (!height.IsAuto) style.height = height.ToDimension();
-            if (!minWidth.IsAuto) style.minWidth = minWidth.ToDimension();
-            if (!minHeight.IsAuto) style.minHeight = minHeight.ToDimension();
-            if (!maxWidth.IsAuto) style.maxWidth = maxWidth.ToDimension();
-            if (!maxHeight.IsAuto) style.maxHeight = maxHeight.ToDimension();
+            if (!width.IsAuto) style.width = width.ToDimension(calcResources);
+            if (!height.IsAuto) style.height = height.ToDimension(calcResources);
+            if (!minWidth.IsAuto) style.minWidth = minWidth.ToDimension(calcResources);
+            if (!minHeight.IsAuto) style.minHeight = minHeight.ToDimension(calcResources);
+            if (!maxWidth.IsAuto) style.maxWidth = maxWidth.ToDimension(calcResources);
+            if (!maxHeight.IsAuto) style.maxHeight = maxHeight.ToDimension(calcResources);
 
-            style.marginLeft = margin.left.ToLengthPercentageAuto();
-            style.marginRight = margin.right.ToLengthPercentageAuto();
-            style.marginTop = margin.top.ToLengthPercentageAuto();
-            style.marginBottom = margin.bottom.ToLengthPercentageAuto();
-            style.paddingLeft = padding.left.ToNonNegativeLengthPercentage();
-            style.paddingRight = padding.right.ToNonNegativeLengthPercentage();
-            style.paddingTop = padding.top.ToNonNegativeLengthPercentage();
-            style.paddingBottom = padding.bottom.ToNonNegativeLengthPercentage();
-            style.borderLeft = border.left.ToNonNegativeLengthPercentage();
-            style.borderRight = border.right.ToNonNegativeLengthPercentage();
-            style.borderTop = border.top.ToNonNegativeLengthPercentage();
-            style.borderBottom = border.bottom.ToNonNegativeLengthPercentage();
+            style.marginLeft = margin.left.ToLengthPercentageAuto(calcResources);
+            style.marginRight = margin.right.ToLengthPercentageAuto(calcResources);
+            style.marginTop = margin.top.ToLengthPercentageAuto(calcResources);
+            style.marginBottom = margin.bottom.ToLengthPercentageAuto(calcResources);
+            style.paddingLeft = padding.left.ToNonNegativeLengthPercentage(calcResources);
+            style.paddingRight = padding.right.ToNonNegativeLengthPercentage(calcResources);
+            style.paddingTop = padding.top.ToNonNegativeLengthPercentage(calcResources);
+            style.paddingBottom = padding.bottom.ToNonNegativeLengthPercentage(calcResources);
+            style.borderLeft = border.left.ToNonNegativeLengthPercentage(calcResources);
+            style.borderRight = border.right.ToNonNegativeLengthPercentage(calcResources);
+            style.borderTop = border.top.ToNonNegativeLengthPercentage(calcResources);
+            style.borderBottom = border.bottom.ToNonNegativeLengthPercentage(calcResources);
 
-            if (!flexBasis.IsAuto) style.flexBasis = flexBasis.ToDimension();
+            if (!flexBasis.IsAuto) style.flexBasis = flexBasis.ToDimension(calcResources);
             style.flexGrow = Mathf.Max(0f, flexGrow);
             style.flexShrink = Mathf.Max(0f, flexShrink);
             style.alignSelf = (int)alignSelf;
+            style.justifySelf = (int)justifySelf;
             style.aspectRatio = Mathf.Max(0f, aspectRatio);
             style.floatMode = (int)floatMode;
             style.clearMode = (int)clearMode;
             style.textAlign = (int)textAlign;
             style.itemIsTable = itemIsTable ? (byte)1 : (byte)0;
             style.itemIsReplaced = forceReplacedElement || measuredAsReplaced ? (byte)1 : (byte)0;
+
+            style.gridRowStart = gridRowStart.ToNative(marshalling, name + ".gridRowStart");
+            style.gridRowEnd = gridRowEnd.ToNative(marshalling, name + ".gridRowEnd");
+            style.gridColumnStart = gridColumnStart.ToNative(marshalling, name + ".gridColumnStart");
+            style.gridColumnEnd = gridColumnEnd.ToNative(marshalling, name + ".gridColumnEnd");
+            gridPlacementSignature = GridPlacementSignature();
             return style;
+        }
+
+        internal bool TryValidateGridPlacement(string label, out string error)
+        {
+            return gridRowStart.TryValidate(label + ".gridRowStart", out error) &&
+                   gridRowEnd.TryValidate(label + ".gridRowEnd", out error) &&
+                   gridColumnStart.TryValidate(label + ".gridColumnStart", out error) &&
+                   gridColumnEnd.TryValidate(label + ".gridColumnEnd", out error);
+        }
+
+        internal bool TryValidateCalc(out string error)
+        {
+            return inset.TryValidateCalc(name + ".inset", out error) &&
+                   width.TryValidateCalc(name + ".width", out error) &&
+                   height.TryValidateCalc(name + ".height", out error) &&
+                   minWidth.TryValidateCalc(name + ".minWidth", out error) &&
+                   minHeight.TryValidateCalc(name + ".minHeight", out error) &&
+                   maxWidth.TryValidateCalc(name + ".maxWidth", out error) &&
+                   maxHeight.TryValidateCalc(name + ".maxHeight", out error) &&
+                   margin.TryValidateCalc(name + ".margin", out error) &&
+                   padding.TryValidateCalc(name + ".padding", out error) &&
+                   border.TryValidateCalc(name + ".border", out error) &&
+                   flexBasis.TryValidateCalc(name + ".flexBasis", out error);
         }
 
         public void InvalidateMeasurement()
@@ -124,6 +168,12 @@ namespace TaffyUGUI
             if (!parent) return;
             TaffyLayoutGroup group = parent.GetComponentInParent<TaffyLayoutGroup>();
             if (group) group.InvalidateMeasurement(transform as RectTransform);
+        }
+
+        private string GridPlacementSignature()
+        {
+            return gridRowStart.Signature() + "|" + gridRowEnd.Signature() + "|" +
+                   gridColumnStart.Signature() + "|" + gridColumnEnd.Signature();
         }
 
         private void SetDirty()

@@ -39,8 +39,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 6:** COMPLETE; final ABI v1 `1/2` is frozen, the final Android artifact/payload were rebuilt/restaged, and the final native payload gate passed.
 - **Phase 7:** COMPLETE; persistent Unity/uGUI integration, incremental native synchronization, nested groups, LayoutElement semantics, and permanent Unity regression tests are verified.
 - **Phase 8:** COMPLETE; production Flex/Block/Float authoring and callback-free cached Unity measurement adapters are verified.
-- **Phase 9:** ACTIVE; P9.1 is the next authoritative task.
-- **Phase 10–14:** NOT STARTED.
+- **Phase 9:** COMPLETE; production Grid/Calc Unity authoring, diagnostics, lifecycle, and regression gates are verified.
+- **Phase 10:** ACTIVE; P10.1 is the next authoritative task.
+- **Phase 11–14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -58,7 +59,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 9 P9.1 — implement the serializable Grid track/unit data model.
+**Next authoritative task:** Phase 10 P10.1 — implement the responsive profile/breakpoint system.
 
 
 ---
@@ -413,27 +414,38 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 9 — Complete Grid and Calc Unity Authoring
 
-**Status:** ACTIVE — Phase 8 gate complete; P9.1 is next
-**Note:** native Grid/Calc engine support is already implemented in Phase 1.
+**Status:** COMPLETE — production Grid/Calc Unity gate passed
+**Note:** native Grid/Calc engine support was already implemented in Phase 1; Phase 9 required no ABI expansion.
 
-- [ ] P9.1 Serializable Grid track/unit data model.
-- [ ] P9.2 Grid explicit row/column authoring.
-- [ ] P9.3 Auto/implicit track authoring.
-- [ ] P9.4 `fr`, minmax, min/max-content authoring.
-- [ ] P9.5 repeat/count/auto-fill/auto-fit authoring.
-- [ ] P9.6 named lines/spans.
-- [ ] P9.7 named template areas.
-- [ ] P9.8 grid-auto-flow modes.
-- [ ] P9.9 Grid item placement authoring.
-- [ ] P9.10 justify-items/justify-self/alignment authoring.
-- [ ] P9.11 Typed Calc authoring/resource lifecycle.
-- [ ] P9.12 Grid/Calc diagnostics and validation in Unity.
+- [x] P9.1 Serializable Grid track/unit data model.
+- [x] P9.2 Grid explicit row/column authoring.
+- [x] P9.3 Auto/implicit track authoring.
+- [x] P9.4 `fr`, minmax, min/max-content authoring.
+- [x] P9.5 repeat/count/auto-fill/auto-fit authoring.
+- [x] P9.6 named lines/spans.
+- [x] P9.7 named template areas.
+- [x] P9.8 grid-auto-flow modes.
+- [x] P9.9 Grid item placement authoring.
+- [x] P9.10 justify-items/justify-self/alignment authoring.
+- [x] P9.11 Typed Calc authoring/resource lifecycle.
+- [x] P9.12 Grid/Calc diagnostics and validation in Unity.
+
+### Phase 9 validation note
+
+- VS Code Problems: 0 diagnostics for runtime/tests.
+- Native quality regression: rustfmt, Clippy `-D warnings`, 44/44 Rust tests, and release build pass.
+- Unity `6000.4.3f1` Edit Mode: 22/22 permanent package tests pass.
+- Unity `6000.4.3f1` Play Mode: 5/5 permanent package tests pass.
+- Final ABI/Phase 4/Phase 5 provenance and fresh Android ARM64 IL2CPP package checks are bound to `sha256:c9f0607bc7808c2e3fb857c5785780d31b9b1112fbe39275b8b23b6088cb9698`.
+- No physical Android device was attached for the final Phase 9 APK run; comprehensive Unity Player/device coverage remains Phase 12.
+
+**Documentation:** `PHASE9_GRID_CALC_UNITY.md`
 
 ---
 
 # Phase 10 — Responsive and Integration Hardening
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 9 gate complete; P10.1 is next
 
 - [ ] P10.1 Responsive profile/breakpoint system.
 - [ ] P10.2 Intrinsic resize/CanvasScaler responsiveness.
@@ -531,8 +543,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 8 is complete. Phase 9 is now authoritative.
+Phase 9 is complete. Phase 10 is now authoritative.
 
-**Next task:** P9.1 — implement the serializable Grid track/unit data model.
+**Next task:** P10.1 — implement the responsive profile/breakpoint system.
 
-Phase 9 exposes the already-implemented native Grid/Calc engine safely through Unity authoring and diagnostics.
+Phase 10 hardens the production bridge for responsive profiles, CanvasScaler/intrinsic resizing, safe areas, ScrollRect integration, fitter interaction rules, animation invalidation, pixel rounding, rebuild-loop protection, and runtime overrides.

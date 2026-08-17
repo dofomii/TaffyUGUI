@@ -29,6 +29,18 @@ namespace TaffyUGUI
         public TaffyAlignContent alignContent = TaffyAlignContent.Auto;
         public TaffyAlign justifyItems = TaffyAlign.Auto;
 
+
+        [Header("Grid Container")]
+        public TaffyGridAutoFlow gridAutoFlow = TaffyGridAutoFlow.Row;
+        public List<TaffyGridTrack> gridRows = new List<TaffyGridTrack>();
+        public List<TaffyGridTrack> gridColumns = new List<TaffyGridTrack>();
+        public List<TaffyGridTrack> gridAutoRows = new List<TaffyGridTrack>();
+        public List<TaffyGridTrack> gridAutoColumns = new List<TaffyGridTrack>();
+        public List<TaffyGridNamedLine> gridNamedLines = new List<TaffyGridNamedLine>();
+        public List<TaffyGridArea> gridAreas = new List<TaffyGridArea>();
+        [Min(0)] public int gridAreaRows;
+        [Min(0)] public int gridAreaColumns;
+
         private enum NativePass
         {
             Minimum,
@@ -41,6 +53,7 @@ namespace TaffyUGUI
             internal ulong handle;
             internal TaffyNative.Style style;
             internal bool hasStyle;
+            internal string gridPlacementSignature;
 
             internal readonly Dictionary<int, TaffyMeasurementData> measurementCache = new Dictionary<int, TaffyMeasurementData>();
             internal bool measurementResolved;
@@ -51,6 +64,11 @@ namespace TaffyUGUI
             internal int nativeMeasurementSignature;
         }
 
+        private readonly TaffyCalcResourceCache _calcResources = new TaffyCalcResourceCache();
+        private bool _hasGridTemplate;
+        private string _gridTemplateSignature;
+        private string _gridValidationError;
+
         private ulong _context;
         private ulong _root;
         private TaffyNative.Style _rootStyle;
@@ -60,6 +78,72 @@ namespace TaffyUGUI
         private readonly List<ulong> _orderedHandles = new List<ulong>();
         private readonly HashSet<RectTransform> _seenChildren = new HashSet<RectTransform>();
         private ulong[] _layoutHandles = Array.Empty<ulong>();
+        public string GridValidationError => _gridValidationError;
+
+        public bool ValidateGridAuthoring(out string error)
+        {
+            if (!border.TryValidateCalc(name + ".border", out error))
+            {
+                _gridValidationError = error;
+                return false;
+            }
+
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                TaffyLayoutItem item = transform.GetChild(i).GetComponent<TaffyLayoutItem>();
+                if (item && !item.TryValidateCalc(out error))
+                {
+                    _gridValidationError = error;
+                    return false;
+                }
+            }
+
+            bool valid = TaffyGridCompiler.TryValidate(this, out error);
+            _gridValidationError = valid ? null : error;
+            return valid;
+        }
+
+        public bool TryGetGridDiagnostics(out TaffyGridDiagnostics diagnostics, out string error)
+        {
+            diagnostics = null;
+            error = null;
+            if (containerDisplay != TaffyContainerDisplay.Grid)
+            {
+                error = "Detailed Grid diagnostics require containerDisplay = Grid.";
+                return false;
+            }
+            if (!isActiveAndEnabled)
+            {
+                error = "Detailed Grid diagnostics require an active TaffyLayoutGroup.";
+                return false;
+            }
+
+            try
+            {
+                EnsureContext();
+                float width = Mathf.Max(0f, rectTransform.rect.width);
+                float height = Mathf.Max(0f, rectTransform.rect.height);
+                SynchronizeNativeTree(NativePass.Arrange, width);
+                if (!_arrangedLayoutValid || !SameFloat(_arrangedWidth, width) || !SameFloat(_arrangedHeight, height))
+                {
+                    TaffyNative.Check(TaffyNative.tu_compute_layout(_context, _root, width, height), "compute Grid diagnostics layout");
+                    ReadChildLayouts();
+                    _arrangedWidth = width;
+                    _arrangedHeight = height;
+                    _arrangedLayoutValid = true;
+                }
+
+                diagnostics = ReadGridDiagnostics();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                error = exception.Message;
+                _gridValidationError = error;
+                return false;
+            }
+        }
+
         private TaffyNative.Layout[] _layoutResults = Array.Empty<TaffyNative.Layout>();
         private bool _abiValidated;
         private bool _applying;
@@ -185,6 +269,7 @@ namespace TaffyUGUI
             TaffyNative.Check(TaffyNative.tu_context_create(out _context), "create context");
             if (_context == 0)
                 throw new InvalidOperationException("TaffyUGUI native context creation returned a null handle.");
+            _calcResources.Attach(_context);
 
             var initialStyle = BuildRootStyle(NativePass.Preferred);
             TaffyNative.Check(TaffyNative.tu_node_create(_context, ref initialStyle, out _root), "create root");
@@ -207,6 +292,10 @@ namespace TaffyUGUI
             _nodes.Clear();
             _orderedChildren.Clear();
             _orderedHandles.Clear();
+            _calcResources.Detach();
+            _hasGridTemplate = false;
+            _gridTemplateSignature = null;
+            _gridValidationError = null;
             _seenChildren.Clear();
             _hasRootStyle = false;
             _arrangedLayoutValid = false;
@@ -294,6 +383,7 @@ namespace TaffyUGUI
         private void SynchronizeNativeTree(NativePass pass, float availableWidth)
         {
             EnsureContext();
+            _calcResources.BeginPass(_context);
 
             var rootStyle = BuildRootStyle(pass);
             if (!_hasRootStyle || !StyleEquals(_rootStyle, rootStyle))
@@ -301,6 +391,9 @@ namespace TaffyUGUI
                 TaffyNative.Check(TaffyNative.tu_node_set_style(_context, _root, ref rootStyle), "update root style");
                 _rootStyle = rootStyle;
                 _hasRootStyle = true;
+                // Native style replacement clears Grid template resources, so force a template reapply.
+                _hasGridTemplate = false;
+                _gridTemplateSignature = null;
                 _arrangedLayoutValid = false;
             }
 
@@ -337,26 +430,43 @@ namespace TaffyUGUI
                 TaffyLayoutItem item = child.GetComponent<TaffyLayoutItem>();
                 bool hasMeasurement = ResolveMeasurement(child, item, record, availableWidth);
                 TaffyMeasurementData measurement = record.measurementData;
-                var style = BuildChildStyle(child, item, pass, hasMeasurement, measurement);
 
-                if (record.handle == 0)
+                using (var scope = new TaffyNativeMarshallingScope())
                 {
-                    TaffyNative.Check(TaffyNative.tu_node_create(_context, ref style, out ulong handle), "create child node");
-                    if (handle == 0)
-                        throw new InvalidOperationException("TaffyUGUI native child creation returned a null handle.");
-                    record.handle = handle;
-                    record.style = style;
-                    record.hasStyle = true;
-                    _nodes.Add(child, record);
-                    topologyChanged = true;
-                    _arrangedLayoutValid = false;
-                }
-                else if (!record.hasStyle || !StyleEquals(record.style, style))
-                {
-                    TaffyNative.Check(TaffyNative.tu_node_set_style(_context, record.handle, ref style), "update child style");
-                    record.style = style;
-                    record.hasStyle = true;
-                    _arrangedLayoutValid = false;
+                    TaffyNative.Style style = BuildChildStyle(
+                        child,
+                        item,
+                        pass,
+                        hasMeasurement,
+                        measurement,
+                        scope,
+                        out string gridPlacementSignature);
+                    TaffyNative.Style cachedStyle = NormalizeStyleForCache(style);
+                    bool styleChanged = !record.hasStyle ||
+                                        !StyleEquals(record.style, cachedStyle) ||
+                                        !string.Equals(record.gridPlacementSignature, gridPlacementSignature, StringComparison.Ordinal);
+
+                    if (record.handle == 0)
+                    {
+                        TaffyNative.Check(TaffyNative.tu_node_create(_context, ref style, out ulong handle), "create child node");
+                        if (handle == 0)
+                            throw new InvalidOperationException("TaffyUGUI native child creation returned a null handle.");
+                        record.handle = handle;
+                        record.style = cachedStyle;
+                        record.gridPlacementSignature = gridPlacementSignature;
+                        record.hasStyle = true;
+                        _nodes.Add(child, record);
+                        topologyChanged = true;
+                        _arrangedLayoutValid = false;
+                    }
+                    else if (styleChanged)
+                    {
+                        TaffyNative.Check(TaffyNative.tu_node_set_style(_context, record.handle, ref style), "update child style");
+                        record.style = cachedStyle;
+                        record.gridPlacementSignature = gridPlacementSignature;
+                        record.hasStyle = true;
+                        _arrangedLayoutValid = false;
+                    }
                 }
 
                 SynchronizeNativeMeasurement(record);
@@ -391,6 +501,134 @@ namespace TaffyUGUI
                     "synchronize child topology");
                 _arrangedLayoutValid = false;
             }
+
+            SynchronizeGridTemplate();
+            _calcResources.EndPass();
+        }
+
+        private void SynchronizeGridTemplate()
+        {
+            if (containerDisplay != TaffyContainerDisplay.Grid)
+            {
+                _gridValidationError = null;
+                if (_hasGridTemplate)
+                {
+                    var empty = new TaffyNative.GridTemplate();
+                    TaffyNative.Check(TaffyNative.tu_node_set_grid_template(_context, _root, ref empty), "clear Grid template");
+                    _hasGridTemplate = false;
+                    _gridTemplateSignature = null;
+                    _arrangedLayoutValid = false;
+                }
+                return;
+            }
+
+            if (!ValidateGridAuthoring(out string validationError))
+                throw new InvalidOperationException($"TaffyUGUI Grid authoring is invalid: {validationError}");
+
+            using (var scope = new TaffyNativeMarshallingScope())
+            {
+                if (!TaffyGridCompiler.TryCompile(
+                        this,
+                        _calcResources,
+                        scope,
+                        out TaffyNative.GridTemplate template,
+                        out string signature,
+                        out string compileError))
+                {
+                    _gridValidationError = compileError;
+                    throw new InvalidOperationException($"TaffyUGUI Grid authoring is invalid: {compileError}");
+                }
+
+                _gridValidationError = null;
+                if (!_hasGridTemplate || !string.Equals(_gridTemplateSignature, signature, StringComparison.Ordinal))
+                {
+                    TaffyNative.Check(TaffyNative.tu_node_set_grid_template(_context, _root, ref template), "synchronize Grid template");
+                    _hasGridTemplate = true;
+                    _gridTemplateSignature = signature;
+                    _arrangedLayoutValid = false;
+                }
+            }
+        }
+
+        private static TaffyNative.Style NormalizeStyleForCache(TaffyNative.Style style)
+        {
+            style.gridRowStart.name = default;
+            style.gridRowEnd.name = default;
+            style.gridColumnStart.name = default;
+            style.gridColumnEnd.name = default;
+            return style;
+        }
+
+        private TaffyGridDiagnostics ReadGridDiagnostics()
+        {
+            TaffyNative.Check(TaffyNative.tu_get_grid_info(_context, _root, out TaffyNative.GridInfo info), "get Grid diagnostics summary");
+            var diagnostics = new TaffyGridDiagnostics
+            {
+                negativeImplicitRows = info.negativeImplicitRows,
+                explicitRows = info.explicitRows,
+                positiveImplicitRows = info.positiveImplicitRows,
+                negativeImplicitColumns = info.negativeImplicitColumns,
+                explicitColumns = info.explicitColumns,
+                positiveImplicitColumns = info.positiveImplicitColumns,
+                rowTrackSizes = ReadGridFloatVector(TaffyNative.GridAxis.Row, info.rowTrackCount, false),
+                columnTrackSizes = ReadGridFloatVector(TaffyNative.GridAxis.Column, info.columnTrackCount, false),
+                rowGutters = ReadGridFloatVector(TaffyNative.GridAxis.Row, info.rowTrackCount + 1u, true),
+                columnGutters = ReadGridFloatVector(TaffyNative.GridAxis.Column, info.columnTrackCount + 1u, true),
+            };
+
+            if (info.itemCount == 0)
+            {
+                diagnostics.items = Array.Empty<TaffyGridItemInfo>();
+                return diagnostics;
+            }
+            if (info.itemCount > int.MaxValue)
+                throw new InvalidOperationException("TaffyUGUI Grid diagnostics item count exceeds managed array capacity.");
+
+            var nativeItems = new TaffyNative.GridItemInfo[(int)info.itemCount];
+            TaffyNative.Check(
+                TaffyNative.tu_get_grid_items(_context, _root, nativeItems, (uint)nativeItems.Length, out uint written),
+                "get Grid item diagnostics");
+            if (written != info.itemCount)
+                throw new InvalidOperationException($"TaffyUGUI Grid diagnostics expected {info.itemCount} items, native returned {written}.");
+
+            var items = new TaffyGridItemInfo[nativeItems.Length];
+            for (int i = 0; i < nativeItems.Length; i++)
+            {
+                items[i] = new TaffyGridItemInfo
+                {
+                    rowStart = nativeItems[i].rowStart,
+                    rowEnd = nativeItems[i].rowEnd,
+                    columnStart = nativeItems[i].columnStart,
+                    columnEnd = nativeItems[i].columnEnd,
+                };
+            }
+            diagnostics.items = items;
+            return diagnostics;
+        }
+
+        private float[] ReadGridFloatVector(TaffyNative.GridAxis axis, uint capacityHint, bool gutters)
+        {
+            if (!gutters && capacityHint == 0)
+                return Array.Empty<float>();
+            if (capacityHint > int.MaxValue)
+                throw new InvalidOperationException("TaffyUGUI Grid diagnostics track count exceeds managed array capacity.");
+
+            int capacity = Mathf.Max(1, (int)capacityHint);
+            var values = new float[capacity];
+            int status = gutters
+                ? TaffyNative.tu_get_grid_gutters(_context, _root, (int)axis, values, (uint)values.Length, out uint written)
+                : TaffyNative.tu_get_grid_track_sizes(_context, _root, (int)axis, values, (uint)values.Length, out written);
+            TaffyNative.Check(status, gutters ? "get Grid gutter diagnostics" : "get Grid track diagnostics");
+            if (written == 0)
+                return Array.Empty<float>();
+            if (written > values.Length)
+                throw new InvalidOperationException("TaffyUGUI Grid diagnostics returned more values than the supplied capacity.");
+            if (written == values.Length)
+                return values;
+
+            var trimmed = new float[written];
+            Array.Copy(values, trimmed, (int)written);
+            return trimmed;
         }
 
         private bool ResolveMeasurement(
@@ -507,14 +745,15 @@ namespace TaffyUGUI
             style.paddingRight = TaffyNative.Value.Points(Mathf.Max(0f, padding.right));
             style.paddingTop = TaffyNative.Value.Points(Mathf.Max(0f, padding.top));
             style.paddingBottom = TaffyNative.Value.Points(Mathf.Max(0f, padding.bottom));
-            style.borderLeft = border.left.ToNonNegativeLengthPercentage();
-            style.borderRight = border.right.ToNonNegativeLengthPercentage();
-            style.borderTop = border.top.ToNonNegativeLengthPercentage();
-            style.borderBottom = border.bottom.ToNonNegativeLengthPercentage();
+            style.borderLeft = border.left.ToNonNegativeLengthPercentage(_calcResources);
+            style.borderRight = border.right.ToNonNegativeLengthPercentage(_calcResources);
+            style.borderTop = border.top.ToNonNegativeLengthPercentage(_calcResources);
+            style.borderBottom = border.bottom.ToNonNegativeLengthPercentage(_calcResources);
             style.alignItems = (int)alignItems;
             style.alignContent = (int)alignContent;
             style.justifyContent = ToNativeJustify(justifyContent);
             style.justifyItems = (int)justifyItems;
+            style.gridAutoFlow = (int)gridAutoFlow;
             style.textAlign = (int)textAlign;
 
             if (pass == NativePass.Arrange)
@@ -531,7 +770,9 @@ namespace TaffyUGUI
             TaffyLayoutItem item,
             NativePass pass,
             bool hasMeasurement,
-            TaffyMeasurementData measurement)
+            TaffyMeasurementData measurement,
+            TaffyNativeMarshallingScope marshalling,
+            out string gridPlacementSignature)
         {
             var style = TaffyNative.Style.FlexDefaults();
             LayoutElement element = child.GetComponent<LayoutElement>();
@@ -552,8 +793,6 @@ namespace TaffyUGUI
                 ? Mathf.Max(minimumHeight, measurement.preferred.y)
                 : layoutPreferredHeight;
 
-            // LayoutElement minima remain hard constraints during arrangement. Intrinsic min-content
-            // participates in our own minimum-size report without preventing normal Flex shrink/wrap.
             style.minWidth = TaffyNative.Value.Points(layoutMinWidth);
             style.minHeight = TaffyNative.Value.Points(layoutMinHeight);
 
@@ -584,9 +823,20 @@ namespace TaffyUGUI
             }
 
             if (item)
-                style = item.ApplyTo(style, hasMeasurement && measurement.isReplaced);
-            else if (hasMeasurement && measurement.isReplaced)
-                style.itemIsReplaced = 1;
+            {
+                style = item.ApplyTo(
+                    style,
+                    hasMeasurement && measurement.isReplaced,
+                    _calcResources,
+                    marshalling,
+                    out gridPlacementSignature);
+            }
+            else
+            {
+                gridPlacementSignature = string.Empty;
+                if (hasMeasurement && measurement.isReplaced)
+                    style.itemIsReplaced = 1;
+            }
 
             return style;
         }
@@ -674,8 +924,19 @@ namespace TaffyUGUI
                    a.itemIsReplaced == b.itemIsReplaced &&
                    a.floatMode == b.floatMode &&
                    a.clearMode == b.clearMode &&
-                   a.textAlign == b.textAlign;
+                   a.textAlign == b.textAlign &&
+                   a.gridAutoFlow == b.gridAutoFlow &&
+                   SameGridPlacement(a.gridRowStart, b.gridRowStart) &&
+                   SameGridPlacement(a.gridRowEnd, b.gridRowEnd) &&
+                   SameGridPlacement(a.gridColumnStart, b.gridColumnStart) &&
+                   SameGridPlacement(a.gridColumnEnd, b.gridColumnEnd);
         }
+
+        private static bool SameGridPlacement(TaffyNative.GridPlacement a, TaffyNative.GridPlacement b)
+        {
+            return a.kind == b.kind && a.line == b.line && a.span == b.span && a.occurrence == b.occurrence;
+        }
+
 
         private static bool SameValue(TaffyNative.Value a, TaffyNative.Value b)
         {

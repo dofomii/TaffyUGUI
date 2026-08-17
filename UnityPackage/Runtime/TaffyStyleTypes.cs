@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace TaffyUGUI
 {
-    public enum TaffyUnit { Auto, Points, Percent }
-    public enum TaffyContainerDisplay { Flex = 1, Block = 3, FlowRoot = 4 }
+    public enum TaffyUnit { Auto = 0, Points = 1, Percent = 2, Calc = 3 }
+    public enum TaffyContainerDisplay { Flex = 1, Grid = 2, Block = 3, FlowRoot = 4 }
     public enum TaffyDisplay { None = 0, Flex = 1, Grid = 2, Block = 3, FlowRoot = 4 }
     public enum TaffyBoxSizing { BorderBox = 0, ContentBox = 1 }
     public enum TaffyWritingDirection { LeftToRight = 0, RightToLeft = 1 }
@@ -82,41 +82,75 @@ namespace TaffyUGUI
     {
         public TaffyUnit unit;
         public float value;
+        public TaffyCalcExpression calc;
 
         public static TaffyLength Auto => new TaffyLength { unit = TaffyUnit.Auto };
         public static TaffyLength Points(float value) => new TaffyLength { unit = TaffyUnit.Points, value = value };
         public static TaffyLength Percent(float value) => new TaffyLength { unit = TaffyUnit.Percent, value = value };
+        public static TaffyLength Calc(TaffyCalcExpression expression) => new TaffyLength { unit = TaffyUnit.Calc, calc = expression };
 
         internal bool IsAuto => unit == TaffyUnit.Auto;
 
-        internal TaffyNative.Value ToDimension()
+        internal bool TryValidateCalc(string label, out string error)
+        {
+            if (unit != TaffyUnit.Calc)
+            {
+                error = null;
+                return true;
+            }
+            if (calc == null)
+            {
+                error = $"{label} is Calc but has no expression.";
+                return false;
+            }
+            if (!calc.TryValidate(out error))
+            {
+                error = $"{label}: {error}";
+                return false;
+            }
+            return true;
+        }
+
+        internal TaffyNative.Value ToDimension(TaffyCalcResourceCache resources = null)
         {
             switch (unit)
             {
                 case TaffyUnit.Points: return TaffyNative.Value.Points(Mathf.Max(0f, FiniteOrZero(value)));
                 case TaffyUnit.Percent: return TaffyNative.Value.Percent(Mathf.Max(0f, FiniteOrZero(value)));
+                case TaffyUnit.Calc: return ResolveCalc(resources);
                 default: return TaffyNative.Value.Auto;
             }
         }
 
-        internal TaffyNative.Value ToLengthPercentageAuto()
+        internal TaffyNative.Value ToLengthPercentageAuto(TaffyCalcResourceCache resources = null)
         {
             switch (unit)
             {
                 case TaffyUnit.Points: return TaffyNative.Value.Points(FiniteOrZero(value));
                 case TaffyUnit.Percent: return TaffyNative.Value.Percent(FiniteOrZero(value));
+                case TaffyUnit.Calc: return ResolveCalc(resources);
                 default: return TaffyNative.Value.Auto;
             }
         }
 
-        internal TaffyNative.Value ToNonNegativeLengthPercentage()
+        internal TaffyNative.Value ToNonNegativeLengthPercentage(TaffyCalcResourceCache resources = null)
         {
             switch (unit)
             {
                 case TaffyUnit.Points: return TaffyNative.Value.Points(Mathf.Max(0f, FiniteOrZero(value)));
                 case TaffyUnit.Percent: return TaffyNative.Value.Percent(Mathf.Max(0f, FiniteOrZero(value)));
+                case TaffyUnit.Calc: return ResolveCalc(resources);
                 default: return TaffyNative.Value.Points(0f);
             }
+        }
+
+        private TaffyNative.Value ResolveCalc(TaffyCalcResourceCache resources)
+        {
+            if (resources == null)
+                throw new InvalidOperationException("TaffyUGUI Calc values require an active native Calc resource cache.");
+            if (calc == null)
+                throw new InvalidOperationException("TaffyUGUI Calc value has no expression.");
+            return TaffyNative.Value.Calc(resources.Resolve(calc));
         }
 
         private static float FiniteOrZero(float input)
@@ -144,6 +178,14 @@ namespace TaffyUGUI
         public static TaffyEdges Points(float value)
         {
             return Uniform(TaffyLength.Points(value));
+        }
+
+        internal bool TryValidateCalc(string label, out string error)
+        {
+            return left.TryValidateCalc(label + ".left", out error) &&
+                   right.TryValidateCalc(label + ".right", out error) &&
+                   top.TryValidateCalc(label + ".top", out error) &&
+                   bottom.TryValidateCalc(label + ".bottom", out error);
         }
     }
 }

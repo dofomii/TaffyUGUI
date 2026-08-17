@@ -16,70 +16,59 @@
 - Phase 6 managed ABI conformance/final freeze: **complete**.
 - Phase 7 minimal Unity uGUI product: **complete**.
 - Phase 8 production Flex/Block/Float/measurement integration: **complete**.
-- Phase 9 Grid/Calc Unity authoring: **active; P9.1 is next**.
-- Phases 10–14: **not started**.
+- Phase 9 Grid/Calc Unity authoring: **complete**.
+- Phase 10 responsive/integration hardening: **active; P10.1 is next**.
+- Phases 11–14: **not started**.
 
-## Phase 8 production boundary
+## Phase 9 production boundary
 
-The Unity bridge now provides the Phase 7 persistent lifecycle plus production Phase 8 authoring for:
+The Unity runtime now exposes the native Grid/Calc engine through production authoring:
 
-- size/min/max, margin, padding, border, and box sizing;
-- Flex container and Flex item fields;
-- Block and FlowRoot formatting contexts;
-- float/clear;
-- relative/absolute positioning and insets;
-- overflow, scrollbar width, writing direction, and aspect ratio;
-- text alignment and replaced/table flags used by the native engine.
+- explicit and implicit/auto Grid rows and columns;
+- points, percentages, `fr`, minmax, min-content, max-content, and Calc track sizing;
+- fixed Repeat, auto-fill, and auto-fit;
+- named row/column lines;
+- named template areas;
+- row/column numeric lines and spans;
+- named lines and named spans;
+- grid-auto-flow Row/Column/Dense modes;
+- justify-items and justify-self Grid alignment;
+- serializable typed Calc expressions for dimensions and Grid sizing;
+- managed Grid/Calc validation and detailed native Grid diagnostics.
 
-`TaffyMeasurement.cs` provides callback-free managed cached measurement for:
+Typed Calc resources are cached per persistent native context. Equivalent expressions are canonicalized and reused; dependencies are created before dependents, and unused resources are released in reverse creation order only after current styles/templates no longer reference them. Context teardown clears the managed cache and native context ownership handles remaining native resources.
 
-- custom `ITaffyMeasurementProvider` implementations;
-- TextMeshPro (`TMP_Text`);
-- retained uGUI `Text`;
-- `Image`;
-- `RawImage`.
+Grid arrays and UTF-8 strings are pinned only for the duration of individual ABI calls. Cached native style structs do not retain transient managed string pointers.
 
-Measurements are resolved/cached on the managed side and uploaded before `tu_compute_layout`; no managed callback/delegate is reachable from the native Taffy compute pass. Per-node caches support both intrinsic/unbounded and finite-width records.
+The Phase 9 implementation required **no ABI expansion**. It uses the final Phase 6 ABI v1 `1/2` Grid/Calc calls and style fields already present in the package.
 
-Measurement invalidation covers source signatures, TMP text/font events, Unity font texture rebuilds, component validation/animation lifecycle changes, and explicit custom-provider invalidation/versioning.
+Responsive profiles/CanvasScaler/safe-area/ScrollRect/fitter/rebuild-loop hardening remains Phase 10. Editor tooling and migration remain Phase 11.
 
-Grid/Calc Unity authoring remains Phase 9. ScrollRect/responsive hardening remains Phase 10. Editor tooling and migration remain Phase 11.
+## Phase 9 verification
 
-## Phase 8 verification
-
-Final local verification on Unity `6000.4.3f1`:
+Final local Unity `6000.4.3f1` package verification:
 
 - VS Code Problems: **0 diagnostics** for runtime/tests;
-- final ABI/native regression gate: **PASS**, including all 44 maintained Rust tests, rustfmt, Clippy, release build, and cbindgen drift check;
-- Edit Mode: **14/14 tests passed**;
-- Play Mode: **3/3 tests passed**;
-- Android ARM64 native build/Phase 4 acceptance: **PASS**;
-- Phase 5 staging/verification: **PASS**;
-- Android ARM64 IL2CPP development APK build: **PASS**;
-- IL2CPP includes `TaffyUGUI.Runtime.dll` and `Unity.TextMeshPro.dll`;
-- APK contains `lib/arm64-v8a/libtaffy_ugui.so`;
-- packaged Taffy library has identical ELF program headers and byte-identical runtime-loaded `PT_LOAD` segments to the accepted staged library.
+- native `quality` regression: **PASS**, including rustfmt, Clippy `-D warnings`, 44/44 maintained Rust tests, and release build;
+- Edit Mode: **22/22 tests passed**;
+- Play Mode: **5/5 tests passed**;
+- all previous Phase 7/8 regression tests remain green;
+- Phase 9 tests cover explicit/implicit Grid, `fr`, minmax/content sizing, Repeat/count/auto-fill/auto-fit, named lines/spans/areas, auto-flow, placement/alignment, typed Calc mutation/lifecycle, detailed diagnostics, validation failures, and runtime reconfiguration.
 
-No Android device was attached during the final Phase 8 validation, so the new APK was not executed on hardware. Comprehensive Unity Player/device validation remains Phase 12. Earlier physical-device proof for the final native ABI/runtime path remains valid.
+Final ABI/Android provenance and fresh Android ARM64 IL2CPP packaging are bound to the exact Phase 9 source snapshot:
 
-## Current Android artifact identity
+`sha256:c9f0607bc7808c2e3fb857c5785780d31b9b1112fbe39275b8b23b6088cb9698`
 
-Because the content-addressed release input set includes `UnityPackage/Runtime`, the Phase 8 managed changes intentionally refreshed the Phase 3/4/5 provenance chain rather than leaving previous evidence stale.
-
-Current accepted source snapshot:
-
-`sha256:0eb0a1c56f841cebf48758d6af045533ab69e68e9e76b8f05611712ce282c8f4`
-
-Android ARM64 library SHA-256 remains unchanged:
+The Android ARM64 native library remains:
 
 `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`
 
-The historical Phase 6 freeze snapshot was `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`; Phase 8 did not change the native ABI or engine bytes.
+No physical Android device was attached for the final Phase 9 APK run; comprehensive Unity Player/device validation remains Phase 12. Earlier physical-device proof for the frozen native ABI/runtime path remains valid.
 
 Disposable validation harness/probe material remains local-only under ignored `.build/` paths and is never tracked project source.
 
 ## Next authoritative work
 
-**Phase 9 P9.1 — implement the serializable Grid track/unit data model.**
+**Phase 10 P10.1 — implement the responsive profile/breakpoint system.**
 
 Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope.

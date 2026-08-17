@@ -37,8 +37,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 4:** COMPLETE for the active **Android ARM64-only** release scope at final ABI v1 `1/2`.
 - **Phase 5:** COMPLETE for Android ARM64 at final ABI v1 `1/2`; package provenance matches the accepted Phase 4 artifact.
 - **Phase 6:** COMPLETE; final ABI v1 `1/2` is frozen, the final Android artifact/payload were rebuilt/restaged, and the final native payload gate passed.
-- **Phase 7:** ACTIVE; prototype components exist and P7.1 is the next authoritative task.
-- **Phase 8–14:** NOT STARTED.
+- **Phase 7:** COMPLETE; persistent Unity/uGUI integration, incremental native synchronization, nested groups, LayoutElement semantics, and permanent Unity regression tests are verified.
+- **Phase 8:** ACTIVE; P8.1 is the next authoritative task.
+- **Phase 9–14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -56,7 +57,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 7 P7.1 — production persistent managed/native context lifecycle.
+**Next authoritative task:** Phase 8 P8.1 — complete Unity authoring for core size/min/max/box model.
 
 
 ---
@@ -350,32 +351,37 @@ Only permanent ABI guards, maintained regression tests, and release tooling rema
 
 # Phase 7 — Minimal Working Unity uGUI Product
 
-**Status:** ACTIVE — Phase 6 gate is complete; P7.1 is next
+**Status:** COMPLETE — minimal production uGUI bridge gate passed
 
-Current repository scaffolding:
+Production behavior now includes persistent native contexts/root nodes, stable `RectTransform`→native-node mapping, incremental style/topology synchronization, native intrinsic size reporting, cached two-axis arrangement, nested Taffy groups, `LayoutElement`/`ignoreLayout` compatibility, and permanent Unity regression tests.
 
-- `TaffyLayoutGroup.cs`
-- `TaffyLayoutItem.cs`
-- `TaffyNative.cs`
+- [x] P7.1 Production persistent managed/native context lifecycle.
+- [x] P7.2 Stable mapping between RectTransforms and native node handles.
+- [x] P7.3 Correct topology synchronization without rebuilding everything unnecessarily.
+- [x] P7.4 Correct `CalculateLayoutInputHorizontal/Vertical` integration.
+- [x] P7.5 Correct `SetLayoutHorizontal/Vertical` application.
+- [x] P7.6 Report own min/preferred/flexible size through `SetLayoutInputForAxis`.
+- [x] P7.7 Support nested Taffy layout groups.
+- [x] P7.8 Preserve `LayoutElement` behavior/ignoreLayout semantics.
+- [x] P7.9 Apply native geometry to RectTransform without replacing uGUI rendering/input components.
+- [x] P7.10 Minimal Unity Edit Mode/Play Mode verification.
 
-These files are not considered Phase 7 completion.
+### Phase 7 validation note
 
-- [ ] P7.1 Production persistent managed/native context lifecycle.
-- [ ] P7.2 Stable mapping between RectTransforms and native node handles.
-- [ ] P7.3 Correct topology synchronization without rebuilding everything unnecessarily.
-- [ ] P7.4 Correct `CalculateLayoutInputHorizontal/Vertical` integration.
-- [ ] P7.5 Correct `SetLayoutHorizontal/Vertical` application.
-- [ ] P7.6 Report own min/preferred/flexible size through `SetLayoutInputForAxis`.
-- [ ] P7.7 Support nested Taffy layout groups.
-- [ ] P7.8 Preserve `LayoutElement` behavior/ignoreLayout semantics.
-- [ ] P7.9 Apply native geometry to RectTransform without replacing uGUI rendering/input components.
-- [ ] P7.10 Minimal Unity Edit Mode/Play Mode verification.
+- VS Code Problems: 0 diagnostics for runtime/tests.
+- Native quality regression gate: 44/44 Rust tests plus rustfmt, Clippy, and release build pass.
+- Unity `6000.4.3f1` Edit Mode: 4/4 permanent package tests pass.
+- Unity `6000.4.3f1` Play Mode: 1/1 permanent package test passes.
+- Android ARM64 IL2CPP development APK build passes and packages the accepted Phase 6 native payload with byte-identical runtime-loaded ELF `PT_LOAD` segments.
+- No physical Android device was available for the final Phase 7 run; physical-platform coverage remains Phase 12.
+
+**Documentation:** `PHASE7_MINIMAL_UGUI.md`
 
 ---
 
 # Phase 8 — Production Flex / Block / Float / Measurement Unity Integration
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 7 gate complete; P8.1 is next
 
 - [ ] P8.1 Complete Unity authoring for core size/min/max/box model.
 - [ ] P8.2 Complete Flex container authoring.
@@ -512,8 +518,8 @@ These files are not considered Phase 7 completion.
 
 # Current Next Action
 
-Phase 6 is complete. Phase 7 is now authoritative.
+Phase 7 is complete. Phase 8 is now authoritative.
 
-**Next task:** P7.1 — implement the production persistent managed/native context lifecycle.
+**Next task:** P8.1 — complete Unity authoring for core size/min/max/box model.
 
-The Phase 7 sequence then continues with stable RectTransform↔native-node mapping (P7.2), topology synchronization (P7.3), and proper Unity layout-system integration.
+Phase 8 then expands the minimal Phase 7 bridge into the production Flex/Block/Float/measurement integration, including full authoring and managed measurement adapters.

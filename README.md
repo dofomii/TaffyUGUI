@@ -19,9 +19,10 @@ The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.
 | 4 — Native artifact release gate | **Complete for final ABI v1 `1/2` Android ARM64 artifact** |
 | 5 — Unity native payload | **Complete for final ABI v1 `1/2` Android ARM64 payload** |
 | 6 — Managed ABI conformance / final ABI v1 | **Complete** |
-| 7 — Minimal working Unity uGUI product | **Active; P7.1 is next** |
+| 7 — Minimal working Unity uGUI product | **Complete** |
+| 8 — Production Flex/Block/Float/measurement integration | **Active; P8.1 is next** |
 
-Phase 6 is complete. The final Android ARM64 artifact and Unity payload are ABI v1 `1/2`, and Phase 3 evidence, the Phase 4 index, and Phase 5 provenance all bind to the same content-addressed source snapshot. Phase 7 is now active with P7.1 as the next task. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
+Phase 7 is complete. `TaffyLayoutGroup` now uses persistent native contexts/nodes, incremental topology/style synchronization, native min/preferred size reporting, proper uGUI two-axis arrangement, nested groups, and `LayoutElement`/`ignoreLayout` semantics. Permanent Unity tests pass 4/4 in Edit Mode and 1/1 in Play Mode on Unity `6000.4.3f1`; an Android ARM64 IL2CPP development APK also builds successfully. Phase 8 is now active with P8.1 next. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
 
 
 For the full current state, use:
@@ -32,13 +33,14 @@ For the full current state, use:
 - [Documentation index](docs/README.md)
 - [Local verification status](docs/LOCAL_VERIFICATION_STATUS.md)
 
-## Completed native phase documentation
+## Completed phase documentation
 
 - [Phase 0 — Foundation](docs/PHASE0_FOUNDATION.md)
 - [Phase 1 — Native engine](docs/PHASE1_NATIVE_ENGINE.md)
 - [Phase 2 — Production C ABI](docs/PHASE2_PRODUCTION_C_ABI.md)
 - [Phase 4 — Android native release](docs/PHASE4_PLATFORM_BUILDS.md)
 - [Phase 6 — Managed ABI conformance](docs/PHASE6_MANAGED_ABI.md)
+- [Phase 7 — Minimal Unity uGUI product](docs/PHASE7_MINIMAL_UGUI.md)
 
 
 ## Local-first development

@@ -1,20 +1,20 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the remaining gated path from the current native release candidate to v1.0.
+This document describes the gated production path from the current completed Phase 7 Unity bridge to v1.0.
 
 ## Phase sequence
 
 | Phase | Name | Current status |
 |---|---|---|
 | 0 | Rust Project and Toolchain Foundation | Complete |
-| 1 | Complete Rust/Taffy Native Engine | Complete implementation |
-| 2 | Production C ABI Candidate and Safety | Complete implementation |
-| 3 | Native Verification and ABI RC Lock | Complete locally; ABI-v1-RC `1/1` verified |
-| 4 | Cross-Platform Native Builds | Active; platform artifacts pending |
-| 5 | Unity-Ready Native Artifact Staging | Not started |
-| 6 | Minimal Managed ABI Conformance and Final ABI v1 Freeze | Partial early P/Invoke scaffolding only |
-| 7 | Minimal Working Unity uGUI Product | Prototype scaffolding exists; gated/not started |
-| 8 | Production Flex/Block/Float/Measurement Unity Integration | Not started |
+| 1 | Complete Rust/Taffy Native Engine | Complete |
+| 2 | Production C ABI Candidate and Safety | Complete |
+| 3 | Native Verification and ABI RC Lock | Complete |
+| 4 | Native Builds | Complete for active Android ARM64 scope |
+| 5 | Unity-Ready Native Artifact Staging | Complete for Android ARM64 |
+| 6 | Managed ABI Conformance and Final ABI v1 Freeze | Complete; ABI v1 `1/2` |
+| 7 | Minimal Working Unity uGUI Product | Complete |
+| 8 | Production Flex/Block/Float/Measurement Unity Integration | Active; P8.1 next |
 | 9 | Complete Grid and Calc Unity Authoring | Native support exists; Unity authoring not started |
 | 10 | Responsive and Integration Hardening | Not started |
 | 11 | Editor Tooling and Migration | Not started |
@@ -32,36 +32,26 @@ After `verify-phase4` accepts the complete native target set:
 - verify Git/UPM packaging includes the native payload;
 - keep `dist/**` generated while committing the required verified package-native payload.
 
-## Phase 6 — Minimal Managed ABI Conformance and Final ABI v1 Freeze
+## Phase 6 — Managed ABI Conformance and Final ABI v1 Freeze
 
-Early work already present: low-level `TaffyNative` declarations target `tu_*` ABI-v1-RC and structure-size guards exist.
+**Complete.** The full managed/native contract was validated and final ABI v1 was frozen at version `1`, stage `2`. The accepted Android ARM64 native payload was rebuilt/restaged from the final source and verified through Unity IL2CPP packaging plus earlier physical-device execution.
 
-Still required:
-
-- execute managed/native handshake against the staged real libraries;
-- validate every managed ABI structure/enum/signature needed by Unity;
-- test context/node/style/topology/measurement/compute/result round trips;
-- validate platform library naming and P/Invoke loading rules;
-- resolve every ABI discrepancy;
-- freeze final ABI v1 only after the managed proof;
-- rebuild and re-stage **all** native artifacts from the final ABI v1 source.
-
-User-facing Unity feature development remains gated until this final native payload gate is complete.
+See [PHASE6_MANAGED_ABI.md](PHASE6_MANAGED_ABI.md).
 
 ## Phase 7 — Minimal Working Unity uGUI Product
 
-The repository already contains prototype `TaffyLayoutGroup` and `TaffyLayoutItem` components. They do **not** constitute Phase 7 completion.
+**Complete.** The minimal production Unity bridge now includes:
 
-Required production work includes:
-
-- persistent native context lifecycle in Unity;
-- correct root/child node synchronization;
-- LayoutGroup lifecycle integration;
-- own min/preferred/flexible size reporting through `SetLayoutInputForAxis`;
+- persistent native context/root lifecycle;
+- stable `RectTransform`→native-node mapping;
+- incremental style/topology synchronization;
+- uGUI min/preferred layout-input reporting;
+- cached horizontal/vertical arrangement from native geometry;
 - nested Taffy groups;
-- LayoutElement compatibility;
-- deterministic RectTransform application;
-- Edit Mode and Play Mode verification.
+- `LayoutElement` and `ignoreLayout` compatibility;
+- permanent Edit Mode and Play Mode regression tests.
+
+The Phase 7 gate passed 4/4 Edit Mode and 1/1 Play Mode tests on Unity `6000.4.3f1`, plus an Android ARM64 IL2CPP build check. See [PHASE7_MINIMAL_UGUI.md](PHASE7_MINIMAL_UGUI.md).
 
 ## Phase 8 — Production Flex/Block/Float/Measurement Unity Integration
 

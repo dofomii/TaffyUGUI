@@ -3,7 +3,7 @@
 **Status date:** 2026-08-17
 **Canonical workflow:** local development, local build, local verification
 **Active release scope:** Android ARM64 only
-**Native ABI source state:** final ABI v1 (`version=1`, `stage=2`) on exact Taffy `0.13.0`
+**Native ABI:** final ABI v1 (`version=1`, `stage=2`) on exact Taffy `0.13.0`
 
 ## Current state
 
@@ -14,24 +14,54 @@
 - Phase 4 Android ARM64 native artifact: **complete at final ABI v1 `1/2`**.
 - Phase 5 Android Unity native payload: **complete at final ABI v1 `1/2`**.
 - Phase 6 managed ABI conformance/final freeze: **complete**.
-- Phase 7 minimal Unity uGUI product: **active; P7.1 is next**.
+- Phase 7 minimal Unity uGUI product: **complete**.
+- Phase 8 production Flex/Block/Float/measurement integration: **active; P8.1 is next**.
+- Phases 9–14: **not started**.
 
-## Final Phase 6 release evidence
+## Phase 7 product boundary
 
-The final release chain is content-addressed rather than requiring a Git commit. The following all bind to source snapshot `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`:
+The minimal production Unity bridge now provides:
 
-- Phase 3 local evidence;
-- Phase 4 Android ARM64 manifest and `phase4-index.json`;
-- Phase 5 Unity payload provenance.
+- one persistent native context/root per enabled `TaffyLayoutGroup`;
+- stable `RectTransform`→native-node mapping;
+- incremental node/style/topology synchronization rather than context rebuilds;
+- native min/preferred measurement passes integrated with `CalculateLayoutInputHorizontal/Vertical`;
+- min/preferred/flexible reporting through `SetLayoutInputForAxis`;
+- cached native arrangement shared by `SetLayoutHorizontal/Vertical`;
+- bulk native layout retrieval and uGUI `SetChildAlongAxis` geometry application;
+- nested Taffy layout groups as independent layout owners;
+- uGUI `LayoutElement` sizing and `ignoreLayout` semantics;
+- maintained Edit Mode and Play Mode package regression tests.
 
-The accepted Android binary SHA-256 is `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`, ABI v1 `1/2`. `verify-abi-final`, Android native build/verification, `verify-phase4`, `stage-phase5`, and `verify-phase5` all passed.
+Full production authoring, Block/Float behavior, native measurement adapters, TMP/Text/Image measurement, Grid/Calc Unity authoring, responsive integration, and editor tooling remain later phases.
 
-A fresh Unity `6000.4.3f1` ARM64 IL2CPP Player was also built from a local-only package snapshot of the accepted Phase 5 payload. The APK contained exactly one `lib/arm64-v8a/libtaffy_ugui.so`; its ELF program headers and both `PT_LOAD` runtime segments matched the accepted staged library. Earlier Phase 6 physical-device validation on CPH2723 / Android 16 had already proven final ABI `1/2`, library loading, layout round trips, and last-error diagnostics for the frozen runtime source.
+## Phase 7 verification
 
-Disposable harness/probe material remains local-only under ignored `.build/` paths and is never part of tracked project source.
+Final local verification on Unity `6000.4.3f1`:
+
+- VS Code Problems: **0 diagnostics** for Phase 7 runtime/tests;
+- native `quality` gate: **PASS**, including 44/44 maintained Rust tests;
+- Edit Mode: **4/4 tests passed**;
+- Play Mode: **1/1 test passed**;
+- Android ARM64 IL2CPP development APK build: **PASS**;
+- packaged `libtaffy_ugui.so` has identical ELF program headers and byte-identical runtime-loaded `PT_LOAD` segments to the accepted Phase 6 Android payload.
+
+No Android device was available during the final Phase 7 run, so that final APK was not executed on hardware. Physical platform validation remains a Phase 12 responsibility; Phase 6 retains the earlier physical-device proof for the frozen ABI/native payload.
+
+## Phase 6 release identity
+
+The accepted Phase 6 native release remains:
+
+- ABI: `1/2`;
+- source snapshot: `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`;
+- Android ARM64 library SHA-256: `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
+
+Phase 7 changes are managed Unity integration layered on that frozen native payload; they do not redefine the historical Phase 6 artifact identity.
+
+Disposable validation harness/probe material remains local-only under ignored `.build/` paths and is never tracked project source.
 
 ## Next authoritative work
 
-Phase 7 is now open. The next tracker task is **P7.1 — production persistent managed/native context lifecycle**.
+**Phase 8 P8.1 — complete Unity authoring for core size/min/max/box model.**
 
 Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope.

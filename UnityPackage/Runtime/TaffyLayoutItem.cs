@@ -18,6 +18,8 @@ namespace TaffyUGUI
         public static TaffyLength Points(float value) => new TaffyLength { unit = TaffyUnit.Points, value = value };
         public static TaffyLength Percent(float value) => new TaffyLength { unit = TaffyUnit.Percent, value = value };
 
+        internal bool IsAuto => unit == TaffyUnit.Auto;
+
         internal TaffyNative.Value ToNative()
         {
             switch (unit)
@@ -44,7 +46,11 @@ namespace TaffyUGUI
         public TaffyAlign alignSelf = TaffyAlign.Auto;
         [Min(0)] public float aspectRatio = 0;
 
-        private void Reset() => width = height = minWidth = minHeight = maxWidth = maxHeight = flexBasis = TaffyLength.Auto;
+        private void Reset()
+        {
+            width = height = minWidth = minHeight = maxWidth = maxHeight = flexBasis = TaffyLength.Auto;
+        }
+
         private void OnEnable() => SetDirty();
         private void OnDisable() => SetDirty();
         private void OnValidate() => SetDirty();
@@ -52,13 +58,15 @@ namespace TaffyUGUI
 
         internal TaffyNative.Style ApplyTo(TaffyNative.Style style)
         {
-            style.width = width.ToNative();
-            style.height = height.ToNative();
-            style.minWidth = minWidth.ToNative();
-            style.minHeight = minHeight.ToNative();
-            style.maxWidth = maxWidth.ToNative();
-            style.maxHeight = maxHeight.ToNative();
-            style.flexBasis = flexBasis.ToNative();
+            // Until Phase 8 adds native measurement adapters, Auto preserves the
+            // uGUI-derived intrinsic value already placed in the style by the group.
+            if (!width.IsAuto) style.width = width.ToNative();
+            if (!height.IsAuto) style.height = height.ToNative();
+            if (!minWidth.IsAuto) style.minWidth = minWidth.ToNative();
+            if (!minHeight.IsAuto) style.minHeight = minHeight.ToNative();
+            if (!maxWidth.IsAuto) style.maxWidth = maxWidth.ToNative();
+            if (!maxHeight.IsAuto) style.maxHeight = maxHeight.ToNative();
+            if (!flexBasis.IsAuto) style.flexBasis = flexBasis.ToNative();
             style.flexGrow = Mathf.Max(0f, flexGrow);
             style.flexShrink = Mathf.Max(0f, flexShrink);
             style.alignSelf = (int)alignSelf;
@@ -68,7 +76,9 @@ namespace TaffyUGUI
 
         private void SetDirty()
         {
-            var group = GetComponentInParent<TaffyLayoutGroup>();
+            Transform parent = transform.parent;
+            if (!parent) return;
+            TaffyLayoutGroup group = parent.GetComponentInParent<TaffyLayoutGroup>();
             if (group) group.SetLayoutDirty();
         }
     }

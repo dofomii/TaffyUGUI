@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-17
 
-This document records checks already executed locally. Remote CI is not build authority.
+This document records checks actually executed locally. Remote CI is not build authority.
 
 ## Final ABI / native verification
 
@@ -14,23 +14,46 @@ This document records checks already executed locally. Remote CI is not build au
 - Complete 31-function `tu_*` contract is aligned across Rust FFI, C header, and managed P/Invoke.
 - `tu_copy_last_error` regression is fixed and covered.
 
-## Final Android release verification
+## Accepted Phase 6 Android release verification
 
-- `python3 build/build.py verify-abi-final` — PASS.
-- `python3 build/build.py native android-arm64` — PASS.
-- `python3 build/build.py verify-phase4` — PASS.
-- `python3 build/build.py stage-phase5` — PASS.
-- `python3 build/build.py verify-phase5` — PASS.
-- Source snapshot: `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`.
+- `python3 build/build.py verify-abi-final` — PASS for the Phase 6 release snapshot.
+- Android ARM64 native build/Phase 4 acceptance — PASS.
+- Phase 5 Unity native staging/verification — PASS.
+- Phase 6 source snapshot: `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`.
 - Accepted Android ARM64 library SHA-256: `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
 - ABI recorded by Phase 3/4/5 evidence: `1/2`.
-- Fresh Unity `6000.4.3f1` ARM64 IL2CPP Player build from the accepted staged payload — PASS.
-- APK contains exactly one `lib/arm64-v8a/libtaffy_ugui.so`.
-- APK ELF program headers and both `PT_LOAD` runtime segments match the accepted staged library.
-- Earlier physical-device Phase 6 execution on CPH2723 / Android 16 proved final ABI `1/2`, native loading, managed/native round trips, and last-error diagnostics for the frozen runtime source.
+- Earlier physical-device execution on CPH2723 / Android 16 proved native loading, managed/native round trips, and last-error diagnostics for the frozen Phase 6 ABI/native payload.
+
+## Phase 7 Unity verification
+
+The Phase 7 runtime was validated with Unity `6000.4.3f1` on Linux using the real package plus a local-only host native library in an ignored temporary Unity project.
+
+Permanent package tests:
+
+- Edit Mode: **4 total, 4 passed, 0 failed, 0 skipped**.
+- Play Mode: **1 total, 1 passed, 0 failed, 0 skipped**.
+
+The tests cover:
+
+- intrinsic min/preferred size reporting;
+- `LayoutElement` sizing and `ignoreLayout` preservation;
+- stable/incremental topology through sibling reorder and same-count child replacement;
+- nested groups;
+- native context recreation after disable/enable;
+- runtime container resizing and flexible child layout.
+
+Additional regression checks:
+
+- VS Code Problems for Phase 7 runtime/tests: **0 diagnostics**.
+- `python3 build/build.py quality`: **PASS** after Phase 7 managed changes; native 44/44 tests remain green.
+- Unity Android ARM64 IL2CPP development APK build: **PASS**.
+- APK contains `lib/arm64-v8a/libtaffy_ugui.so`.
+- APK Taffy library program headers and both runtime-loaded ELF `PT_LOAD` segments are byte-identical to the accepted Phase 6 native payload.
+
+No Android device was available during the final Phase 7 validation, so the Phase 7 APK was **not** executed on physical hardware. That does not block the Phase 7 minimal Edit/Play gate; comprehensive real-platform validation remains Phase 12.
 
 ## Phase status
 
-**Phase 6 is complete. Phase 7 is active; P7.1 is next.**
+**Phase 7 is complete. Phase 8 is active; P8.1 is next.**
 
-Disposable validation harnesses/probes are local-only and excluded from Git by project policy.
+Permanent Unity regression tests are tracked product tests. Disposable validation harnesses/probes remain local-only under ignored `.build/` paths and are excluded from Git by project policy.

@@ -27,7 +27,6 @@ Create a deterministic, production-oriented native Rust foundation that can evol
   - `version.rs`
 - Local-first build/verification driver under `build/build.py`.
 - Public-header generation configuration via `cbindgen.toml`.
-- C/C++ smoke-test source inventory.
 - Local toolchain/bootstrap scripts.
 
 ## Architectural decisions established in this phase
@@ -40,6 +39,6 @@ Create a deterministic, production-oriented native Rust foundation that can evol
 
 ## Completion evidence
 
-The current repository structure retains all Phase 0 outputs and the provider-independent local static gate passes.
+The current repository structure retains the permanent Phase 0 outputs and the maintained local native quality checks pass.
 
 Phase 0 does not need to be reopened unless a future toolchain/compatibility change deliberately changes the established baseline.

@@ -1,16 +1,16 @@
 # Local Development and Verification
 
-TaffyUGUI uses the local machine as the source of truth for builds and tests. No GitHub Actions result is required to advance a phase.
+TaffyUGUI uses the local machine as the source of truth for builds and tests. GitHub is a repository mirror, not the build authority.
 
 ## Required host tools
 
 - Python 3.10+
-- Rust **1.97.1** for the canonical development gate (`rust-toolchain.toml` pins it)
-- The crate MSRV remains **1.82** and should be checked separately when validating compatibility
+- Rust **1.97.1** for canonical development (`rust-toolchain.toml`)
+- Rust **1.82.0** for the separate MSRV compatibility check
 - `rustfmt` and Clippy
 - `cbindgen` **0.29.2**
-- Clang/Clang++ for public C/C++ ABI smoke tests
 - Git
+- Platform SDK/toolchain required by the target being built
 
 Install cbindgen after Rust is available:
 
@@ -18,7 +18,7 @@ Install cbindgen after Rust is available:
 cargo install cbindgen --version 0.29.2 --locked
 ```
 
-The build driver also checks `.toolchain/bin` before `PATH`, so a project-local toolchain may be used without modifying the system installation.
+The build driver checks `.toolchain/bin` before `PATH`, so project-local tools can be used without changing the system installation.
 
 ## Canonical local commands
 
@@ -28,13 +28,13 @@ Environment diagnostic:
 python3 build/build.py doctor
 ```
 
-Provider-independent static gate:
+Format/build/test the permanent native project:
 
 ```bash
-python3 build/build.py static-gate
+python3 build/build.py quality
 ```
 
-After installing the pinned local toolchain, canonicalize formatting and the generated header once:
+Canonicalize Rust formatting and regenerate the public header:
 
 ```bash
 python3 build/build.py prepare
@@ -46,71 +46,32 @@ Optional MSRV check:
 python3 build/build.py verify-msrv
 ```
 
-Full Phase 3 gate:
+Final ABI verification on the exact content-addressed project-input snapshot:
 
 ```bash
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 ```
 
-That command requires ABI `1/1` and performs, locally:
+The final ABI gate runs rustfmt, Clippy with warnings denied, the maintained Rust test suite, a host release build, pinned-cbindgen header regeneration/drift verification, and records local evidence for the exact content-addressed project-input snapshot. It never falls back to remote CI.
 
-1. C11 and C++17 public-header compilation.
-2. Static native/managed contract checks.
-3. `cargo fmt --check`.
-4. `cargo clippy --locked --all-targets -- -D warnings`.
-5. `cargo test --locked`.
-6. Host release native build.
-7. cbindgen regeneration/diff verification.
-8. Linked C and C++ smoke executables against the produced host library.
+## Android native release
 
-If a prerequisite is absent, the command stops with an installation requirement. It never falls back to a remote CI service.
-
-## Phase 4 platform builds
-
-Phase 4 is a local **multi-host** build. Every artifact-producing machine must use the byte-identical clean source tree and first run the complete `verify-abi-rc` gate; the build driver records local evidence and refuses Phase 4 builds without it.
-
-List targets/status:
+The active release scope is Android ARM64. After the exact source snapshot passes `verify-abi-final`:
 
 ```bash
-python3 build/build.py list-targets
-python3 build/build.py phase4-status
-```
-
-Build every target assigned to the current local OS directly:
-
-```bash
-python3 build/build.py phase4-host
-```
-
-Or use the full host wrapper, which bootstraps the project-local Rust toolchain, installs the canonical Rust target(s), reruns Phase 3, and then builds the assigned Phase 4 outputs:
-
-```text
-Windows: powershell -ExecutionPolicy Bypass -File scripts/phase4-build-host.ps1
-macOS/Linux: ./scripts/phase4-build-host.sh
-```
-
-Canonical host ownership is Windows → Windows x64, macOS → macOS arm64/x64/universal + iOS ARM64, Linux → Android ARM64 + WebGL. You can still build/deep-verify an individual target with:
-
-```bash
-python3 build/build.py native <target>
-python3 build/build.py verify-native <target>
-```
-
-Platform SDK/toolchain requirements are intentionally strict:
-
-- Android baseline: NDK r21d / revision `21.3.6528147`, API 21.
-- WebGL baseline: Emscripten `2.0.19` (including its bundled `llvm-nm`) for the current Unity 2021.3 compatibility target.
-- iOS and macOS outputs must be built on macOS with Xcode tooling.
-- Windows MSVC output must be built on Windows.
-
-After collecting all locally built target directories into one checkout, run:
-
-```bash
+python3 build/build.py native android-arm64
+python3 build/build.py verify-native android-arm64
 python3 build/build.py verify-phase4
+python3 build/build.py stage-phase5
+python3 build/build.py verify-phase5
 ```
 
-That final gate requires every advertised target, verifies checksums/manifests/source-tree parity/full ABI export parity, and writes `dist/native/phase4-index.json`. The checked-in `./scripts/phase4-finalize.sh` reruns the local Phase 3 proof before invoking it. See [PHASE4_PLATFORM_BUILDS.md](PHASE4_PLATFORM_BUILDS.md).
+Android uses the pinned NDK r21d baseline (`21.3.6528147`) and API 21 for the native library. Other target definitions remain deferred outside the active release scope.
+
+## Local-only validation experiments
+
+Disposable reproduction programs, device runners, temporary Unity projects, diagnostic executables, and exploratory validation scripts must be created only under ignored `.build/` paths or outside the repository. They are not project source and must not be committed. See `CONTRIBUTING.md`.
 
 ## Unity development boundary
 
-Unity uGUI owns rendering and interaction. Do not replace Button, Image, Text/TMP, ScrollRect, EventSystem, prefabs, or existing scripts. `TaffyLayoutGroup` and `TaffyLayoutItem` translate layout inputs to the native `tu_*` ABI and apply computed rectangles using normal uGUI layout APIs.
+Unity uGUI owns rendering and interaction. Do not replace Button, Image, Text/TMP, ScrollRect, EventSystem, prefabs, or existing scripts. `TaffyLayoutGroup` and `TaffyLayoutItem` translate layout inputs to the native `tu_*` ABI and apply computed rectangles through normal uGUI layout APIs.

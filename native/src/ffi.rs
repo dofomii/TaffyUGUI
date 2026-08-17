@@ -1,4 +1,4 @@
-//! ABI-v1-RC production C ABI surface.
+//! ABI-v1 final production C ABI surface.e.
 //!
 //! All exported functions use fixed-width values and opaque generation-safe handles. Raw
 //! pointers are caller-owned temporary buffers only. Expected invalid input is reported through
@@ -822,21 +822,34 @@ pub unsafe extern "C" fn tu_copy_last_error(
     capacity: u32,
     out_written: *mut u32,
 ) -> i32 {
-    guard(|| {
+    // Unlike normal ABI calls, successfully reading the diagnostic must preserve
+    // the error being read. The generic guard clears LAST_ERROR on entry, so use
+    // an equivalent panic boundary here without the pre-call clear.
+    match catch_unwind(AssertUnwindSafe(|| -> Result<(), NativeError> {
         let bytes = last_error_bytes();
         if out_written.is_null() {
             return Err(NativeError::NullPointer);
-        };
+        }
         if capacity > 0 && buffer.is_null() {
             return Err(NativeError::NullPointer);
-        };
+        }
         let n = bytes.len().min(capacity as usize);
         if n > 0 {
             unsafe { ptr::copy_nonoverlapping(bytes.as_ptr(), buffer, n) }
-        };
+        }
         unsafe { *out_written = n as u32 };
         Ok(())
-    })
+    })) {
+        Ok(Ok(())) => TuStatus::Ok as i32,
+        Ok(Err(e)) => {
+            set_last_error(e.to_string());
+            e.status_code()
+        }
+        Err(_) => {
+            set_last_error("unexpected native panic");
+            TuStatus::InternalPanic as i32
+        }
+    }
 }
 /// Creates a context.
 /// # Safety

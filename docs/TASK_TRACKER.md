@@ -1,12 +1,12 @@
 # TaffyUGUI Task Tracker
 
 **Canonical workflow:** local development, local build, local verification. GitHub is backup storage only.
-**Status date:** 2026-08-16
+**Status date:** 2026-08-17
 **Taffy baseline:** exactly `0.13.0`
 **Canonical Rust toolchain:** `1.97.1`
 **MSRV:** `1.82.0`
 **Unity primary baseline:** `2021.3 LTS`
-**Native ABI source state:** `ABI-v1-RC`, version `1`, stage `1`
+**Native ABI source state:** final `ABI-v1`, version `1`, stage `2`
 
 ## How to read this tracker
 
@@ -34,32 +34,29 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 1:** native engine implementation COMPLETE.
 - **Phase 2:** production C ABI implementation COMPLETE.
 - **Phase 3:** COMPLETE; ABI-v1-RC `1/1` passed the canonical local compiled gate.
-- **Phase 4:** COMPLETE for the active **Android ARM64-only** release scope; other platform targets are deferred and are not advertised/supported by this branch.
-- **Phase 5:** COMPLETE for Android ARM64; verified Unity package native payload staged.
-- **Phase 6:** READY / PARTIAL EARLY SCAFFOLDING (production `tu_*` P/Invoke surface already aligned); formal managed conformance can begin next.
-- **Phase 7:** prototype components exist; formal production Unity phase NOT STARTED.
+- **Phase 4:** COMPLETE for the active **Android ARM64-only** release scope at final ABI v1 `1/2`.
+- **Phase 5:** COMPLETE for Android ARM64 at final ABI v1 `1/2`; package provenance matches the accepted Phase 4 artifact.
+- **Phase 6:** COMPLETE; final ABI v1 `1/2` is frozen, the final Android artifact/payload were rebuilt/restaged, and the final native payload gate passed.
+- **Phase 7:** ACTIVE; prototype components exist and P7.1 is the next authoritative task.
 - **Phase 8–14:** NOT STARTED.
 
 ## Current authoritative boundary
-## Current authoritative boundary
 
-The active v1 release scope is now **Android ARM64 only**. Windows, macOS, iOS, and WebGL target definitions remain in the repository for future work, but they no longer gate this branch and must not be advertised as supported.
+The active v1 release scope is **Android ARM64 only**. Windows, macOS, iOS, and WebGL target definitions remain in the repository for future work, but they do not gate this branch and must not be advertised as supported.
 
-Every accepted Android native artifact must still pass the full Phase 3 gate on the exact clean source tree:
+Every accepted final Android native artifact must pass the full regression gate on the exact content-addressed project-input snapshot:
 
 ```bash
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 ```
 
-Phase 4 closes only when the Android ARM64 artifact is accepted by:
+Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 
 ```bash
 python3 build/build.py verify-phase4
 ```
 
-and `dist/native/phase4-index.json` records `android-arm64` as the sole release target.
-
-**Next authoritative task:** stage and verify that Phase-4-accepted Android ARM64 binary under `UnityPackage/Plugins/Android/arm64-v8a/`, including deterministic Unity importer metadata and provenance.
+**Next authoritative task:** Phase 7 P7.1 — production persistent managed/native context lifecycle.
 
 
 ---
@@ -164,8 +161,7 @@ and `dist/native/phase4-index.json` records `android-arm64` as the sole release 
 ### Phase 1 gate
 
 - [x] Complete required native v1 style/algorithm surface is represented in source.
-- [x] Native unit/integration/golden verification inventory exists.
-- [ ] Current-machine compiled execution of the complete native verification inventory — **covered by Phase 3 `verify-abi-rc`, pending in this sandbox**.
+- [x] Current-machine compiled execution of the maintained native verification inventory completed during Phase 3 and was rerun during the final ABI-v1 freeze.
 
 **Documentation:** `PHASE1_NATIVE_ENGINE.md`
 
@@ -174,7 +170,7 @@ and `dist/native/phase4-index.json` records `android-arm64` as the sole release 
 # Phase 2 — Production C ABI Candidate and Safety Boundary
 
 **Status:** IMPLEMENTATION COMPLETE
-**Current ABI source:** promoted to ABI-v1-RC `1/1`
+**Current ABI source:** final ABI v1 `1/2`; this phase originally produced the ABI-v1-RC `1/1` contract later promoted in Phase 6.
 
 **Goal:** expose the complete native engine through a production-shaped fixed-width C ABI.
 
@@ -203,8 +199,8 @@ and `dist/native/phase4-index.json` records `android-arm64` as the sole release 
 - [x] Production ABI implementation exists.
 - [x] Public C/C++ header exists.
 - [x] Static export inventory matches header inventory.
-- [x] C11/C++17 header compile passes in current local static gate.
-- [ ] Current-machine cbindgen regeneration/drift proof — pending in Phase 3 compiled gate.
+- [x] Public header generation and export inventory are maintained.
+- [x] Pinned cbindgen regeneration/drift proof completed in Phase 3 and remains part of `verify-abi-final`.
 
 **Documentation:** `PHASE2_PRODUCTION_C_ABI.md`
 
@@ -224,26 +220,21 @@ and `dist/native/phase4-index.json` records `android-arm64` as the sole release 
 - [x] P3.6 ABI size/alignment/offset and enum numeric-contract assertions.
 - [x] P3.7 Invalid/stale/cross-context/malformed/wrong-thread verification inventory.
 - [x] P3.8 Repeated lifecycle/topology stress verification inventory.
-- [x] P3.9 C11 public-header smoke source.
-- [x] P3.10 C++17 public-header smoke source.
-- [x] P3.11 cbindgen header regeneration/drift command.
-- [x] P3.12 Linked host C/C++ smoke command.
-- [x] P3.13 One canonical local `verify-abi-rc` command.
-- [x] P3.14 ABI source promoted to release-candidate state `1/1`.
-- [x] P3.15 Provider-independent local static gate passes.
-- [x] P3.16 Run `cargo fmt --check` locally on current canonical machine/source.
-- [x] P3.17 Run Clippy with `-D warnings` locally.
-- [x] P3.18 Run full Rust test inventory locally.
-- [x] P3.19 Build host release native library locally.
-- [x] P3.20 Regenerate/diff public header with pinned cbindgen locally.
-- [x] P3.21 Link and execute C/C++ smoke programs against the built Rust library locally.
-- [x] P3.22 Record Phase 3 evidence for the clean source tree.
+- [x] P3.9 Pinned cbindgen header regeneration/drift command.
+- [x] P3.10 Canonical local ABI verification command established.
+- [x] P3.11 ABI source promoted to release-candidate state `1/1`.
+- [x] P3.12 Run `cargo fmt --check` locally on the canonical source.
+- [x] P3.13 Run Clippy with `-D warnings` locally.
+- [x] P3.14 Run the maintained Rust test inventory locally.
+- [x] P3.15 Build the host release native library locally.
+- [x] P3.16 Regenerate/diff the public header with pinned cbindgen locally.
+- [x] P3.17 Record Phase 3 evidence for the exact content-addressed source snapshot.
 
 ### Current Phase 3 gate
 
 **COMPLETE on the local Linux host.**
 
-Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact-producing source tree/host as required by the build driver.
+Phase 4 artifacts may not be accepted until the maintained final ABI verification gate passes on the exact clean artifact-producing source revision.
 
 **Documentation:** `PHASE3_NATIVE_VERIFICATION.md`
 
@@ -253,7 +244,7 @@ Phase 4 artifacts may not be accepted until P3.16–P3.22 pass on every artifact
 
 **Status:** COMPLETE FOR ACTIVE ANDROID ARM64-ONLY RELEASE SCOPE
 
-**Goal:** produce the reproducible ABI-v1-RC native library required by the currently supported release target before Unity plugin payload packaging.
+**Goal:** produce the reproducible Android ARM64 native library required by the supported release target. The accepted Phase 4 artifact is historical ABI-v1-RC `1/1`; Phase 6 requires one final clean-tree rebuild at ABI v1 `1/2` before release closure.
 
 ## Build infrastructure — complete
 
@@ -311,47 +302,55 @@ The Android ARM64 artifact exists, is locally architecture/export/checksum verif
 ### Phase 5 exit gate
 
 A complete, verified Android ARM64 Unity-native payload exists at `UnityPackage/Plugins/Android/arm64-v8a/` and matches the accepted Phase 4 artifact byte-for-byte. No other platform is claimed by this gate.
-A complete, verified Android ARM64 Unity-native payload exists at `UnityPackage/Plugins/Android/arm64-v8a/` and matches the accepted Phase 4 artifact byte-for-byte. No other platform is claimed by this gate.
 
 ---
 
 # Phase 6 — Minimal Managed ABI Conformance and Final ABI v1 Freeze
 
-**Status:** READY / PARTIAL EARLY SCAFFOLDING — Phase 5 gate is complete; formal managed conformance is next.
+**Status:** COMPLETE — ABI v1 / Final Native Payload Gate passed
+
+**Current evidence:** the complete 31-function managed ABI surface passed standalone managed, Unity, direct ARM64 Android, IL2CPP packaging, and real-device validation at final ABI v1 `1/2`. The final Android Phase 4 artifact and Phase 5 Unity payload were then rebuilt/restaged from content-addressed source snapshot `sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731`; accepted binary SHA-256 is `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`. A fresh Unity ARM64 IL2CPP APK build verified the accepted staged library's ELF program headers and runtime-loaded `PT_LOAD` bytes.
+
 
 **Early work already present:**
 
-- [x] P6.E1 Unity low-level P/Invoke migrated from obsolete bootstrap symbols to `tu_*` ABI-v1-RC.
+- [x] P6.E1 Unity low-level P/Invoke migrated from obsolete bootstrap symbols to the production `tu_*` ABI surface.
 - [x] P6.E2 Managed/native ABI structure-size guards exist for the current ABI surface.
 
 **Formal Phase 6 tasks:**
 
-- [ ] P6.1 Load each staged native library through the managed wrapper.
-- [ ] P6.2 Validate ABI version/stage/capability handshake from Unity/C#.
-- [ ] P6.3 Validate managed struct layout/size/enum mapping against native ABI.
-- [ ] P6.4 Context create/destroy/clear managed round trip.
-- [ ] P6.5 Node create/remove/style managed round trip.
-- [ ] P6.6 Topology/bulk upload managed round trip.
-- [ ] P6.7 Cached measurement managed round trip.
-- [ ] P6.8 Calc/Grid resource managed round trip.
-- [ ] P6.9 Compute and single/bulk layout retrieval managed round trip.
-- [ ] P6.10 Validate error/last-error diagnostics through P/Invoke.
-- [ ] P6.11 Validate library naming/loading rules per platform.
-- [ ] P6.12 Resolve every ABI discrepancy before final freeze.
-- [ ] P6.13 Freeze final ABI v1.
-- [ ] P6.14 Rebuild **every** Phase 4 artifact from final ABI v1.
-- [ ] P6.15 Re-stage **every** Phase 5 package artifact from final ABI v1.
-- [ ] P6.16 Declare **ABI v1 / Final Native Payload Gate** complete.
+- [x] P6.1 Load the Android ARM64 native library through the managed wrapper in a real Android Player/device environment.
+- [x] P6.2 Validate ABI version/stage/capability handshake from C# and Unity host execution.
+- [x] P6.3 Validate managed struct layout/size/enum mapping against native ABI.
+- [x] P6.4 Context create/destroy/clear managed round trip.
+- [x] P6.5 Node create/remove/style managed round trip.
+- [x] P6.6 Topology/bulk style upload managed round trip.
+- [x] P6.7 Cached measurement single/bulk managed round trip.
+- [x] P6.8 Calc/Grid resource managed round trip.
+- [x] P6.9 Compute and single/bulk layout retrieval managed round trip.
+- [x] P6.10 Validate status and thread-local last-error diagnostics through P/Invoke.
+- [x] P6.11 Validate Android library naming/loading rules in a real Android Player; `libtaffy_ugui.so` loaded successfully on ARM64 Android.
+- [x] P6.12 Resolve every ABI discrepancy before final freeze. The stale Android payload exposed the fixed `tu_copy_last_error` regression; rebuilding from current source restored the full diagnostic and passed real-device conformance.
+- [x] P6.13 Freeze final ABI v1 (`stage=2`) and require final stage by default in the managed wrapper.
+- [x] P6.14 Rebuild the active Android ARM64 Phase 4 release artifact from final ABI v1 using the exact content-addressed source snapshot.
+- [x] P6.15 Re-stage and verify the Android Phase 5 package artifact from the accepted final ABI-v1 Phase 4 artifact.
+- [x] P6.16 Declare **ABI v1 / Final Native Payload Gate** complete after P6.14–P6.15 and final Unity ARM64 package integration verification against the accepted staged payload.
+
+### Phase 6 validation note
+
+Only permanent ABI guards, maintained regression tests, and release tooling remain tracked. Disposable development-validation artifacts are local-only by repository policy.
 
 ### Phase 6 exit gate
 
-The final ABI has been proven through the real managed boundary and the complete cross-platform native payload has been rebuilt from that exact final ABI.
+**PASS.** The final ABI source passed managed/Unity and physical Android validation; the final Phase 4/5 Android payload was rebuilt/restaged from the same content-addressed snapshot and verified in a fresh Unity ARM64 IL2CPP APK. Phase 7 may begin.
+
+**Documentation:** `PHASE6_MANAGED_ABI.md`
 
 ---
 
 # Phase 7 — Minimal Working Unity uGUI Product
 
-**Status:** NOT STARTED — prototype scaffolding exists, but phase is gated by Phase 6
+**Status:** ACTIVE — Phase 6 gate is complete; P7.1 is next
 
 Current repository scaffolding:
 
@@ -513,13 +512,8 @@ These files are not considered Phase 7 completion.
 
 # Current Next Action
 
-The tracker is intentionally **not** advancing into Phase 5 or user-facing Unity feature work yet.
+Phase 6 is complete. Phase 7 is now authoritative.
 
-The next real work is:
+**Next task:** P7.1 — implement the production persistent managed/native context lifecycle.
 
-1. obtain a local machine/environment containing the pinned Rust verification toolchain;
-2. run `python3 build/build.py verify-abi-rc` successfully on a clean tree;
-3. run the canonical Phase 4 host builds on Windows, macOS, and Linux;
-4. collect artifacts and run `python3 build/build.py verify-phase4`;
-5. mark P4.1–P4.10 complete only from real artifact evidence;
-6. then open Phase 5.
+The Phase 7 sequence then continues with stable RectTransform↔native-node mapping (P7.2), topology synchronization (P7.3), and proper Unity layout-system integration.

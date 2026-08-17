@@ -36,6 +36,6 @@ case "$(uname -s)" in
 esac
 
 python3 build/build.py prepare
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 python3 build/build.py phase4-host
 python3 build/build.py phase4-status

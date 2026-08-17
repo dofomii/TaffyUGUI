@@ -33,7 +33,7 @@ def verify_staged(name: str, *, recheck_symbols: bool = False) -> dict[str, obje
         raise SystemExit(f"Source revision/tree evidence missing from manifest: {name}")
     abi = manifest.get("abi", {})
     if not isinstance(abi, dict) or (abi.get("version"), abi.get("stage")) != (ABI_RC_VERSION, ABI_RC_STAGE):
-        raise SystemExit(f"Staged target is not ABI-v1-RC: {name}")
+        raise SystemExit(f"Staged target is not final ABI v1: {name}")
     exports = header_export_contract()
     if tuple(manifest.get("public_exports", [])) != exports:
         raise SystemExit(f"Public export inventory mismatch in manifest: {name}")
@@ -76,7 +76,7 @@ def verify_macos_universal(*, recheck_symbols: bool = False) -> dict[str, object
         raise SystemExit("Source revision/tree evidence missing: macos-universal")
     abi = manifest.get("abi", {})
     if not isinstance(abi, dict) or (abi.get("version"), abi.get("stage")) != (ABI_RC_VERSION, ABI_RC_STAGE):
-        raise SystemExit("macos-universal is not ABI-v1-RC")
+        raise SystemExit("macos-universal is not final ABI v1")
     exports = header_export_contract()
     if tuple(manifest.get("public_exports", [])) != exports or manifest.get("public_exports_sha256") != export_fingerprint(exports):
         raise SystemExit("Public export contract mismatch: macos-universal")

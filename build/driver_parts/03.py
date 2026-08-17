@@ -52,7 +52,7 @@ def stage_manifest(spec: TargetSpec, artifact: Path, description: str, exports: 
     manifest = {
         "schema": 2,
         "package_version": package_version(),
-        "abi": {"designation": "ABI-v1-RC", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
+        "abi": {"designation": "ABI-v1", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
         "taffy_version": TAFFY_VERSION,
         "rust_target": spec.triple,
         "source_revision": source_revision(),
@@ -119,7 +119,7 @@ def macos_universal() -> Path:
     manifest = {
         "schema": 2,
         "package_version": package_version(),
-        "abi": {"designation": "ABI-v1-RC", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
+        "abi": {"designation": "ABI-v1", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
         "taffy_version": TAFFY_VERSION,
         "rust_targets": [TARGETS["macos-arm64"].triple, TARGETS["macos-x64"].triple],
         "source_revision": source_revision(),

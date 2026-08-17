@@ -41,7 +41,9 @@ namespace TaffyUGUI
             base.OnDisable();
         }
 
+#if UNITY_EDITOR
         protected override void OnValidate() { base.OnValidate(); SetLayoutDirty(); }
+#endif
         protected override void OnTransformChildrenChanged() { base.OnTransformChildrenChanged(); SetLayoutDirty(); }
         protected override void OnRectTransformDimensionsChange() { base.OnRectTransformDimensionsChange(); SetLayoutDirty(); }
 

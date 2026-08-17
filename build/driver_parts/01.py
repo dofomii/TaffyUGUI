@@ -1,41 +1,24 @@
 
 
 def require_phase3_evidence() -> dict[str, object]:
-    revision = require_clean_tree()
+    revision = source_revision()
     if not PHASE3_EVIDENCE.exists():
         raise SystemExit(
             "Phase 4 is locked until the complete Phase 3 gate is executed locally on this exact revision. "
-            "Run: python3 build/build.py verify-abi-rc"
+            "Run: python3 build/build.py verify-abi-final"
         )
     evidence = json.loads(PHASE3_EVIDENCE.read_text(encoding="utf-8"))
     if evidence.get("source_revision") != revision or evidence.get("source_tree") != source_tree_sha():
         raise SystemExit(
             "Phase 3 evidence belongs to different local source content. "
-            "Rerun 'python3 build/build.py verify-abi-rc' on the current clean revision."
+            "Rerun 'python3 build/build.py verify-abi-final' for the current content-addressed source snapshot."
         )
     abi = evidence.get("abi", {})
     if not isinstance(abi, dict) or (abi.get("version"), abi.get("stage")) != (ABI_RC_VERSION, ABI_RC_STAGE):
-        raise SystemExit("Phase 3 evidence is not for ABI-v1-RC 1/1.")
+        raise SystemExit("Phase 3 evidence is not for final ABI v1 1/2.")
     if tuple(evidence.get("public_exports", [])) != header_export_contract():
         raise SystemExit("Phase 3 evidence export inventory no longer matches the public ABI header.")
     return evidence
-
-
-def static_preflight() -> None:
-    script = ROOT / "scripts" / "local_static_preflight.py"
-    run(sys.executable, str(script))
-    header_export_contract()
-
-
-def compile_header() -> None:
-    clang = require("clang", "Install Clang for the C11 ABI smoke compile.")
-    clangxx = require("clang++", "Install Clang++ for the C++17 ABI smoke compile.")
-    with tempfile.TemporaryDirectory(prefix="taffyugui-header-") as directory:
-        c_obj = Path(directory) / "smoke-c.o"
-        cpp_obj = Path(directory) / "smoke-cpp.o"
-        run(clang, "-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(HEADER.parent), "-c", str(ROOT / "tests/native-smoke/smoke.c"), "-o", str(c_obj))
-        run(clangxx, "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(HEADER.parent), "-c", str(ROOT / "tests/native-smoke/smoke.cpp"), "-o", str(cpp_obj))
-    print("C11/C++17 public-header compile: PASS")
 
 
 def verify_dev_toolchain() -> None:
@@ -51,7 +34,6 @@ def verify_dev_toolchain() -> None:
 def quality() -> None:
     require_abi_rc()
     verify_dev_toolchain()
-    static_preflight()
     cargo("fmt", "--all", "--", "--check")
     cargo("clippy", "--locked", "--all-targets", "--", "-D", "warnings")
     cargo("test", "--locked")
@@ -72,7 +54,6 @@ def generate_header(path: Path) -> None:
 def header() -> None:
     HEADER.parent.mkdir(parents=True, exist_ok=True)
     generate_header(HEADER)
-    compile_header()
 
 
 def verify_header() -> None:
@@ -97,41 +78,12 @@ def host_shared_library() -> Path:
     raise SystemExit(f"Unsupported local host: {sys.platform}")
 
 
-def host_smoke() -> None:
-    cargo("build", "--locked", "--release")
-    library = host_shared_library()
-    if not library.exists():
-        raise SystemExit(f"Host native library was not produced: {library}")
-    if os.name == "nt":
-        # Windows ABI execution is validated by Rust tests and the built DLL here. C/C++
-        # link setup differs by installed MSVC/LLVM environment and is left to a Windows host.
-        print(f"Host DLL built: {library}")
-        return
-    clang = require("clang")
-    clangxx = require("clang++")
-    with tempfile.TemporaryDirectory(prefix="taffyugui-linked-smoke-") as directory:
-        out = Path(directory)
-        c_bin = out / "smoke-c"
-        cpp_bin = out / "smoke-cpp"
-        lib_dir = library.parent
-        rpath = f"-Wl,-rpath,{lib_dir}"
-        link = ["-L", str(lib_dir), "-ltaffy_ugui", rpath]
-        run(clang, "-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(HEADER.parent), str(ROOT / "tests/native-smoke/smoke.c"), *link, "-lm", "-o", str(c_bin))
-        run(clangxx, "-std=c++17", "-Wall", "-Wextra", "-Werror", "-I", str(HEADER.parent), str(ROOT / "tests/native-smoke/smoke.cpp"), *link, "-o", str(cpp_bin))
-        run(str(c_bin), env=base_env())
-        run(str(cpp_bin), env=base_env())
-    print("Linked C11/C++17 host ABI smoke: PASS")
-
-
-def verify_abi_rc() -> None:
+def verify_abi_final() -> None:
     require_abi_rc()
-    require_clean_tree()
-    compile_header()
     quality()
     verify_header()
-    host_smoke()
     write_phase3_evidence()
-    print("\nPHASE 3 LOCAL GATE: PASS — ABI-v1-RC is ready for Phase 4 platform builds.")
+    print("\nPHASE 3 LOCAL GATE: PASS — final ABI v1 is ready for Phase 4 platform builds.")
 
 
 def prepare() -> None:

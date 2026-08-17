@@ -186,7 +186,7 @@ def package_version() -> str:
 
 def source_revision() -> str:
     head, dirty, _ = git_state()
-    return head + ("+dirty" if dirty else "")
+    return head + ("+working-tree" if dirty else "")
 
 
 def sha256(path: Path) -> str:

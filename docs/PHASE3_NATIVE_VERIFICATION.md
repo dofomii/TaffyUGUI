@@ -1,60 +1,34 @@
 # Phase 3 — Native Verification and ABI Release-Candidate Lock
 
 **Implementation:** COMPLETE
-**ABI source state:** ABI-v1-RC (`version=1`, `stage=1`)
-**Canonical local gate:** COMPLETE on the local Linux host
+**Historical gate:** ABI-v1-RC `1/1` completed locally
+**Current source:** final ABI v1 `1/2`
 
 ## Goal
 
-Prove that the native engine and C ABI are stable enough to become the release-candidate contract used for all cross-platform native builds.
+Establish a maintainable native verification baseline before producing release artifacts.
 
-## Verification infrastructure delivered
+## Permanent verification retained in the project
 
-- Rust unit tests;
-- native integration/golden tests;
-- Flex geometry verification;
-- Block/FlowRoot/Float geometry verification;
-- Grid named-line/area/placement verification;
-- Calc and cached measurement verification;
-- ABI size/alignment/offset assertions;
-- enum numeric-contract assertions;
-- invalid/stale/cross-context/malformed input tests;
-- wrong-thread access test;
-- repeated lifecycle/topology stress test;
-- public-header C11 smoke source;
-- public-header C++17 smoke source;
-- cbindgen regeneration/drift check;
-- linked host C/C++ smoke execution path;
-- one canonical local verification command.
+- Rust unit and integration/golden tests for Flex, Block/FlowRoot/Float, Grid, Calc, measurement, handles, lifecycle, invalid input, wrong-thread access, and repeated topology/lifecycle stress.
+- ABI size/alignment/offset and enum numeric-contract assertions.
+- Thread-local diagnostic regression coverage.
+- Pinned cbindgen public-header regeneration/drift verification.
+- Host release native build.
+- Clean-source evidence recording used by Phase 4 artifact acceptance.
 
-## Canonical Phase 3 gate
+## Canonical command
+
+For the current final ABI source, use:
 
 ```bash
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 ```
 
-The command requires and performs:
+The historical `verify-abi-rc` command remains only as a compatibility alias.
 
-1. provider-independent static preflight;
-2. C11/C++17 public-header compilation;
-3. `cargo fmt --check`;
-4. Clippy with warnings denied;
-5. Rust unit/integration tests;
-6. host release native build;
-7. cbindgen header regeneration/diff verification;
-8. linked C and C++ smoke execution against the produced native library;
-9. local Phase 3 evidence recording for the exact clean Git tree.
-
-## Local verification result
-
-```bash
-python3 build/build.py static-gate
-```
-
-passes, including the public-header C/C++ compile and Phase 4 build-driver contract tests. The complete compiled Phase 3 suite also passes: `cargo fmt --check`, Clippy with warnings denied, 44 Rust tests, release build, pinned-cbindgen header drift verification, and linked C/C++ smoke execution.
+The final command hashes the maintained project inputs into a deterministic content-addressed snapshot, runs the Rust quality/test suite, host release build, cbindgen drift verification, and records source/evidence metadata required by Phase 4.
 
 ## Gate rule
 
-Phase 4 artifact production is not accepted merely because the ABI source says `1/1`. Every artifact-producing local machine must first run the complete Phase 3 gate successfully on the exact clean source tree and produce matching Phase 3 evidence.
-
-This is the current authoritative project boundary.
+Phase 4 artifacts are accepted only when their recorded source snapshot matches the exact content-addressed project inputs that passed the final ABI verification gate. Disposable external-consumer experiments used during development are not part of the tracked project.

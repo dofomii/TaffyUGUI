@@ -1,7 +1,7 @@
 //! Native ABI/build version constants.
 
 pub const TU_ABI_VERSION: u32 = 1;
-pub const TU_ABI_STAGE: u32 = 1; // 0 = candidate, 1 = RC, 2 = final
+pub const TU_ABI_STAGE: u32 = 2; // 0 = candidate, 1 = RC, 2 = final
 pub const TU_TAFFY_VERSION_MAJOR: u32 = 0;
 pub const TU_TAFFY_VERSION_MINOR: u32 = 13;
 pub const TU_TAFFY_VERSION_PATCH: u32 = 0;

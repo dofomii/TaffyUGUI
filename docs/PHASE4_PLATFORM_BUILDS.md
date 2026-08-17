@@ -12,10 +12,10 @@ Phase 4 is a **local multi-host release build**, not a GitHub Actions workflow. 
 
 ## Entry gate
 
-Every machine that produces a Phase 4 artifact must use the byte-identical clean source tree and must first pass:
+Every machine that produces a Phase 4 artifact must use the byte-identical content-addressed source snapshot and must first pass:
 
 ```bash
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 ```
 
 That command records local evidence under `.build/evidence/phase3-local.json`. `build/build.py native ...` refuses to produce a Phase 4 release artifact if the evidence is missing, belongs to different local source content, or the working tree is dirty.
@@ -157,7 +157,7 @@ The manifest records:
 - ABI designation/version/stage;
 - exact Taffy baseline;
 - exact Rust target;
-- clean source commit;
+- content-addressed source snapshot;
 - artifact size and SHA-256;
 - platform/architecture/crate type;
 - target-specific architecture evidence (PE/Mach-O/ELF inspection, `lipo -info` for iOS, and Emscripten archive-member inspection for WebGL);
@@ -169,7 +169,7 @@ The manifest records:
 
 ## Collecting the multi-host output
 
-All host builds must be made from the **same clean source tree**. Copy the generated `dist/native/...` target directories from the Windows, macOS, and Linux build machines into one local project checkout without modifying their contents.
+All host builds must be made from the **same content-addressed source snapshot**. Copy the generated `dist/native/...` target directories from the Windows, macOS, and Linux build machines into one local project checkout without modifying their contents.
 
 For the active Android-only release, run:
 

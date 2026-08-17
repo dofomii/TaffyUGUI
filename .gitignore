@@ -31,3 +31,11 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+# Disposable local validation artifacts — never commit
+/.local-validation/
+/.harness/
+/.probes/
+/tests/harness/
+/tests/probes/
+/scripts/harness/
+/scripts/probes/

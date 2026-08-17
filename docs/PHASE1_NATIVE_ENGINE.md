@@ -102,6 +102,6 @@ Caller-supplied cached measurement supports:
 
 ## Test inventory
 
-The repository contains native unit/integration/golden verification covering the above subsystems. Under the current local-first policy, the authoritative compiled execution of that inventory is part of `build/build.py verify-abi-rc` in Phase 3.
+The repository contains native unit/integration/golden verification covering the above subsystems. Under the current local-first policy, the authoritative compiled execution of that inventory is part of `build/build.py verify-abi-final` in Phase 3.
 
 Therefore Phase 1 implementation is complete, while its current-machine compiled proof is intentionally inherited by the still-pending Phase 3 local gate rather than being falsely re-declared as freshly verified in this sandbox.

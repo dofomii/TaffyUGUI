@@ -14,9 +14,14 @@
 - [PHASE2_PRODUCTION_C_ABI.md](PHASE2_PRODUCTION_C_ABI.md)
 - [PHASE3_NATIVE_VERIFICATION.md](PHASE3_NATIVE_VERIFICATION.md)
 
-## Active platform phase
+## Completed Android native/package and ABI phases
 
 - [PHASE4_PLATFORM_BUILDS.md](PHASE4_PLATFORM_BUILDS.md)
+- [PHASE6_MANAGED_ABI.md](PHASE6_MANAGED_ABI.md)
+
+## Active phase
+
+Phase 7 — Minimal Working Unity uGUI Product. See [TASK_TRACKER.md](TASK_TRACKER.md); P7.1 is next.
 
 ## Local development
 

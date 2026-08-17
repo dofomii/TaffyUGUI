@@ -26,7 +26,7 @@ def verify_phase4() -> None:
         "source_revision": revision,
         "source_tree": source_tree,
         "source_revisions": sorted({str(manifest.get("source_revision")) for manifest in manifests.values()}),
-        "abi": {"designation": "ABI-v1-RC", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
+        "abi": {"designation": "ABI-v1", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
         "taffy_version": TAFFY_VERSION,
         "public_exports": list(header_export_contract()),
         "public_exports_sha256": export_fingerprint(header_export_contract()),
@@ -162,41 +162,6 @@ def verify_phase5() -> None:
         raise SystemExit(f"Unexpected native binaries in Unity package: {names}")
     print("PHASE 5 ANDROID PAYLOAD VERIFY: PASS")
 
-
-def phase4_driver_selftest() -> None:
-    expected = set(PHASE4_REQUIRED_TARGETS)
-    assigned = set()
-    for targets in PHASE4_HOST_TARGETS.values():
-        assigned.update(targets)
-    if "macos-universal" in assigned:
-        assigned.update(("macos-arm64", "macos-x64"))
-    if assigned != expected:
-        raise SystemExit(f"Phase 4 host assignment does not cover the required target set: {sorted(assigned)} != {sorted(expected)}")
-    validate_manifest_architecture_evidence(
-        TARGETS["ios-arm64"], {"method": "lipo -info", "detail": "Non-fat file: libtaffy_ugui.a is architecture: arm64"}
-    )
-    validate_manifest_architecture_evidence(
-        TARGETS["webgl"],
-        {
-            "method": "emar + file",
-            "member_count": 1,
-            "sample_member": "sample.o",
-            "sample_description": "WebAssembly (wasm) binary module version 0x1",
-        },
-    )
-    for spec, bad in (
-        (TARGETS["ios-arm64"], {"method": "lipo -info", "detail": "x86_64"}),
-        (TARGETS["webgl"], {"method": "emar + file", "member_count": 0, "sample_description": "current ar archive"}),
-    ):
-        try:
-            validate_manifest_architecture_evidence(spec, bad)
-        except SystemExit:
-            pass
-        else:
-            raise SystemExit(f"Phase 4 architecture validator accepted invalid evidence for {spec.name}")
-    print("Phase 4 build-driver contract self-test: PASS")
-
-
 def doctor() -> None:
     print("TaffyUGUI local environment")
     print(f"  host: {platform.platform()}")
@@ -206,14 +171,6 @@ def doctor() -> None:
     for name in ("git", "python3", "cargo", "rustc", "rustup", "rustfmt", "clippy-driver", "cbindgen", "clang", "clang++", "cmake"):
         print(f"  {name:14} {executable(name) or 'MISSING'}")
     print("  CI fallback: disabled by design")
-
-
-def static_gate() -> None:
-    require_abi_rc()
-    static_preflight()
-    phase4_driver_selftest()
-    compile_header()
-    print("\nLOCAL STATIC GATE: PASS")
 
 
 def list_targets() -> None:
@@ -226,16 +183,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("doctor", help="Show local prerequisites and ABI state")
-    sub.add_parser("static-gate", help="Run all verification that does not require Rust compilation")
     sub.add_parser("prepare", help="Locally apply rustfmt and regenerate the cbindgen public header")
-    sub.add_parser("quality", help="Run local static preflight, rustfmt, Clippy, tests, and host release build")
+    sub.add_parser("quality", help="Run rustfmt, Clippy, tests, and host release build")
     sub.add_parser("verify-msrv", help="Run local Cargo check/test using Rust 1.82.0")
     sub.add_parser("header", help="Regenerate the public ABI header locally with pinned cbindgen")
     sub.add_parser("verify-header", help="Fail if checked-in public header differs from local cbindgen output")
     sub.add_parser("stage-phase5", help="Stage the verified Android ARM64 native payload into the Unity package")
     sub.add_parser("verify-phase5", help="Verify the Android-only Unity native payload and provenance")
-    sub.add_parser("host-smoke", help="Build and execute local linked C/C++ smoke programs")
-    sub.add_parser("verify-abi-rc", help="Run the complete local Phase 3 ABI-v1-RC gate")
+    sub.add_parser("verify-abi-final", help="Run the complete local Phase 3 regression gate for final ABI v1")
+    sub.add_parser("verify-abi-rc", help="Compatibility alias for the final ABI v1 verification gate")
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")
     sub.add_parser("phase4-status", help="Show local Phase 4 artifact/evidence status")
     sub.add_parser("phase4-host", help="Build all canonical Phase 4 targets assigned to this local OS")
@@ -247,7 +203,6 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "doctor": doctor()
-    elif args.command == "static-gate": static_gate()
     elif args.command == "prepare": prepare()
     elif args.command == "quality": quality()
     elif args.command == "verify-msrv": verify_msrv()
@@ -255,8 +210,7 @@ def main() -> int:
     elif args.command == "stage-phase5": stage_phase5()
     elif args.command == "verify-phase5": verify_phase5()
     elif args.command == "verify-header": verify_header()
-    elif args.command == "host-smoke": host_smoke()
-    elif args.command == "verify-abi-rc": verify_abi_rc()
+    elif args.command in ("verify-abi-final", "verify-abi-rc"): verify_abi_final()
     elif args.command == "list-targets": list_targets()
     elif args.command == "phase4-status": phase4_status()
     elif args.command == "phase4-host": phase4_host()

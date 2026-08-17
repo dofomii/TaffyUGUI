@@ -13,6 +13,6 @@ if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue) -and
 }
 
 python build/build.py prepare
-python build/build.py verify-abi-rc
+python build/build.py verify-abi-final
 python build/build.py phase4-host
 python build/build.py phase4-status

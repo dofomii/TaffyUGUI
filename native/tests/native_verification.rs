@@ -130,9 +130,9 @@ fn p3_1_context_handle_error_and_version_units() {
     assert_eq!(
         tu_get_abi_version(),
         1,
-        "ABI-v1-RC must remain locked after the verified Phase 3 gate"
+        "final ABI v1 must remain locked after the Phase 6 freeze"
     );
-    assert_eq!(tu_get_abi_stage(), 1);
+    assert_eq!(tu_get_abi_stage(), 2);
     assert_eq!(tu_get_taffy_version_packed(), 13 << 12);
     assert_ne!(tu_get_capabilities(), 0);
     let context = Context::new();
@@ -142,9 +142,19 @@ fn p3_1_context_handle_error_and_version_units() {
         tu_node_mark_dirty(context.0, node),
         TuStatus::InvalidNode as i32
     );
-    assert!(tu_get_last_error_length() > 0);
+    let error_length = tu_get_last_error_length();
+    assert!(error_length > 0);
+    let mut error_bytes = vec![0_u8; error_length as usize];
+    let mut written = 0_u32;
+    assert_eq!(
+        unsafe { tu_copy_last_error(error_bytes.as_mut_ptr(), error_length, &mut written) },
+        OK
+    );
+    assert_eq!(written, error_length);
+    let diagnostic = std::str::from_utf8(&error_bytes[..written as usize]).unwrap();
+    assert!(diagnostic.contains("node handle"));
+    assert_eq!(tu_get_last_error_length(), error_length);
 }
-
 #[test]
 fn p3_2_flex_golden_geometry() {
     let context = Context::new();

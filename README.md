@@ -8,21 +8,21 @@ Responsive Flexbox, Grid, Block, and CSS-style layout for existing Unity uGUI, p
 
 ## Current progress
 
-The native interface is **ABI-v1-RC (version 1, stage 1)** with Taffy **0.13.0** pinned exactly. The production native engine and `tu_*` C ABI are implemented and locally verified. The active release scope is intentionally **Android ARM64 only**.
+The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.0** pinned exactly. The production native engine and complete 31-function `tu_*` C ABI are implemented. The active release scope is intentionally **Android ARM64 only**.
 
 | Phase | Status |
 |---|---|
 | 0 — Rust/toolchain foundation | **Complete** |
 | 1 — Complete native Taffy engine | **Implementation complete** |
 | 2 — Production C ABI | **Implementation complete** |
-| 3 — Native verification / ABI RC | **Complete; canonical local compiled gate passed** |
-| 4 — Native artifact release gate | **Complete for Android ARM64-only scope** |
-| 5 — Unity-ready native staging | **Complete for Android ARM64** |
-| 6 — Managed ABI conformance / final ABI v1 | Ready; partial early P/Invoke scaffolding exists |
-| 7 — Minimal working Unity product | Prototype scaffolding exists; formal phase gated |
-| 8–14 — Production integration through v1.0 | Not started |
+| 3 — Native verification / ABI RC | **Complete; historical ABI-v1-RC gate passed** |
+| 4 — Native artifact release gate | **Complete for final ABI v1 `1/2` Android ARM64 artifact** |
+| 5 — Unity native payload | **Complete for final ABI v1 `1/2` Android ARM64 payload** |
+| 6 — Managed ABI conformance / final ABI v1 | **Complete** |
+| 7 — Minimal working Unity uGUI product | **Active; P7.1 is next** |
 
-The verified Android ARM64 library is staged under `UnityPackage/Plugins/Android/arm64-v8a/` together with Android-only PluginImporter metadata and source/checksum provenance. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
+Phase 6 is complete. The final Android ARM64 artifact and Unity payload are ABI v1 `1/2`, and Phase 3 evidence, the Phase 4 index, and Phase 5 provenance all bind to the same content-addressed source snapshot. Phase 7 is now active with P7.1 as the next task. Windows, macOS, iOS, and WebGL remain deferred and are not supported by this branch.
+
 
 For the full current state, use:
 
@@ -37,8 +37,9 @@ For the full current state, use:
 - [Phase 0 — Foundation](docs/PHASE0_FOUNDATION.md)
 - [Phase 1 — Native engine](docs/PHASE1_NATIVE_ENGINE.md)
 - [Phase 2 — Production C ABI](docs/PHASE2_PRODUCTION_C_ABI.md)
-- [Phase 3 — Native verification](docs/PHASE3_NATIVE_VERIFICATION.md)
-- [Phase 4 — Cross-platform builds](docs/PHASE4_PLATFORM_BUILDS.md)
+- [Phase 4 — Android native release](docs/PHASE4_PLATFORM_BUILDS.md)
+- [Phase 6 — Managed ABI conformance](docs/PHASE6_MANAGED_ABI.md)
+
 
 ## Local-first development
 
@@ -48,24 +49,24 @@ Provider-independent checks:
 
 ```bash
 python3 build/build.py doctor
-python3 build/build.py static-gate
+python3 build/build.py quality
 ```
 
-Complete native Phase 3 verification on a correctly provisioned local host:
+Final ABI verification on the exact content-addressed local source snapshot:
 
 ```bash
 python3 build/build.py prepare
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 ```
 
-That gate runs rustfmt, Clippy, Rust tests, release build, cbindgen drift verification, and linked C/C++ host smoke tests locally. See [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
+That gate runs rustfmt, Clippy, Rust tests, a release build, and cbindgen header-drift verification locally. See [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
 
 ## Android native release and Unity staging
 
-The active release target is Android ARM64. The exact clean source tree must first pass:
+The active release target is Android ARM64. The exact content-addressed project-input snapshot must first pass:
 
 ```bash
-python3 build/build.py verify-abi-rc
+python3 build/build.py verify-abi-final
 python3 build/build.py native android-arm64
 python3 build/build.py verify-phase4
 ```
@@ -77,7 +78,9 @@ python3 build/build.py stage-phase5
 python3 build/build.py verify-phase5
 ```
 
-The packaged binary is `UnityPackage/Plugins/Android/arm64-v8a/libtaffy_ugui.so`. Its checksum must match the verified Phase 4 artifact exactly. See [docs/PHASE4_PLATFORM_BUILDS.md](docs/PHASE4_PLATFORM_BUILDS.md) and [docs/TASK_TRACKER.md](docs/TASK_TRACKER.md).
+## Phase 6 final ABI state
+
+Final ABI stage `2` is frozen and Phase 6 is complete. Final Android Phase 4/5 artifacts were rebuilt/restaged from the same content-addressed source snapshot, and a fresh Unity IL2CPP APK build verified the accepted staged ARM64 payload. See [docs/PHASE6_MANAGED_ABI.md](docs/PHASE6_MANAGED_ABI.md).
 
 Deferred Windows, macOS, iOS, and WebGL build definitions remain available for future branches but do not gate or define support for the active Android-only release.
 
@@ -98,7 +101,7 @@ Deferred Windows, macOS, iOS, and WebGL build definitions remain available for f
 
 ## Unity package
 
-The package lives in `UnityPackage/` and targets Unity 2021.3+ until older Unity versions are explicitly validated. The low-level P/Invoke wrapper has already been aligned to the `tu_*` ABI-v1-RC as early Phase 6 scaffolding, but production managed conformance and user-facing Unity phases remain gated behind the final native payload sequence.
+The package lives in `UnityPackage/` and targets Unity 2021.3+ until older Unity versions are explicitly validated. The low-level P/Invoke wrapper covers the full `tu_*` final ABI-v1 surface and requires stage `2` by default. User-facing Unity phases remain gated until the final Android native payload is rebuilt/restaged through the clean-tree release sequence.
 
 ## License
 

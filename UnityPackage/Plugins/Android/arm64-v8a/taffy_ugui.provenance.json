@@ -1,7 +1,7 @@
 {
   "abi": {
-    "designation": "ABI-v1-RC",
-    "stage": 1,
+    "designation": "ABI-v1",
+    "stage": 2,
     "version": 1
   },
   "architecture": "arm64-v8a",
@@ -10,9 +10,9 @@
   "phase4_index": "dist/native/phase4-index.json",
   "platform": "android",
   "schema": 1,
-  "sha256": "b41be001013f3198ec1c34e578a047c8ec742731157843d16a54f750dabb0064",
+  "sha256": "7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66",
   "source_manifest": "dist/native/android/arm64-v8a/manifest.json",
-  "source_revision": "a2077e61e665004aadf201bfea913ea1402d2360",
-  "source_tree": "cb581a7af22ac59d5287ebcdbbde2e7a56d69084",
+  "source_revision": "770c63c04f0d39fea5092c463a0f9e191ecb35c4+working-tree",
+  "source_tree": "sha256:68fb502c6bc48c83b2239f5212d98fd6a7f3f777c587cb286876121c58752731",
   "taffy_version": "0.13.0"
 }

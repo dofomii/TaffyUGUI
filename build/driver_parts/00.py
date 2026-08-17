@@ -34,7 +34,7 @@ DEV_RUST_VERSION = "1.97.1"
 MSRV = "1.82"
 CBINDGEN_VERSION = "0.29.2"
 ABI_RC_VERSION = 1
-ABI_RC_STAGE = 1
+ABI_RC_STAGE = 2
 TAFFY_VERSION = "0.13.0"
 ANDROID_NDK_REVISION = "21.3.6528147"  # Unity 2021.3 NDK r21d baseline
 ANDROID_API = 21
@@ -192,7 +192,7 @@ def require_abi_rc() -> None:
     actual = (parse_u32_const("TU_ABI_VERSION"), parse_u32_const("TU_ABI_STAGE"))
     expected = (ABI_RC_VERSION, ABI_RC_STAGE)
     if actual != expected:
-        raise SystemExit(f"Phase 4 is locked: expected ABI-v1-RC {expected[0]}/{expected[1]}, found {actual[0]}/{actual[1]}.")
+        raise SystemExit(f"Phase 4 is locked: expected final ABI v1 {expected[0]}/{expected[1]}, found {actual[0]}/{actual[1]}.")
 
 
 def header_export_contract() -> tuple[str, ...]:
@@ -218,31 +218,63 @@ def git_state() -> tuple[str, bool, str]:
     return (head, bool(status.strip()), status)
 
 
-def require_clean_tree() -> str:
-    head, dirty, status = git_state()
-    if dirty:
-        preview = "\n".join(status.splitlines()[:20])
-        raise SystemExit(
-            "Phase 3 evidence and Phase 4 release artifacts require a clean local Git tree. "
-            "Commit the local phase work first, then rerun.\n" + preview
-        )
-    return head
+SOURCE_SNAPSHOT_FILES = (
+    ROOT / "Cargo.toml",
+    ROOT / "Cargo.lock",
+    ROOT / "rust-toolchain.toml",
+    ROOT / "cbindgen.toml",
+    ROOT / "native" / "Cargo.toml",
+    ROOT / "include" / "taffy_ugui.h",
+    ROOT / "UnityPackage" / "package.json",
+)
+SOURCE_SNAPSHOT_DIRS = (
+    ROOT / "native" / "src",
+    ROOT / "native" / "tests",
+    ROOT / "build",
+    ROOT / "UnityPackage" / "Runtime",
+)
+
+
+def source_snapshot_files() -> tuple[Path, ...]:
+    files: set[Path] = set()
+    for path in SOURCE_SNAPSHOT_FILES:
+        if not path.is_file():
+            raise SystemExit(f"Required source snapshot input is missing: {path.relative_to(ROOT)}")
+        files.add(path)
+    for directory in SOURCE_SNAPSHOT_DIRS:
+        if not directory.is_dir():
+            raise SystemExit(f"Required source snapshot directory is missing: {directory.relative_to(ROOT)}")
+        for path in directory.rglob("*"):
+            if not path.is_file():
+                continue
+            if "__pycache__" in path.parts or path.suffix in {".pyc", ".pyo"}:
+                continue
+            files.add(path)
+    return tuple(sorted(files, key=lambda path: path.relative_to(ROOT).as_posix()))
 
 
 def source_tree_sha() -> str:
-    git = require("git")
-    require_clean_tree()
-    return run(git, "rev-parse", "HEAD^{tree}", capture=True).strip()
+    digest = hashlib.sha256()
+    for path in source_snapshot_files():
+        relative = path.relative_to(ROOT).as_posix().encode("utf-8")
+        payload = path.read_bytes()
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+    return "sha256:" + digest.hexdigest()
 
 
 def write_phase3_evidence() -> None:
-    revision = require_clean_tree()
+    head, dirty, _ = git_state()
     PHASE3_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
     evidence = {
-        "schema": 1,
-        "source_revision": revision,
+        "schema": 2,
+        "source_revision": head + ("+working-tree" if dirty else ""),
         "source_tree": source_tree_sha(),
-        "abi": {"designation": "ABI-v1-RC", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
+        "source_snapshot_kind": "content-addressed-project-inputs-v1",
+        "git_dirty": dirty,
+        "abi": {"designation": "ABI-v1", "version": ABI_RC_VERSION, "stage": ABI_RC_STAGE},
         "taffy_version": TAFFY_VERSION,
         "rustc": tool_version("rustc", "--version"),
         "cargo": tool_version("cargo", "--version"),

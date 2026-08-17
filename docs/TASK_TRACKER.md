@@ -41,8 +41,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 8:** COMPLETE; production Flex/Block/Float authoring and callback-free cached Unity measurement adapters are verified.
 - **Phase 9:** COMPLETE; production Grid/Calc Unity authoring, diagnostics, lifecycle, and regression gates are verified.
 - **Phase 10:** COMPLETE; responsive/integration hardening and permanent regression gates are verified.
-- **Phase 11:** ACTIVE; P11.1 is the next authoritative task.
-- **Phase 12–14:** NOT STARTED.
+- **Phase 11:** COMPLETE; editor tooling, diagnostics, migration, Undo/prefab safety, and permanent regression gates are verified.
+- **Phase 12:** ACTIVE; P12.1 is the next authoritative task.
+- **Phase 13–14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -60,7 +61,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 11 P11.1 — implement the `TaffyLayoutGroup` custom inspector.
+**Next authoritative task:** Phase 12 P12.1 — validate the package in Unity 2021.3 LTS.
 
 
 ---
@@ -474,25 +475,38 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 11 — Editor Tooling and Migration
 
-**Status:** ACTIVE — Phase 10 gate complete; P11.1 is next
+**Status:** COMPLETE — editor authoring/migration production gate passed
 
-- [ ] P11.1 `TaffyLayoutGroup` custom inspector.
-- [ ] P11.2 `TaffyLayoutItem` custom inspector.
-- [ ] P11.3 Length/dimension/rect property drawers.
-- [ ] P11.4 Grid track/placement/area editor tooling.
-- [ ] P11.5 Scene-view layout visualization.
-- [ ] P11.6 Layout debugger/diagnostics window.
-- [ ] P11.7 HorizontalLayoutGroup migration.
-- [ ] P11.8 VerticalLayoutGroup migration.
-- [ ] P11.9 GridLayoutGroup migration where semantically safe.
-- [ ] P11.10 Prefab/Undo/serialized-data-safe migration behavior.
-- [ ] P11.11 Batch migration workflow.
+- [x] P11.1 `TaffyLayoutGroup` custom inspector.
+- [x] P11.2 `TaffyLayoutItem` custom inspector.
+- [x] P11.3 Length/dimension/rect property drawers.
+- [x] P11.4 Grid track/placement/area editor tooling.
+- [x] P11.5 Scene-view layout visualization.
+- [x] P11.6 Layout debugger/diagnostics window.
+- [x] P11.7 HorizontalLayoutGroup migration.
+- [x] P11.8 VerticalLayoutGroup migration.
+- [x] P11.9 GridLayoutGroup migration where semantically safe.
+- [x] P11.10 Prefab/Undo/serialized-data-safe migration behavior.
+- [x] P11.11 Batch migration workflow.
+
+### Phase 11 validation note
+
+- Editor tooling is isolated in the Editor-only `TaffyUGUI.Editor` assembly.
+- Unity `6000.4.3f1` Edit Mode: **38/38** permanent package tests pass, including 9 Phase 11 editor/migration tests.
+- Unity `6000.4.3f1` Play Mode: **9/9** permanent package tests pass.
+- Horizontal/Vertical migration is Undo-aware and preserves supported padding/alignment/child sizing/grow semantics.
+- Grid migration is conservative: only deterministic fixed-row/fixed-column configurations are changed; unsupported configurations remain untouched with diagnostics.
+- Prefab-instance migration retains the prefab connection and does not mutate the prefab asset.
+- Final ABI/Phase 4/Phase 5 provenance and fresh Android ARM64 IL2CPP Player checks are bound to `sha256:3228f12128c07fd6c470a7bc9119a4ba810f7718d98c6ae9537086030beaa0fc`.
+- Fresh Android ARM64 IL2CPP Player build passes with `TaffyUGUI.Runtime.dll` included and `TaffyUGUI.Editor.dll` excluded from Player/IL2CPP assemblies; packaged Taffy runtime `PT_LOAD` bytes match the accepted staged payload.
+
+**Documentation:** `PHASE11_EDITOR_TOOLING_MIGRATION.md`
 
 ---
 
 # Phase 12 — Real Unity Platform Validation
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 11 gate complete; P12.1 is next
 
 - [ ] P12.1 Unity 2021.3 LTS primary Editor validation.
 - [ ] P12.2 Selected Unity 2022.3 LTS compatibility validation.
@@ -555,8 +569,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 10 is complete. Phase 11 is now authoritative.
+Phase 11 is complete. Phase 12 is now authoritative.
 
-**Next task:** P11.1 — implement the `TaffyLayoutGroup` custom inspector.
+**Next task:** P12.1 — validate the package in Unity 2021.3 LTS.
 
-Phase 11 builds production editor authoring, property drawers, Grid tooling, diagnostics/visualization, and migration workflows on top of the completed runtime integration.
+Phase 12 expands from the current Unity 6 / Android ARM64 development gates into the explicit Unity-version and real Player platform compatibility matrix.

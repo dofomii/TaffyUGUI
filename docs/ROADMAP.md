@@ -1,6 +1,6 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the gated production path from the current completed Phase 10 responsive/integration hardening to v1.0.
+This document describes the gated production path from the current completed Phase 11 editor tooling/migration integration to v1.0.
 
 ## Phase sequence
 
@@ -17,8 +17,8 @@ This document describes the gated production path from the current completed Pha
 | 8 | Production Flex/Block/Float/Measurement Unity Integration | Complete |
 | 9 | Complete Grid and Calc Unity Authoring | Complete |
 | 10 | Responsive and Integration Hardening | Complete |
-| 11 | Editor Tooling and Migration | Active; P11.1 next |
-| 12 | Real Unity Platform Validation | Not started |
+| 11 | Editor Tooling and Migration | Complete |
+| 12 | Real Unity Platform Validation | Active; P12.1 next |
 | 13 | Performance and Reliability Hardening | Not started |
 | 14 | v1.0 Release | Not started |
 
@@ -104,13 +104,19 @@ The Phase 10 gate passed 29/29 Edit Mode and 9/9 Play Mode tests on Unity `6000.
 
 ## Phase 11 — Editor Tooling and Migration
 
-- custom inspectors/property drawers;
-- Grid authoring UI;
-- scene visualization/debugging;
-- diagnostics window;
-- migration wizard from HorizontalLayoutGroup/VerticalLayoutGroup/GridLayoutGroup;
-- prefab/Undo/serialization-safe migration;
-- documentation and samples for editor workflows.
+**Complete.** The package now includes an Editor-only authoring/migration assembly with:
+
+- custom `TaffyLayoutGroup` and `TaffyLayoutItem` inspectors;
+- typed Length/Edges/Calc/Grid property drawers;
+- Grid track/placement/named-line/area authoring;
+- selected-layout Scene view visualization and Grid track overlays;
+- a layout debugger/diagnostics window;
+- conservative HorizontalLayoutGroup and VerticalLayoutGroup Flex migration;
+- deterministic fixed-row/fixed-column GridLayoutGroup migration with refusal diagnostics for unsafe configurations;
+- one-step Undo, prefab-instance override preservation, and existing item-data reuse;
+- selection/all-loaded-scene batch migration.
+
+The Phase 11 gate passes 38/38 Edit Mode and 9/9 Play Mode package tests on Unity `6000.4.3f1`. See [PHASE11_EDITOR_TOOLING_MIGRATION.md](PHASE11_EDITOR_TOOLING_MIGRATION.md).
 
 ## Phase 12 — Real Unity Platform Validation
 

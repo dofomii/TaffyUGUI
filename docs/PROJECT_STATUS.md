@@ -1,6 +1,6 @@
 # TaffyUGUI Project Status
 
-**Status date:** 2026-08-17
+**Status date:** 2026-08-18
 **Canonical workflow:** local development, local build, local verification
 **Active release scope:** Android ARM64 only
 **Native ABI:** final ABI v1 (`version=1`, `stage=2`) on exact Taffy `0.13.0`
@@ -18,39 +18,44 @@
 - Phase 8 production Flex/Block/Float/measurement integration: **complete**.
 - Phase 9 Grid/Calc Unity authoring: **complete**.
 - Phase 10 responsive/integration hardening: **complete**.
-- Phase 11 editor tooling/migration: **active; P11.1 is next**.
-- Phases 12–14: **not started**.
+- Phase 11 editor tooling/migration: **complete**.
+- Phase 12 real Unity platform validation: **active; P12.1 is next**.
+- Phases 13–14: **not started**.
 
-## Phase 10 production boundary
+## Phase 11 production boundary
 
-The runtime bridge now includes production integration hardening for:
+The package now includes a dedicated Editor-only `TaffyUGUI.Editor` assembly with production authoring and migration tooling:
 
-- serializable responsive profiles with width/height breakpoints and priority;
-- runtime profile forcing without mutating serialized data;
-- rect/Canvas-scale observation for responsive rebuilds;
-- safe-area-to-padding integration plus runtime safe-area overrides;
-- ScrollRect content sizing against viewport and Taffy preferred size;
-- ContentSizeFitter axis ownership rules;
-- AspectRatioFitter aspect handoff and conflict diagnostics;
-- animation-property dirty invalidation;
-- edge-based pixel rounding, including Canvas-pixel mode;
-- same-frame and re-entrant rebuild-loop protection;
-- runtime integration diagnostics and override APIs.
+- `TaffyLayoutGroup` custom inspector;
+- `TaffyLayoutItem` custom inspector;
+- typed Length/Edges/Calc/Grid property drawers;
+- Grid track, placement, named-line, and area authoring UI;
+- selected-layout Scene view visualization with Grid track overlays;
+- layout debugger/diagnostics window;
+- HorizontalLayoutGroup migration to Flex row;
+- VerticalLayoutGroup migration to Flex column;
+- deterministic GridLayoutGroup migration for safe fixed-row/fixed-column configurations;
+- conservative refusal/diagnostics for unsupported legacy Grid semantics;
+- one-step Undo migration;
+- prefab-instance-safe added/removed component overrides without mutating the prefab asset;
+- selection/all-loaded-scene batch migration.
 
-The native ABI and Rust engine did not change. All Phase 10 behavior is implemented in the Unity runtime layer over the frozen ABI v1 `1/2`.
+Unity's layout-group hierarchy does not allow a Taffy layout group to coexist temporarily with a legacy `LayoutGroup`. The migration service therefore snapshots the legacy settings/children, removes the old component through Undo, adds Taffy, then applies the snapshot. Existing `TaffyLayoutItem` data is reused rather than overwritten wholesale.
 
-## Phase 10 verification
+No Rust engine, C ABI, or managed runtime ABI expansion was required for Phase 11. Editor dependencies remain outside Player assemblies.
+
+## Phase 11 verification
 
 Final local Unity `6000.4.3f1` package verification:
 
-- VS Code Problems: **0 diagnostics** for runtime/tests;
+- VS Code Problems: **0 diagnostics** for package/runtime/editor/tests;
 - native quality regression: **PASS**, including rustfmt, Clippy `-D warnings`, 44/44 maintained Rust tests, and release build;
-- Edit Mode: **29/29 tests passed**;
+- Edit Mode: **38/38 tests passed**;
 - Play Mode: **9/9 tests passed**;
-- all Phase 7–9 regression coverage remains green;
-- Phase 10 tests cover responsive serialization/validation/switching, runtime overrides, safe area, ScrollRect dynamics, fitter ownership, aspect integration, Canvas-scale observation, animation invalidation, pixel rounding, and rebuild suppression.
+- 9 new Phase 11 Edit Mode tests cover editor registration, typed drawers, Horizontal/Vertical/Grid migration, unsafe Grid refusal, Undo restoration, prefab-instance safety, batch migration, debugger type availability, and Scene visualization state;
+- all Phase 7–10 runtime regression coverage remains green.
 
-Final ABI/Android provenance and fresh Android ARM64 IL2CPP packaging are bound to the exact Phase 10 source snapshot:
+Final ABI/Android provenance and fresh Android ARM64 IL2CPP packaging are bound to the exact Phase 11 source snapshot:
 
 `sha256:3228f12128c07fd6c470a7bc9119a4ba810f7718d98c6ae9537086030beaa0fc`
 
@@ -58,12 +63,12 @@ Android ARM64 native library SHA-256 remains:
 
 `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`
 
-Physical Android execution now also passes on device `CPH2723` (Android 16 / API 36, ARM64-v8a) using Unity `6000.4.3f1`, IL2CPP, and the final Phase 10 Android payload. The runtime marker `TAFFY_PHASE10_DEVICE_PASS:profile=phone:height=328.0:suppressed=4` confirms responsive-profile selection, safe-area padding, ScrollRect content sizing, native Taffy layout, and rebuild-loop protection on hardware; Android loaded `libtaffy_ugui.so` successfully and the Player remained alive with no Unity/AndroidRuntime/native fatal errors. Comprehensive cross-platform Unity Player validation remains Phase 12.
+The fresh Phase 11 Android ARM64 IL2CPP gate passes. The Player includes `TaffyUGUI.Runtime.dll` but excludes `TaffyUGUI.Editor.dll` from both stripped managed assemblies and the IL2CPP conversion list. The APK contains `libil2cpp.so` and `libtaffy_ugui.so`; the staged and packaged Taffy ELF program headers match and both runtime-loaded `PT_LOAD` segments are byte-identical. Comprehensive Unity-version/platform compatibility validation remains Phase 12.
 
 Disposable validation material remains local-only under ignored `.build/` paths and is never tracked project source.
 
 ## Next authoritative work
 
-**Phase 11 P11.1 — implement the `TaffyLayoutGroup` custom inspector.**
+**Phase 12 P12.1 — validate the package in Unity 2021.3 LTS.**
 
-Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope.
+Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope until their Phase 12 gates pass.

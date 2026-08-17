@@ -19,8 +19,9 @@
 - Phase 9 Grid/Calc Unity authoring: **complete**.
 - Phase 10 responsive/integration hardening: **complete**.
 - Phase 11 editor tooling/migration: **complete**.
-- Phase 12 real Unity platform validation: **active; P12.1 is next**.
-- Phases 13–14: **not started**.
+- Phase 12 real Unity platform validation: **complete for the Android ARM64-only release scope**.
+- Phase 13 performance/reliability hardening: **active; P13.1 is next**.
+- Phase 14: **not started**.
 
 ## Phase 11 production boundary
 
@@ -67,8 +68,18 @@ The fresh Phase 11 Android ARM64 IL2CPP gate passes. The Player includes `TaffyU
 
 Disposable validation material remains local-only under ignored `.build/` paths and is never tracked project source.
 
+## Phase 12 verification
+
+Phase 12 validates package compatibility across Unity `2021.3.39f1`, `2022.3.62f1`, and `6000.4.3f1`. All three Editors compile the package and pass **38/38 Edit Mode** plus **9/9 Play Mode** permanent tests. The Unity 2021.3 gate required the known local Linux `bee_backend --stdin-canary` workaround on this newer Linux host; the Editor installation was restored byte-for-byte afterward. The only tracked compatibility adjustment is version-correct built-in font selection in the permanent legacy-uGUI `Text` measurement tests.
+
+The fresh Android ARM64 Unity 6 IL2CPP Player gate also passes on physical `CPH2723`. The APK contains `libil2cpp.so` and `libtaffy_ugui.so`, its packaged Taffy ELF program headers match the staged payload, both runtime-loaded `PT_LOAD` segments are byte-identical, Android loads the library successfully, and the runtime scene reports `TAFFY_PHASE12_DEVICE_PASS width=120.00 height=48.00` with no fatal/linker error.
+
+Final native closeout remains green: rustfmt, Clippy `-D warnings`, **44/44 Rust tests**, release build/cbindgen drift check, Android ARM64 build/verify, Phase 4, and Phase 5 staging/verification all pass. Android ARM64 remains the sole advertised Player target. Windows, macOS, iOS, WebGL, and Linux Player are explicitly not advertised on this branch rather than being claimed from unexecuted platform tests.
+
+See `PHASE12_REAL_UNITY_VALIDATION.md` for the complete matrix and evidence. Disposable validation scenes/probes remain local-only under ignored `.build/` paths and are never tracked project source.
+
 ## Next authoritative work
 
-**Phase 12 P12.1 — validate the package in Unity 2021.3 LTS.**
+**Phase 13 P13.1 — establish the 100-node benchmark baseline.**
 
-Windows, macOS, iOS, and WebGL remain deferred outside the active Android ARM64 release scope until their Phase 12 gates pass.
+Phase 13 now owns performance, allocation, lifecycle, leak, and failure-path hardening before Phase 14 release work.

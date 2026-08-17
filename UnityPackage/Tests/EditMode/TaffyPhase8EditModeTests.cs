@@ -152,7 +152,13 @@ namespace TaffyUGUI.Tests
             RectTransform child = textObject.GetComponent<RectTransform>();
             child.SetParent(root, false);
             Text text = textObject.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+#if UNITY_2022_1_OR_NEWER
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+#else
+            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+#endif
+            Assert.That(font, Is.Not.Null, "Unity Text measurement requires an available built-in font resource.");
+            text.font = font;
             text.fontSize = 20;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Overflow;

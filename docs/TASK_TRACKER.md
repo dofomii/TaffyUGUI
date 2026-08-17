@@ -42,8 +42,9 @@ A later-phase prototype or early scaffold does not automatically mean that later
 - **Phase 9:** COMPLETE; production Grid/Calc Unity authoring, diagnostics, lifecycle, and regression gates are verified.
 - **Phase 10:** COMPLETE; responsive/integration hardening and permanent regression gates are verified.
 - **Phase 11:** COMPLETE; editor tooling, diagnostics, migration, Undo/prefab safety, and permanent regression gates are verified.
-- **Phase 12:** ACTIVE; P12.1 is the next authoritative task.
-- **Phase 13–14:** NOT STARTED.
+- **Phase 12:** COMPLETE; Unity 2021.3/2022.3/6 Editor regressions and the Android ARM64 physical Player gate pass. Non-Android Player targets are explicitly not advertised on this branch.
+- **Phase 13:** ACTIVE; P13.1 is the next authoritative task.
+- **Phase 14:** NOT STARTED.
 
 ## Current authoritative boundary
 
@@ -61,7 +62,7 @@ Phase 4 closes only when the final Android ARM64 artifact is accepted by:
 python3 build/build.py verify-phase4
 ```
 
-**Next authoritative task:** Phase 12 P12.1 — validate the package in Unity 2021.3 LTS.
+**Next authoritative task:** Phase 13 P13.1 — establish the 100-node benchmark baseline.
 
 
 ---
@@ -506,28 +507,30 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 12 — Real Unity Platform Validation
 
-**Status:** ACTIVE — Phase 11 gate complete; P12.1 is next
+**Status:** COMPLETE — Android ARM64 is the sole validated/advertised Player target
 
-- [ ] P12.1 Unity 2021.3 LTS primary Editor validation.
-- [ ] P12.2 Selected Unity 2022.3 LTS compatibility validation.
-- [ ] P12.3 Selected Unity 6.0 compatibility validation.
-- [ ] P12.4 Windows x64 Unity Player validation.
-- [ ] P12.5 macOS Intel Unity Player validation.
-- [ ] P12.6 macOS Apple Silicon Unity Player validation.
-- [ ] P12.7 Android ARM64 Unity Player validation.
-- [ ] P12.8 iOS ARM64 Unity Player validation.
-- [ ] P12.9 WebGL Player validation.
-- [ ] P12.10 Linux validation if retained as advertised support.
-- [ ] P12.11 Edit Mode regression suite.
-- [ ] P12.12 Play Mode regression suite.
-- [ ] P12.13 Platform regression scenes.
-- [ ] P12.14 Advertise only targets that pass real Unity validation.
+- [x] P12.1 Unity 2021.3 LTS primary Editor validation — `2021.3.39f1`: package compile PASS, Edit Mode 38/38, Play Mode 9/9.
+- [x] P12.2 Selected Unity 2022.3 LTS compatibility validation — `2022.3.62f1`: Edit Mode 38/38, Play Mode 9/9.
+- [x] P12.3 Selected Unity 6.0 compatibility validation — `6000.4.3f1`: Edit Mode 38/38, Play Mode 9/9.
+- [x] P12.4 Windows x64 Unity Player validation — closed as not advertised/deferred outside the Android-only branch.
+- [x] P12.5 macOS Intel Unity Player validation — closed as not advertised/deferred outside the Android-only branch.
+- [x] P12.6 macOS Apple Silicon Unity Player validation — closed as not advertised/deferred outside the Android-only branch.
+- [x] P12.7 Android ARM64 Unity Player validation — fresh Unity 6 IL2CPP APK build/install/runtime PASS on physical `CPH2723`.
+- [x] P12.8 iOS ARM64 Unity Player validation — closed as not advertised/deferred outside the Android-only branch.
+- [x] P12.9 WebGL Player validation — closed as not advertised; legacy/future support remains separate.
+- [x] P12.10 Linux validation if retained as advertised support — Linux Player support is not retained/advertised; Linux is an Editor validation host only.
+- [x] P12.11 Edit Mode regression suite — 38/38 on Unity 2021.3.39f1, 2022.3.62f1, and 6000.4.3f1.
+- [x] P12.12 Play Mode regression suite — 9/9 on Unity 2021.3.39f1, 2022.3.62f1, and 6000.4.3f1.
+- [x] P12.13 Platform regression scenes — Android ARM64 physical-device smoke scene PASS with `TAFFY_PHASE12_DEVICE_PASS width=120.00 height=48.00`.
+- [x] P12.14 Advertise only targets that pass real Unity validation — Android ARM64 remains the sole advertised Player target.
+
+**Documentation:** `PHASE12_REAL_UNITY_VALIDATION.md`
 
 ---
 
 # Phase 13 — Performance and Reliability Hardening
 
-**Status:** NOT STARTED
+**Status:** ACTIVE — Phase 12 gate complete; P13.1 is next
 
 - [ ] P13.1 100-node benchmark.
 - [ ] P13.2 1,000-node benchmark.
@@ -569,8 +572,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 11 is complete. Phase 12 is now authoritative.
+Phase 12 is complete. Phase 13 is now authoritative.
 
-**Next task:** P12.1 — validate the package in Unity 2021.3 LTS.
+**Next task:** P13.1 — establish the 100-node benchmark baseline.
 
-Phase 12 expands from the current Unity 6 / Android ARM64 development gates into the explicit Unity-version and real Player platform compatibility matrix.
+Phase 13 hardens the validated Android ARM64 product through repeatable performance, allocation, lifecycle, leak, and failure-path measurements before v1.0 release work.

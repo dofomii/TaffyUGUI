@@ -20,10 +20,11 @@
 - [PHASE9_GRID_CALC_UNITY.md](PHASE9_GRID_CALC_UNITY.md)
 - [PHASE10_RESPONSIVE_INTEGRATION.md](PHASE10_RESPONSIVE_INTEGRATION.md)
 - [PHASE11_EDITOR_TOOLING_MIGRATION.md](PHASE11_EDITOR_TOOLING_MIGRATION.md)
+- [PHASE12_REAL_UNITY_VALIDATION.md](PHASE12_REAL_UNITY_VALIDATION.md)
 
 ## Active phase
 
-Phase 12 — Real Unity Platform Validation. See [TASK_TRACKER.md](TASK_TRACKER.md); **P12.1** is next.
+Phase 13 — Performance and Reliability Hardening. See [TASK_TRACKER.md](TASK_TRACKER.md); **P13.1** is next.
 
 ## Local development
 

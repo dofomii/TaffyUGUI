@@ -60,10 +60,26 @@ Android ARM64 native library SHA-256 remains expected at:
 
 `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`
 
-The Player gate specifically verifies that `TaffyUGUI.Editor` and UnityEditor-dependent migration/debug tooling are absent from Player assemblies. Comprehensive Unity-version and multi-platform validation remains Phase 12.
+The Player gate specifically verifies that `TaffyUGUI.Editor` and UnityEditor-dependent migration/debug tooling are absent from Player assemblies. Phase 12 retains that Player-isolation guarantee while expanding real Unity-version and device validation.
+
+## Phase 12 Unity/version and Player verification
+
+The final package matrix was executed locally with ignored validation hosts:
+
+- Unity `2021.3.39f1`: package compile **PASS**, Edit Mode **38/38**, Play Mode **9/9**;
+- Unity `2022.3.62f1`: Edit Mode **38/38**, Play Mode **9/9**;
+- Unity `6000.4.3f1`: Edit Mode **38/38**, Play Mode **9/9**.
+
+Unity 2021.3 on this newer Linux host required the known temporary `bee_backend --stdin-canary` workaround. The Editor's original `bee_backend` was restored after the run and its SHA-256 was verified as `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+
+A fresh Unity `6000.4.3f1` Android ARM64 IL2CPP APK was built, installed, and executed on physical `CPH2723`. Android loaded `libtaffy_ugui.so` successfully and the regression scene emitted `TAFFY_PHASE12_DEVICE_PASS width=120.00 height=48.00`; no fatal managed/native linker exception was observed. The packaged ELF program-header table and both runtime-loaded `PT_LOAD` segments match the accepted staged payload byte-for-byte.
+
+Final closeout native checks also pass: rustfmt, Clippy with warnings denied, **44/44 Rust tests**, host release/cbindgen drift verification, Android ARM64 native build/verify, Phase 4, and Phase 5 staging/verification.
+
+The active Player support matrix is intentionally Android ARM64 only. Windows, macOS, iOS, WebGL, and Linux Player are not advertised on this branch. See `PHASE12_REAL_UNITY_VALIDATION.md`.
 
 ## Phase status
 
-**Phase 11 is complete. Phase 12 is active; P12.1 is next.**
+**Phase 12 is complete. Phase 13 is active; P13.1 is next.**
 
 Permanent Unity regression tests are tracked product tests. Disposable validation material remains local-only under ignored `.build/` paths and is excluded from Git by project policy.

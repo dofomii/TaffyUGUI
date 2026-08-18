@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 complete; DX1 ready
+**Program status:** ACTIVE — DX0 + DX1 complete; DX2 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -93,25 +93,25 @@ A task being implemented does not make its phase complete. The phase closes only
 |---|---|---|---|---|
 | DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | READY |
 | DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | NOT STARTED |
-| DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | NOT STARTED |
+| DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | READY |
 | DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | NOT STARTED |
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | NOT STARTED |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | NOT STARTED |
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
 | DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | COMPLETE |
-| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | READY |
+| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | COMPLETE |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX0.1` — freeze/document the serialized authoring contract used by the current runtime components.
+**Current authoritative task:** `DX2.1` — add Simple | Advanced inspector mode on top of the completed modular Editor foundation.
 
 ---
 
 # Program Milestones
 
 ## Milestone A — Safe Editor Foundation
-**Current authoritative task:** `DX1.1` — create the modular `Editor/Core/` foundation while preserving current inspector/runtime semantics.
+**Current authoritative task:** `DX2.1` — add Simple | Advanced inspector mode on top of the completed modular Editor foundation.
 Complete when `DX0 + DX1` are complete.
 
 Result: Editor internals are modular enough to evolve safely without changing layout semantics.
@@ -218,49 +218,58 @@ One focused commit containing compatibility documentation and permanent baseline
 
 # DX1 — Editor Core & Inspector Refactor
 
-**Status:** READY
+**Status:** COMPLETE
 **Depends on:** DX0  
 **Goal:** build a modular Editor architecture while preserving the existing visible behavior as closely as practical.
 
 ## Core infrastructure
 
-- [ ] DX1.1 Create `Editor/Core/` structure.
-- [ ] DX1.2 Introduce `TaffyInspectorContext` for shared target/parent/mode/editor state.
-- [ ] DX1.3 Introduce centralized serialized-property lookup/helpers.
-- [ ] DX1.4 Introduce centralized default-value comparison helpers.
-- [ ] DX1.5 Introduce centralized `TaffyEditorContent` for labels/tooltips/help text.
-- [ ] DX1.6 Introduce reusable Editor styles/layout helpers without introducing custom visual dependencies.
-- [ ] DX1.7 Introduce Editor preference storage for future inspector mode/density settings.
+- [x] DX1.1 Create `Editor/Core/` structure.
+- [x] DX1.2 Introduce `TaffyInspectorContext` for shared target/parent/mode/editor state.
+- [x] DX1.3 Introduce centralized serialized-property lookup/helpers.
+- [x] DX1.4 Introduce centralized default-value comparison helpers.
+- [x] DX1.5 Introduce centralized `TaffyEditorContent` for labels/tooltips/help text.
+- [x] DX1.6 Introduce reusable Editor styles/layout helpers without introducing custom visual dependencies.
+- [x] DX1.7 Introduce Editor preference storage for future inspector mode/density settings.
 
 ## Inspector modularization
 
-- [ ] DX1.8 Split `TaffyLayoutGroupEditor` into focused section classes.
-- [ ] DX1.9 Split `TaffyLayoutItemEditor` into focused section classes.
-- [ ] DX1.10 Move existing drawer implementations into a maintainable `Drawers/` structure without semantic changes.
-- [ ] DX1.11 Keep existing diagnostics/debugger buttons functional after the split.
-- [ ] DX1.12 Keep Scene visualization integration functional after the split.
-- [ ] DX1.13 Preserve multi-object editing behavior.
+- [x] DX1.8 Split `TaffyLayoutGroupEditor` into focused section classes.
+- [x] DX1.9 Split `TaffyLayoutItemEditor` into focused section classes.
+- [x] DX1.10 Move existing drawer implementations into a maintainable `Drawers/` structure without semantic changes.
+- [x] DX1.11 Keep existing diagnostics/debugger buttons functional after the split.
+- [x] DX1.12 Keep Scene visualization integration functional after the split.
+- [x] DX1.13 Preserve multi-object editing behavior.
 
 ## Section architecture
 
-- [ ] DX1.14 Implement common section relevance API.
-- [ ] DX1.15 Implement section foldout-state persistence.
-- [ ] DX1.16 Implement section summary hook, even if initial summaries are minimal.
-- [ ] DX1.17 Ensure sections use serialized properties and do not directly mutate runtime fields.
+- [x] DX1.14 Implement common section relevance API.
+- [x] DX1.15 Implement section foldout-state persistence.
+- [x] DX1.16 Implement section summary hook, even if initial summaries are minimal.
+- [x] DX1.17 Ensure sections use serialized properties and do not directly mutate runtime fields.
 
 ## Tests
 
-- [ ] DX1.18 Add tests proving modular Group inspector exposes all previously reachable serialized properties in Advanced-equivalent coverage.
-- [ ] DX1.19 Add tests proving modular Item inspector exposes all previously reachable serialized properties in Advanced-equivalent coverage.
-- [ ] DX1.20 Add Undo/prefab regression tests for representative inspector edits.
+- [x] DX1.18 Add tests proving modular Group inspector exposes all previously reachable serialized properties in Advanced-equivalent coverage.
+- [x] DX1.19 Add tests proving modular Item inspector exposes all previously reachable serialized properties in Advanced-equivalent coverage.
+- [x] DX1.20 Add Undo/prefab regression tests for representative inspector edits.
+
+### DX1 validation note
+
+- Editor sources are split into `Editor/Core/`, `Editor/Inspectors/`, `Editor/Sections/`, and `Editor/Drawers/`; runtime/native sources are unchanged.
+- Permanent DX1 coverage added in `TaffyDX1EditorArchitectureTests.cs` for Group/Item property coverage, persisted foldout infrastructure, representative Undo/prefab editing, and debugger/Scene-tool availability.
+- Unity `6000.4.3f1` Edit Mode: **56/56 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **56/56 PASS** using the same temporary local `bee_backend --stdin-canary` workaround documented by Phase 12; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- VS Code Problems: **0 warnings/errors** before phase close.
+- No runtime/native layout behavior or serialized runtime contract changed in DX1.
 
 ### DX1 exit criteria
 
-- [ ] Inspector code is modular enough for independent sections.
-- [ ] No serialized field coverage is accidentally lost.
-- [ ] No runtime/native behavior changes are required.
-- [ ] Existing debugger, migration, and Scene tools still work.
-- [ ] Permanent tests pass.
+- [x] Inspector code is modular enough for independent sections.
+- [x] No serialized field coverage is accidentally lost.
+- [x] No runtime/native behavior changes are required.
+- [x] Existing debugger, migration, and Scene tools still work.
+- [x] Permanent tests pass.
 
 ### Recommended commit boundary
 

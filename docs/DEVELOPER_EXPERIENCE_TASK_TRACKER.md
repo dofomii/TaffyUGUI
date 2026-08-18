@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 + DX1 complete; DX2 ready
+**Program status:** ACTIVE — DX0 + DX1 + DX2 complete; DX3 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -91,27 +91,27 @@ A task being implemented does not make its phase complete. The phase closes only
 
 | Phase | Name | Primary Outcome | Depends On | Status |
 |---|---|---|---|---|
-| DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | READY |
-| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | NOT STARTED |
-| DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | READY |
-| DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | NOT STARTED |
+| DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | COMPLETE |
+| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | COMPLETE |
+| DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | COMPLETE |
+| DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | READY |
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | NOT STARTED |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | NOT STARTED |
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
-| DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | COMPLETE |
-| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | COMPLETE |
+| DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | NOT STARTED |
+| DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX2.1` — add Simple | Advanced inspector mode on top of the completed modular Editor foundation.
+**Current authoritative task:** `DX3.1` — replace raw TaffyLength editing with intent-first sizing controls while preserving the serialized runtime model.
 
 ---
 
 # Program Milestones
 
 ## Milestone A — Safe Editor Foundation
-**Current authoritative task:** `DX2.1` — add Simple | Advanced inspector mode on top of the completed modular Editor foundation.
+**Status:** COMPLETE
 Complete when `DX0 + DX1` are complete.
 
 Result: Editor internals are modular enough to evolve safely without changing layout semantics.
@@ -279,64 +279,75 @@ Editor architecture/refactor only. Do not mix large visual UX changes into this 
 
 # DX2 — Beginner-First Inspector
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX1  
 **Goal:** make both core inspectors immediately understandable to a first-time TaffyUGUI user.
 
 ## Simple / Advanced modes
 
-- [ ] DX2.1 Add `Simple | Advanced` inspector mode.
-- [ ] DX2.2 Make Simple mode the default for new Editor preference state.
-- [ ] DX2.3 Ensure both modes edit identical serialized properties.
-- [ ] DX2.4 Add an obvious route from Simple mode to the complete advanced surface.
+- [x] DX2.1 Add `Simple | Advanced` inspector mode.
+- [x] DX2.2 Make Simple mode the default for new Editor preference state.
+- [x] DX2.3 Ensure both modes edit identical serialized properties.
+- [x] DX2.4 Add an obvious route from Simple mode to the complete advanced surface.
 
 ## Group essentials
 
-- [ ] DX2.5 Create a permanently visible Quick Setup section for `TaffyLayoutGroup`.
-- [ ] DX2.6 Surface layout type/display in human-readable language.
-- [ ] DX2.7 Surface direction visually/clearly.
-- [ ] DX2.8 Surface primary alignment.
-- [ ] DX2.9 Surface gap/spacing.
-- [ ] DX2.10 Surface padding.
-- [ ] DX2.11 Surface essential size behavior where meaningful for the container workflow.
+- [x] DX2.5 Create a permanently visible Quick Setup section for `TaffyLayoutGroup`.
+- [x] DX2.6 Surface layout type/display in human-readable language.
+- [x] DX2.7 Surface direction visually/clearly.
+- [x] DX2.8 Surface primary alignment.
+- [x] DX2.9 Surface gap/spacing.
+- [x] DX2.10 Surface padding.
+- [x] DX2.11 Surface essential size behavior where meaningful for the container workflow.
 
 ## Item essentials
 
-- [ ] DX2.12 Add parent-layout summary at the top of `TaffyLayoutItem`.
-- [ ] DX2.13 Surface Width and Height first.
-- [ ] DX2.14 Surface common sizing behavior first.
-- [ ] DX2.15 Surface Grow when parent context makes it relevant.
-- [ ] DX2.16 Surface alignment override in a beginner-readable form.
+- [x] DX2.12 Add parent-layout summary at the top of `TaffyLayoutItem`.
+- [x] DX2.13 Surface Width and Height first.
+- [x] DX2.14 Surface common sizing behavior first.
+- [x] DX2.15 Surface Grow when parent context makes it relevant.
+- [x] DX2.16 Surface alignment override in a beginner-readable form.
 
 ## Progressive disclosure
 
-- [ ] DX2.17 Hide Flex-only details when irrelevant in Simple mode.
-- [ ] DX2.18 Hide Grid-only details when irrelevant in Simple mode.
-- [ ] DX2.19 Hide Block/Float details when irrelevant in Simple mode.
-- [ ] DX2.20 Preserve modified but currently inactive fields through visible summaries/warnings where required.
-- [ ] DX2.21 Add clear Advanced sections for full access to all properties.
+- [x] DX2.17 Hide Flex-only details when irrelevant in Simple mode.
+- [x] DX2.18 Hide Grid-only details when irrelevant in Simple mode.
+- [x] DX2.19 Hide Block/Float details when irrelevant in Simple mode.
+- [x] DX2.20 Preserve modified but currently inactive fields through visible summaries/warnings where required.
+- [x] DX2.21 Add clear Advanced sections for full access to all properties.
 
 ## Tooltip/help baseline
 
-- [ ] DX2.22 Add meaningful tooltip/help content for every Group field surfaced by the new inspector.
-- [ ] DX2.23 Add meaningful tooltip/help content for every Item field surfaced by the new inspector.
-- [ ] DX2.24 Add contextual help for axis-sensitive Flex concepts.
-- [ ] DX2.25 Add contextual text explaining parent-dependent item behavior.
+- [x] DX2.22 Add meaningful tooltip/help content for every Group field surfaced by the new inspector.
+- [x] DX2.23 Add meaningful tooltip/help content for every Item field surfaced by the new inspector.
+- [x] DX2.24 Add contextual help for axis-sensitive Flex concepts.
+- [x] DX2.25 Add contextual text explaining parent-dependent item behavior.
 
 ## Tests
 
-- [ ] DX2.26 Test Simple and Advanced modes map to the same serialized properties.
-- [ ] DX2.27 Test contextual Flex/Grid section visibility.
-- [ ] DX2.28 Test parent summary for Flex, Grid, and no-parent cases.
-- [ ] DX2.29 Test mode preference persistence.
+- [x] DX2.26 Test Simple and Advanced modes map to the same serialized properties.
+- [x] DX2.27 Test contextual Flex/Grid section visibility.
+- [x] DX2.28 Test parent summary for Flex, Grid, and no-parent cases.
+- [x] DX2.29 Test mode preference persistence.
+
+### DX2 validation note
+
+- Added persisted `Simple | Advanced` inspector mode with Simple as the default preference state; Advanced retains the complete DX1 property surface.
+- Group Quick Setup now exposes layout type, context-appropriate direction/flow, primary alignment, gaps, padding, and current RectTransform size while preserving inactive Flex/Grid settings with Simple-mode warnings.
+- Item Essentials now leads with Width/Height and adds parent-aware Flex Grow/alignment or Grid alignment context, plus explicit no-parent and inactive-setting guidance.
+- Centralized tooltip/help content covers every serialized Group/Item property reachable through the Advanced inspector, with axis-sensitive Flex guidance.
+- Mixed-display Group multi-selection avoids ambiguous Simple-only controls and keeps full layout-specific multi-editing available in Advanced mode.
+- Permanent DX2 coverage added in `TaffyDX2BeginnerInspectorTests.cs`; Unity `6000.4.3f1` Edit Mode: **64/64 PASS**, Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **64/64 PASS** using the previously documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX2.
 
 ### DX2 exit criteria
 
-- [ ] A new user can identify layout direction, alignment, spacing, padding, and essential size controls immediately.
-- [ ] Item behavior is shown in parent context.
-- [ ] All advanced properties remain reachable.
-- [ ] Every surfaced control has useful explanatory content.
-- [ ] No runtime changes were necessary.
+- [x] A new user can identify layout direction, alignment, spacing, padding, and essential size controls immediately.
+- [x] Item behavior is shown in parent context.
+- [x] All advanced properties remain reachable.
+- [x] Every surfaced control has useful explanatory content.
+- [x] No runtime changes were necessary.
 
 ### Usability checkpoint
 

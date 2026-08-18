@@ -13,6 +13,7 @@ namespace TaffyUGUI.Editor
             "responsiveProfiles", "safeAreaMode", "scrollRectContentMode", "pixelRounding", "maxRebuildRequestsPerFrame",
         };
 
+        private readonly TaffyGroupQuickSetupSection _quickSetupSection = new TaffyGroupQuickSetupSection();
         private readonly TaffyInspectorSection[] _authoringSections =
         {
             new TaffyGroupFormattingSection(),
@@ -28,9 +29,18 @@ namespace TaffyUGUI.Editor
             serializedObject.Update();
             var context = new TaffyInspectorContext(this);
             TaffyEditorGUI.DrawScript(serializedObject);
+            TaffyEditorGUI.DrawInspectorMode();
+            _quickSetupSection.Draw(context);
 
-            for (int i = 0; i < _authoringSections.Length; i++)
-                _authoringSections[i].Draw(context);
+            if (context.IsSimpleMode)
+            {
+                TaffyEditorGUI.DrawSimpleModeHint();
+            }
+            else
+            {
+                for (int i = 0; i < _authoringSections.Length; i++)
+                    _authoringSections[i].Draw(context);
+            }
 
             serializedObject.ApplyModifiedProperties();
 
@@ -54,6 +64,8 @@ namespace TaffyUGUI.Editor
             "measurement", "forceReplacedElement", "itemIsTable",
         };
 
+        private readonly TaffyItemParentSummarySection _parentSummarySection = new TaffyItemParentSummarySection();
+        private readonly TaffyItemEssentialsSection _essentialsSection = new TaffyItemEssentialsSection();
         private readonly TaffyInspectorSection[] _authoringSections =
         {
             new TaffyItemDisplaySection(),
@@ -72,9 +84,19 @@ namespace TaffyUGUI.Editor
             serializedObject.Update();
             var context = new TaffyInspectorContext(this);
             TaffyEditorGUI.DrawScript(serializedObject);
+            TaffyEditorGUI.DrawInspectorMode();
+            _parentSummarySection.Draw(context);
+            _essentialsSection.Draw(context);
 
-            for (int i = 0; i < _authoringSections.Length; i++)
-                _authoringSections[i].Draw(context);
+            if (context.IsSimpleMode)
+            {
+                TaffyEditorGUI.DrawSimpleModeHint();
+            }
+            else
+            {
+                for (int i = 0; i < _authoringSections.Length; i++)
+                    _authoringSections[i].Draw(context);
+            }
 
             serializedObject.ApplyModifiedProperties();
             _postSection.Draw(context);

@@ -21,17 +21,31 @@ namespace TaffyUGUI.Editor
         internal bool IsMultiEditing => Targets.Length > 1;
         internal TaffyLayoutGroup Group => PrimaryTarget as TaffyLayoutGroup;
         internal TaffyLayoutItem Item => PrimaryTarget as TaffyLayoutItem;
+        internal TaffyInspectorMode Mode => TaffyEditorPreferences.InspectorMode;
+        internal bool IsSimpleMode => Mode == TaffyInspectorMode.Simple;
+        internal bool IsAdvancedMode => Mode == TaffyInspectorMode.Advanced;
 
         internal TaffyLayoutGroup ParentGroup
         {
             get
             {
                 TaffyLayoutItem item = Item;
-                return item ? item.GetComponentInParent<TaffyLayoutGroup>() : null;
+                if (!item)
+                    return null;
 
+                Transform current = item.transform.parent;
+                while (current)
+                {
+                    TaffyLayoutGroup group = current.GetComponent<TaffyLayoutGroup>();
+                    if (group)
+                        return group;
+                    current = current.parent;
+                }
+
+                return null;
+            }
         }
 
-   }
         internal TaffyContainerDisplay ResolvedAuthoringDisplay
         {
             get
@@ -42,6 +56,15 @@ namespace TaffyUGUI.Editor
 
                 TaffyLayoutGroup parent = ParentGroup;
                 return parent ? parent.containerDisplay : TaffyContainerDisplay.Flex;
+            }
+        }
+
+        internal TaffyContainerDisplay? ParentDisplay
+        {
+            get
+            {
+                TaffyLayoutGroup parent = ParentGroup;
+                return parent ? parent.containerDisplay : (TaffyContainerDisplay?)null;
             }
         }
 

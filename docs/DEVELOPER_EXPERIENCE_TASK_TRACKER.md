@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX5 complete; DX6 ready
+**Program status:** ACTIVE — DX0 through DX6 complete; DX7 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -97,14 +97,14 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | COMPLETE |
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | COMPLETE |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | COMPLETE |
-| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | READY |
-| DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | NOT STARTED |
+| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | COMPLETE |
+| DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | READY |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX6.1` — define the apply-once Container preset representation with explicit property ownership.
+**Current authoritative task:** `DX7.1` — replace raw responsive-profile list presentation with a breakpoint-oriented editor.
 ---
 
 # Program Milestones
@@ -563,59 +563,73 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 
 # DX6 — Presets & Reusable Layout Patterns
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX5  
 **Goal:** let developers reuse common TaffyUGUI configurations without manually repeating dozens of values.
 
 ## Preset model
 
-- [ ] DX6.1 Define apply-once Container preset representation.
-- [ ] DX6.2 Define apply-once Item preset representation.
-- [ ] DX6.3 Define responsive preset representation only if it remains cleanly separable.
-- [ ] DX6.4 Define which properties each preset owns so unrelated properties remain unchanged.
-- [ ] DX6.5 Keep linked/live preset behavior explicitly out of scope for this phase.
+- [x] DX6.1 Define apply-once Container preset representation.
+- [x] DX6.2 Define apply-once Item preset representation.
+- [x] DX6.3 Define responsive preset representation only if it remains cleanly separable.
+- [x] DX6.4 Define which properties each preset owns so unrelated properties remain unchanged.
+- [x] DX6.5 Keep linked/live preset behavior explicitly out of scope for this phase.
 
 ## Built-in preset library
 
-- [ ] DX6.6 Horizontal Row.
-- [ ] DX6.7 Vertical Stack.
-- [ ] DX6.8 Centered Panel.
-- [ ] DX6.9 Toolbar.
-- [ ] DX6.10 Sidebar + Content container pattern.
-- [ ] DX6.11 Scrollable List content pattern.
-- [ ] DX6.12 Responsive/Wrapping Cards starter pattern.
-- [ ] DX6.13 Flexible Item.
-- [ ] DX6.14 Spacer.
-- [ ] DX6.15 Fit Content Item.
+- [x] DX6.6 Horizontal Row.
+- [x] DX6.7 Vertical Stack.
+- [x] DX6.8 Centered Panel.
+- [x] DX6.9 Toolbar.
+- [x] DX6.10 Sidebar + Content container pattern.
+- [x] DX6.11 Scrollable List content pattern.
+- [x] DX6.12 Responsive/Wrapping Cards starter pattern.
+- [x] DX6.13 Flexible Item.
+- [x] DX6.14 Spacer.
+- [x] DX6.15 Fit Content Item.
 
 ## Project presets
 
-- [ ] DX6.16 Support creating project-owned preset assets/data.
-- [ ] DX6.17 Add Save Current As Preset.
-- [ ] DX6.18 Add Apply preset.
-- [ ] DX6.19 Add Edit/Open preset workflow.
+- [x] DX6.16 Support creating project-owned preset assets/data.
+- [x] DX6.17 Add Save Current As Preset.
+- [x] DX6.18 Add Apply preset.
+- [x] DX6.19 Add Edit/Open preset workflow.
 
 ## Preset browser
 
-- [ ] DX6.20 Create searchable preset browser.
-- [ ] DX6.21 Add category filtering.
-- [ ] DX6.22 Add compact visual preview representation.
-- [ ] DX6.23 Aggregate built-in and project presets.
-- [ ] DX6.24 Support applying to current selection.
+- [x] DX6.20 Create searchable preset browser.
+- [x] DX6.21 Add category filtering.
+- [x] DX6.22 Add compact visual preview representation.
+- [x] DX6.23 Aggregate built-in and project presets.
+- [x] DX6.24 Support applying to current selection.
 
 ## Tests
 
-- [ ] DX6.25 Test built-in preset serialized output.
-- [ ] DX6.26 Test unrelated properties remain unchanged.
-- [ ] DX6.27 Test project preset save/reload/apply.
-- [ ] DX6.28 Test Undo and multi-object application.
+- [x] DX6.25 Test built-in preset serialized output.
+- [x] DX6.26 Test unrelated properties remain unchanged.
+- [x] DX6.27 Test project preset save/reload/apply.
+- [x] DX6.28 Test Undo and multi-object application.
+
+### DX6 validation note
+
+- Added Editor-only apply-once preset data with explicit owned serialized-property paths; applying a preset copies only those paths from its captured snapshot, so unrelated component state remains unchanged.
+- Container and Item presets share the same Editor-only application infrastructure; linked/live preset state was intentionally not introduced.
+- A separate responsive-preset representation was intentionally not added because responsive-profile authoring remains cleanly owned by DX7; the wrapping-cards built-in uses existing Flex wrapping without creating a second responsive configuration model.
+- Built-ins cover Horizontal Row, Vertical Stack, Centered Panel, Toolbar, Sidebar + Content, Scrollable List Content, Responsive/Wrapping Cards, Flexible Item, Spacer, and Fit Content Item.
+- Project presets are Editor-only `ScriptableObject` assets with Save Current, Apply, and Open/Edit workflows.
+- `Window/TaffyUGUI/Preset Browser` provides search, category filtering, compact previews, unified built-in/project results, and apply-to-selection behavior.
+- Preset application uses Undo, prefab-instance recording, and multi-selection while remaining fully isolated from runtime/native assemblies.
+- Permanent DX6 coverage added in `TaffyDX6PresetTests.cs`.
+- Unity `6000.4.3f1` Edit Mode: **94/94 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **94/94 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX6.
 
 ### DX6 exit criteria
 
-- [ ] Common reusable layout styles can be shared without manual field replication.
-- [ ] Built-in and project presets appear in one browser.
-- [ ] Preset application is deterministic and Undo-safe.
-- [ ] No runtime dependency on Editor presets is introduced.
+- [x] Common reusable layout styles can be shared without manual field replication.
+- [x] Built-in and project presets appear in one browser.
+- [x] Preset application is deterministic and Undo-safe.
+- [x] No runtime dependency on Editor presets is introduced.
 
 ---
 

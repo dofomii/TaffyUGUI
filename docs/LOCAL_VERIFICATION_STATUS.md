@@ -8,7 +8,7 @@ This document records checks actually executed locally. Remote CI is not build a
 
 - Final ABI v1 `1/2` on exact Taffy `0.13.0`.
 - Rust `1.97.1`; rustfmt passes; Clippy passes with warnings denied.
-- All 44 maintained Rust tests pass.
+- All 46 maintained Rust tests pass.
 - Host release build passes.
 - Pinned-cbindgen public-header drift verification passes.
 - Complete 31-function `tu_*` contract remains aligned across Rust FFI, C header, and managed P/Invoke.
@@ -78,8 +78,26 @@ Final closeout native checks also pass: rustfmt, Clippy with warnings denied, **
 
 The active Player support matrix is intentionally Android ARM64 only. Windows, macOS, iOS, WebGL, and Linux Player are not advertised on this branch. See `PHASE12_REAL_UNITY_VALIDATION.md`.
 
+## Phase 13 performance and reliability verification
+
+Permanent native benchmarks now cover 100, 1,000, and 10,000-node first layout, dirty-leaf recompute, cached recompute, native allocation traffic, and bulk-vs-scalar layout retrieval. Final medians are documented in `PHASE13_PERFORMANCE_RELIABILITY.md`; first-layout medians are 59.158 µs, 592.140 µs, and 9.297 ms respectively. Bulk retrieval is 3.28–4.27× faster than scalar retrieval.
+
+The permanent Unity 100-node dirty-layout allocation profile records **0 managed-thread allocated bytes across 100 measured rebuilds**. Unity lifecycle coverage adds 100 enable/disable context cycles and 50 prefab/fresh-scene cycles; 5 fresh Unity 6 editor launches each reran the 100-cycle context test successfully.
+
+Recursive Unity serialization warnings discovered by the prefab stress were fixed by managed-reference serialization for Calc operand-list and Grid repeat-track elements. Final regression matrix on the resulting schema:
+
+- Unity `2021.3.39f1`: Edit Mode **41/41**, Play Mode **9/9**, serialization-depth warnings **0**;
+- Unity `2022.3.62f1`: Edit Mode **41/41**, Play Mode **9/9**, serialization-depth warnings **0**;
+- Unity `6000.4.3f1`: Edit Mode **41/41**, Play Mode **9/9**, serialization-depth warnings **0**.
+
+Native final closeout passes rustfmt, Clippy with warnings denied, **46/46 Rust tests**, release build, cbindgen drift verification, Android ARM64 rebuild/deep verification, Phase 4 provenance, and Phase 5 staging/verification. Valgrind reports **0 definitely lost bytes and 0 indirectly lost bytes** for repeated full tree lifecycles. Its 676-byte exit residual is reproduced exactly by a same-toolchain Rust `ThreadId`/thread-local/`OnceLock` baseline and is not attributed to Taffy resources.
+
+A 100 fresh-process host startup profile records 291.115 µs median library load, 22.683 µs first ABI query, 74.336 µs first context creation, and 3.609 µs first context destruction. The Android ARM64 native payload is 762,488 bytes. A fresh Unity 6 Android ARM64 IL2CPP APK is 31,886,853 bytes, contains `libil2cpp.so` and `libtaffy_ugui.so`, and its Taffy `PT_LOAD` headers/segment hashes match the staged payload. No Android device was attached for a new Phase 13 execution; Phase 12 remains the latest physical-device runtime evidence.
+
+Final Phase 13 content-addressed project-input snapshot: `sha256:e1e047831c23047e8ab0a1e2fbad256453b63bd03b679b49e3b0af3ee778ffcb`. Android ARM64 native SHA-256 remains `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
+
 ## Phase status
 
-**Phase 12 is complete. Phase 13 is active; P13.1 is next.**
+**Phase 13 is complete. Phase 14 is active; P14.1 is next.**
 
 Permanent Unity regression tests are tracked product tests. Disposable validation material remains local-only under ignored `.build/` paths and is excluded from Git by project policy.

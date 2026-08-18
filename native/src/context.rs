@@ -929,18 +929,17 @@ fn available_space(value: f32) -> AvailableSpace {
 mod tests {
     use std::thread;
 
-    use taffy::prelude::*;
-    use taffy::style::{Clear, Float};
-    use taffy::style_helpers::{auto, length, line, span};
-
     use super::{
-        create_registered_context, destroy_registered_context, with_registered_context_mut,
-        Context, ContextRegistry,
+        context_owners, create_registered_context, destroy_registered_context,
+        with_registered_context_mut, Context, ContextRegistry, CONTEXT_REGISTRY,
     };
     use crate::calc::CalcExpr;
     use crate::error::NativeError;
     use crate::grid::{fraction_track, template_areas, GridTemplateResource};
     use crate::measurement::MeasurementRecord;
+    use taffy::prelude::*;
+    use taffy::style::{Clear, Float};
+    use taffy::style_helpers::{auto, length, line, span};
 
     #[test]
     fn registry_insert_and_remove_context() {
@@ -977,6 +976,72 @@ mod tests {
             thread::spawn(move || with_registered_context_mut(handle, |_| Ok(())).unwrap_err());
         assert_eq!(other_thread.join().unwrap(), NativeError::WrongThread);
         assert_eq!(destroy_registered_context(handle), Ok(()));
+    }
+
+    #[test]
+    fn repeated_registered_context_lifecycle_does_not_leak_active_slots_or_owners() {
+        let current_thread = thread::current().id();
+        let initial_owned = context_owners()
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|owner| **owner == current_thread)
+            .count();
+        let (initial_slots, initial_active) = CONTEXT_REGISTRY.with(|registry| {
+            let registry = registry.borrow();
+            (
+                registry.slots.len(),
+                registry
+                    .slots
+                    .iter()
+                    .filter(|slot| slot.context.is_some())
+                    .count(),
+            )
+        });
+
+        let mut previous = None;
+        for _ in 0..1_000 {
+            let handle = create_registered_context().unwrap();
+            if let Some(stale) = previous {
+                assert_ne!(handle, stale);
+            }
+            with_registered_context_mut(handle, |context| {
+                let root = context.create_node(Style::default())?;
+                context.compute_layout(root, 100.0, 100.0)?;
+                Ok(())
+            })
+            .unwrap();
+            destroy_registered_context(handle).unwrap();
+            assert_eq!(
+                with_registered_context_mut(handle, |_| Ok(())).unwrap_err(),
+                NativeError::ContextNotFound
+            );
+            previous = Some(handle);
+        }
+
+        let final_owned = context_owners()
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|owner| **owner == current_thread)
+            .count();
+        let (final_slots, final_active, final_free) = CONTEXT_REGISTRY.with(|registry| {
+            let registry = registry.borrow();
+            (
+                registry.slots.len(),
+                registry
+                    .slots
+                    .iter()
+                    .filter(|slot| slot.context.is_some())
+                    .count(),
+                registry.free.len(),
+            )
+        });
+
+        assert_eq!(final_owned, initial_owned);
+        assert_eq!(final_active, initial_active);
+        assert!(final_slots <= initial_slots + 1);
+        assert_eq!(final_free, final_slots - final_active);
     }
 
     #[test]

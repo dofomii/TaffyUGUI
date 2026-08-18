@@ -69,6 +69,7 @@ namespace TaffyUGUI
         public TaffyGridTrackBreadth max = default;
         public TaffyGridRepeatMode repeatMode = TaffyGridRepeatMode.Count;
         [Min(1)] public int repeatCount = 1;
+        [SerializeReference]
         public List<TaffyGridTrack> repeatTracks = new List<TaffyGridTrack>();
 
         public static TaffyGridTrack Auto() => new TaffyGridTrack { kind = TaffyGridTrackKind.Auto };

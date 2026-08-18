@@ -14,3 +14,15 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 taffy = { version = "=0.13.0", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "float_layout", "calc", "content_size", "detailed_layout_info"] }
+
+[[bench]]
+name = "layout_scaling"
+harness = false
+
+[[bench]]
+name = "allocation_profile"
+harness = false
+
+[[bench]]
+name = "bulk_abi"
+harness = false

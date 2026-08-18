@@ -23,6 +23,7 @@ namespace TaffyUGUI
     {
         public TaffyCalcOperation operation = TaffyCalcOperation.Length;
         public float value;
+        [SerializeReference]
         public List<TaffyCalcExpression> operands = new List<TaffyCalcExpression>();
 
         public static TaffyCalcExpression Length(float points)

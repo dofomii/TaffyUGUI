@@ -25,9 +25,10 @@ The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.
 | 10 — Responsive and integration hardening | **Complete** |
 | 11 — Editor tooling and migration | **Complete** |
 | 12 — Real Unity platform validation | **Complete for Android ARM64-only release scope** |
-| 13 — Performance and reliability hardening | **Active; P13.1 is next** |
+| 13 — Performance and reliability hardening | **Complete** |
+| 14 — v1.0 release | **Active; P14.1 is next** |
 
-Phase 12 is complete. The package compiles and passes all permanent regressions on Unity `2021.3.39f1`, `2022.3.62f1`, and `6000.4.3f1` (**38/38 Edit Mode and 9/9 Play Mode on each**). A fresh Unity 6 Android ARM64 IL2CPP APK also builds, packages the accepted native runtime, and executes successfully on physical `CPH2723`, reporting `TAFFY_PHASE12_DEVICE_PASS width=120.00 height=48.00`. Android ARM64 remains the sole advertised Player target; Windows, macOS, iOS, WebGL, and Linux Player are not advertised on this branch. Phase 13 performance/reliability hardening is now active with P13.1 next.
+Phase 13 is complete. Final regressions pass on Unity `2021.3.39f1`, `2022.3.62f1`, and `6000.4.3f1` (**41/41 Edit Mode and 9/9 Play Mode on each**) with zero recursive-serialization warnings. Native performance/allocation/bulk benchmarks, lifecycle stress, Valgrind leak checks, panic containment, and startup/package-size profiling are recorded in the Phase 13 report. A fresh Unity 6 Android ARM64 IL2CPP APK builds from the final Phase 13 payload and preserves byte-identical runtime-loaded Taffy ELF segments. Android ARM64 remains the sole advertised Player target. Phase 14 v1.0 release work is now active with P14.1 next.
 
 
 For the full current state, use:
@@ -51,6 +52,7 @@ For the full current state, use:
 - [Phase 10 — Responsive/integration hardening](docs/PHASE10_RESPONSIVE_INTEGRATION.md)
 - [Phase 11 — Editor tooling and migration](docs/PHASE11_EDITOR_TOOLING_MIGRATION.md)
 - [Phase 12 — Real Unity platform validation](docs/PHASE12_REAL_UNITY_VALIDATION.md)
+- [Phase 13 — Performance and reliability hardening](docs/PHASE13_PERFORMANCE_RELIABILITY.md)
 
 ## Local-first development
 

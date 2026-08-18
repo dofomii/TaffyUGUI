@@ -20,8 +20,8 @@
 - Phase 10 responsive/integration hardening: **complete**.
 - Phase 11 editor tooling/migration: **complete**.
 - Phase 12 real Unity platform validation: **complete for the Android ARM64-only release scope**.
-- Phase 13 performance/reliability hardening: **active; P13.1 is next**.
-- Phase 14: **not started**.
+- Phase 13 performance/reliability hardening: **complete**.
+- Phase 14 v1.0 release: **active; P14.1 is next**.
 
 ## Phase 11 production boundary
 
@@ -78,8 +78,22 @@ Final native closeout remains green: rustfmt, Clippy `-D warnings`, **44/44 Rust
 
 See `PHASE12_REAL_UNITY_VALIDATION.md` for the complete matrix and evidence. Disposable validation scenes/probes remain local-only under ignored `.build/` paths and are never tracked project source.
 
+## Phase 13 verification
+
+Phase 13 adds permanent native scaling/allocation/bulk benchmarks plus Unity allocation and lifecycle regressions. Final native first-layout medians are 59.158 µs at 100 nodes, 592.140 µs at 1,000 nodes, and 9.297 ms at 10,000 nodes; dirty-leaf recompute is 25.160 µs, 332.798 µs, and 5.315 ms respectively, while fully cached recompute remains about 69–77 ns median. Bulk layout retrieval is 3.28–4.27× faster than scalar retrieval across the same scales.
+
+The warmed 100-node Unity dirty-layout profile records **0 managed-thread allocated bytes across 100 iterations**. Native allocation profiling records two fresh allocation calls per first compute, with median transient allocation of 60,600 bytes at 100 nodes, 493,560 bytes at 1,000 nodes, and 7,887,864 bytes at 10,000 nodes.
+
+Lifecycle/reliability gates include a 1,000-cycle native registered-context test, 100-cycle Unity enable/disable context recreation, 5 fresh Unity-domain launches running that lifecycle test, and 50 prefab/scene lifecycle cycles. Phase 13 also fixed recursive Unity serialization hazards by moving Calc operand-list and Grid repeat-track elements to managed-reference serialization.
+
+Valgrind reports **0 definitely lost bytes, 0 indirectly lost bytes, and 0 definite/indirect leak errors** for repeated full native tree lifecycles. The 676-byte process-exit residual exactly matches a same-toolchain Rust ownership/thread-local baseline. Panic-containment regression confirms unexpected panics are returned as `InternalPanic` and the next ABI call recovers normally.
+
+Final Unity compatibility is **41/41 Edit Mode plus 9/9 Play Mode** on Unity `2021.3.39f1`, `2022.3.62f1`, and `6000.4.3f1`, with zero recursive-serialization warnings. Final native quality is **46/46 Rust tests**, rustfmt/Clippy/release/cbindgen green. Android ARM64 Phase 4/5 provenance was rebuilt from source snapshot `sha256:e1e047831c23047e8ab0a1e2fbad256453b63bd03b679b49e3b0af3ee778ffcb`; the production `.so` SHA remains `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`. A fresh Unity 6 Android IL2CPP APK builds and contains matching runtime-loaded Taffy `PT_LOAD` segments. No device was attached for a new Phase 13 execution, so Phase 12 remains the latest physical-device run.
+
+See `PHASE13_PERFORMANCE_RELIABILITY.md` for the full benchmark tables, allocation/load metrics, lifecycle/leak evidence, and known limits.
+
 ## Next authoritative work
 
-**Phase 13 P13.1 — establish the 100-node benchmark baseline.**
+**Phase 14 P14.1 — produce the final compatibility matrix.**
 
-Phase 13 now owns performance, allocation, lifecycle, leak, and failure-path hardening before Phase 14 release work.
+Phase 14 now owns v1.0 release documentation, samples, package/install validation, release notes, archive/version/tag preparation, and publication gates.

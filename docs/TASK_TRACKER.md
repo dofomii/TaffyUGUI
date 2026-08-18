@@ -530,20 +530,20 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 13 — Performance and Reliability Hardening
 
-**Status:** ACTIVE — Phase 12 gate complete; P13.1 is next
+**Status:** COMPLETE — all performance and reliability gates passed; Phase 14 is next
 
-- [ ] P13.1 100-node benchmark.
-- [ ] P13.2 1,000-node benchmark.
-- [ ] P13.3 10,000-node benchmark/stress scenario.
-- [ ] P13.4 Native/managed allocation profiling.
-- [ ] P13.5 Dirty propagation/recompute profiling.
-- [ ] P13.6 Bulk ABI transfer profiling.
-- [ ] P13.7 Domain reload/context lifecycle stress.
-- [ ] P13.8 Repeated scene/prefab lifecycle stress.
-- [ ] P13.9 Native resource/memory leak checks.
-- [ ] P13.10 Error-path and panic-containment audit.
-- [ ] P13.11 Package/library load/startup checks.
-- [ ] P13.12 Performance documentation and known limits.
+- [x] P13.1 100-node benchmark — permanent native first/dirty/cached baseline recorded.
+- [x] P13.2 1,000-node benchmark — permanent native first/dirty/cached baseline recorded.
+- [x] P13.3 10,000-node benchmark/stress scenario — permanent stress baseline recorded.
+- [x] P13.4 Native/managed allocation profiling — native allocation counts/bytes recorded; warmed 100-node Unity dirty rebuild records 0 managed-thread bytes across 100 iterations.
+- [x] P13.5 Dirty propagation/recompute profiling — dirty-leaf and fully cached persistent-tree modes recorded.
+- [x] P13.6 Bulk ABI transfer profiling — bulk retrieval is 3.28–4.27× faster than scalar retrieval across 100/1k/10k nodes.
+- [x] P13.7 Domain reload/context lifecycle stress — 1,000-cycle native registered-context stress plus 5 fresh Unity domains × 100 managed context cycles pass.
+- [x] P13.8 Repeated scene/prefab lifecycle stress — 50 fresh Editor scene/prefab cycles pass; recursive Calc/Grid serialization hardened with `SerializeReference`.
+- [x] P13.9 Native resource/memory leak checks — Valgrind reports 0 definite/indirect Taffy leak bytes; residual exactly matches same-toolchain Rust ownership-runtime baseline.
+- [x] P13.10 Error-path and panic-containment audit — intentional panic is contained as `InternalPanic`; subsequent ABI call recovers; existing error-path regressions remain green.
+- [x] P13.11 Package/library load/startup checks — native load/first-call timings and package/library/APK sizes recorded; fresh Android IL2CPP packaging passes.
+- [x] P13.12 Performance documentation and known limits — see `PHASE13_PERFORMANCE_RELIABILITY.md`.
 
 ---
 
@@ -572,8 +572,8 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Current Next Action
 
-Phase 12 is complete. Phase 13 is now authoritative.
+Phase 13 is complete. Phase 14 is now authoritative.
 
-**Next task:** P13.1 — establish the 100-node benchmark baseline.
+**Next task:** P14.1 — produce the final compatibility matrix from the validated Android ARM64 release scope and completed Unity-version evidence.
 
-Phase 13 hardens the validated Android ARM64 product through repeatable performance, allocation, lifecycle, leak, and failure-path measurements before v1.0 release work.
+Phase 14 owns v1.0 documentation, samples, installation/package validation, release notes, archive/version/tag preparation, and publication gates.

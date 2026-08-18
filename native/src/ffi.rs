@@ -1520,6 +1520,22 @@ mod tests {
             len: 0,
         },
     };
+
+    #[test]
+    fn guard_contains_unexpected_panics_and_recovers_for_the_next_call() {
+        let status = guard(|| -> Result<(), NativeError> {
+            panic!("phase13 intentional panic containment test");
+        });
+        assert_eq!(status, TuStatus::InternalPanic as i32);
+        assert_eq!(
+            std::str::from_utf8(&last_error_bytes()).unwrap(),
+            "unexpected native panic"
+        );
+
+        assert_eq!(guard(|| Ok(())), TuStatus::Ok as i32);
+        assert!(last_error_bytes().is_empty());
+    }
+
     fn test_style() -> TuStyle {
         TuStyle {
             display: TuDisplay::Flex as i32,

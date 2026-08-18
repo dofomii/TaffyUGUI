@@ -21,7 +21,7 @@
 - Phase 11 editor tooling/migration: **complete**.
 - Phase 12 real Unity platform validation: **complete for the Android ARM64-only release scope**.
 - Phase 13 performance/reliability hardening: **complete**.
-- Phase 14 v1.0 release: **active; P14.1 is next**.
+- Phase 14 v1.0 release: **complete; v1.0.0 is release-ready and intentionally unpublished**.
 
 ## Phase 11 production boundary
 
@@ -92,8 +92,14 @@ Final Unity compatibility is **41/41 Edit Mode plus 9/9 Play Mode** on Unity `20
 
 See `PHASE13_PERFORMANCE_RELIABILITY.md` for the full benchmark tables, allocation/load metrics, lifecycle/leak evidence, and known limits.
 
-## Next authoritative work
+## Phase 14 release closeout
 
-**Phase 14 P14.1 — produce the final compatibility matrix.**
+The distributable Unity package is now version `1.0.0` and self-contained with package-local README/changelog/license/notices, complete user documentation, explicit uGUI/TMP dependencies, and three importable samples. Fresh UPM consumer projects on Unity 2021.3.39f1, 2022.3.62f1, and 6000.4.3f1 compile the imported samples and pass **41/41 Edit Mode + 9/9 Play Mode** each.
 
-Phase 14 now owns v1.0 release documentation, samples, package/install validation, release notes, archive/version/tag preparation, and publication gates.
+Local-path UPM installation, a temporary ignored Git `?path=/UnityPackage#v1.0.0` installation, and local tarball installation all pass. The native crate/package versions are frozen at `1.0.0`; Android ARM64 was rebuilt from source snapshot `sha256:676771e84efb0f8ab0d8cfb14cbf4c388bce500d88fd1870c50babe0d368fed8`, producing `.so` SHA-256 `85cb8ef34fc03c51cc40baaf4bdbbd45892a616d93958d21f4f86100303e51a7`. A fresh Unity 6 IL2CPP APK packages byte-identical runtime-loaded Taffy segments.
+
+Publication is **not performed**: no real `v1.0.0` tag, push, GitHub release, or registry publication exists from this closeout. See `PHASE14_V1_RELEASE.md`.
+
+## Current authoritative state
+
+**v1.0.0 is release-ready locally and intentionally unpublished.** Future publication requires a separate explicit owner instruction.

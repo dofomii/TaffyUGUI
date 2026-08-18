@@ -1,121 +1,82 @@
 # TaffyUGUI
 
-Responsive Flexbox, Grid, Block, and CSS-style layout for existing Unity uGUI, powered by Rust and Taffy. Unity continues to own rendering, interaction, TextMeshPro, ScrollRect, prefabs, animation, and EventSystem behavior; the native library owns layout geometry only.
+Responsive Flexbox, Grid, Block, and CSS-style layout for Unity uGUI, powered by Rust and Taffy. Unity remains responsible for rendering, input, TextMeshPro, ScrollRect, animation, prefabs, and EventSystem behavior; TaffyUGUI computes layout geometry.
 
-## ⚠️ AI-Generated Project Disclaimer
+## AI-generated project disclaimer
 
-**This project is currently fully AI-generated, including source code, project structure, documentation, build scripts, and configuration.** Automated and manual tests can reduce risk but do not guarantee correctness, security, reliability, production readiness, or suitability for any purpose. Review and test the project independently before shipping it. The software is provided **AS IS**, without warranty of any kind, and is used entirely at your own risk.
+**This project is currently fully AI-generated, including source code, project structure, documentation, build scripts, and configuration.** Automated and manual tests reduce risk but do not guarantee correctness, security, reliability, production readiness, or suitability for a particular product. Review and test the code independently before shipping it. The software is provided **AS IS**, without warranty.
 
-## Current progress
+## v1.0 release scope
 
-The native interface is **final ABI v1 (version 1, stage 2)** with Taffy **0.13.0** pinned exactly. The production native engine and complete 31-function `tu_*` C ABI are implemented. The active release scope is intentionally **Android ARM64 only**.
+- Final native ABI v1 (`version=1`, `stage=2`), exact Taffy `0.13.0`.
+- Unity package baseline: **2021.3+**.
+- Permanent tests pass on Unity **2021.3.39f1**, **2022.3.62f1**, and **6000.4.3f1** at **41/41 Edit Mode + 9/9 Play Mode** on each.
+- Advertised Player target: **Android ARM64 only**.
+- Unity 6 Android ARM64 IL2CPP packaging and physical-device execution have been validated.
 
-| Phase | Status |
-|---|---|
-| 0 — Rust/toolchain foundation | **Complete** |
-| 1 — Complete native Taffy engine | **Implementation complete** |
-| 2 — Production C ABI | **Implementation complete** |
-| 3 — Native verification / ABI RC | **Complete; historical ABI-v1-RC gate passed** |
-| 4 — Native artifact release gate | **Complete for final ABI v1 `1/2` Android ARM64 artifact** |
-| 5 — Unity native payload | **Complete for final ABI v1 `1/2` Android ARM64 payload** |
-| 6 — Managed ABI conformance / final ABI v1 | **Complete** |
-| 7 — Minimal working Unity uGUI product | **Complete** |
-| 8 — Production Flex/Block/Float/measurement integration | **Complete** |
-| 9 — Grid/Calc Unity authoring | **Complete** |
-| 10 — Responsive and integration hardening | **Complete** |
-| 11 — Editor tooling and migration | **Complete** |
-| 12 — Real Unity platform validation | **Complete for Android ARM64-only release scope** |
-| 13 — Performance and reliability hardening | **Complete** |
-| 14 — v1.0 release | **Active; P14.1 is next** |
+## Install
 
-Phase 13 is complete. Final regressions pass on Unity `2021.3.39f1`, `2022.3.62f1`, and `6000.4.3f1` (**41/41 Edit Mode and 9/9 Play Mode on each**) with zero recursive-serialization warnings. Native performance/allocation/bulk benchmarks, lifecycle stress, Valgrind leak checks, panic containment, and startup/package-size profiling are recorded in the Phase 13 report. A fresh Unity 6 Android ARM64 IL2CPP APK builds from the final Phase 13 payload and preserves byte-identical runtime-loaded Taffy ELF segments. Android ARM64 remains the sole advertised Player target. Phase 14 v1.0 release work is now active with P14.1 next.
+After you choose to create the `v1.0.0` Git tag, the Git/UPM dependency will be:
 
+```json
+"com.dofomii.taffyugui": "https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.0.0"
+```
 
-For the full current state, use:
+For local testing, open **Window > Package Manager > + > Add package from disk...** and select:
 
-- [Project status](docs/PROJECT_STATUS.md)
-- [Complete task tracker](docs/TASK_TRACKER.md)
-- [Production roadmap](docs/ROADMAP.md)
-- [Documentation index](docs/README.md)
-- [Local verification status](docs/LOCAL_VERIFICATION_STATUS.md)
+```text
+<checkout>/UnityPackage/package.json
+```
 
-## Completed phase documentation
+The package folder is self-contained and includes documentation, samples, legal notices, and the Android ARM64 native plugin.
 
-- [Phase 0 — Foundation](docs/PHASE0_FOUNDATION.md)
-- [Phase 1 — Native engine](docs/PHASE1_NATIVE_ENGINE.md)
-- [Phase 2 — Production C ABI](docs/PHASE2_PRODUCTION_C_ABI.md)
-- [Phase 4 — Android native release](docs/PHASE4_PLATFORM_BUILDS.md)
-- [Phase 6 — Managed ABI conformance](docs/PHASE6_MANAGED_ABI.md)
-- [Phase 7 — Minimal Unity uGUI product](docs/PHASE7_MINIMAL_UGUI.md)
-- [Phase 8 — Flex/Block/Float/measurement integration](docs/PHASE8_FLEX_BLOCK_MEASUREMENT.md)
-- [Phase 9 — Grid/Calc Unity authoring](docs/PHASE9_GRID_CALC_UNITY.md)
-- [Phase 10 — Responsive/integration hardening](docs/PHASE10_RESPONSIVE_INTEGRATION.md)
-- [Phase 11 — Editor tooling and migration](docs/PHASE11_EDITOR_TOOLING_MIGRATION.md)
-- [Phase 12 — Real Unity platform validation](docs/PHASE12_REAL_UNITY_VALIDATION.md)
-- [Phase 13 — Performance and reliability hardening](docs/PHASE13_PERFORMANCE_RELIABILITY.md)
+## Main features
 
-## Local-first development
+- Flex row/column, wrapping, gaps, alignment, growth/shrink, and box model.
+- Grid tracks, repeat/minmax/fraction/content sizing, named lines/areas, explicit and auto placement.
+- Typed Calc expression trees for lengths and Grid sizing.
+- Block/FlowRoot, float/clear, relative/absolute positioning, overflow, writing direction, and aspect ratio.
+- Intrinsic measurement for TMP, legacy Text, Image, RawImage, and custom providers without native-to-managed callbacks during compute.
+- Responsive breakpoints, safe area, pixel rounding, ScrollRect content integration, and rebuild diagnostics.
+- Editor inspectors/property drawers, Scene visualization, Layout Debugger, and conservative legacy LayoutGroup migration.
 
-Development and verification are **local-first**. GitHub is only a repository backup/mirror; GitHub Actions are not part of the canonical build authority.
+## Documentation
 
-Provider-independent checks:
+User documentation ships inside the UPM package at `UnityPackage/Documentation~/`:
+
+- [Getting Started](UnityPackage/Documentation~/getting-started.md)
+- [Flexbox and Block](UnityPackage/Documentation~/flexbox.md)
+- [Grid and Calc](UnityPackage/Documentation~/grid-and-calc.md)
+- [Measurement and TextMeshPro](UnityPackage/Documentation~/measurement.md)
+- [ScrollRect and Responsive Integration](UnityPackage/Documentation~/responsive-and-scrollrect.md)
+- [Migration](UnityPackage/Documentation~/migration.md)
+- [Platform Support](UnityPackage/Documentation~/platform-support.md)
+- [Troubleshooting](UnityPackage/Documentation~/troubleshooting.md)
+
+Maintainer verification and phase history live under [`docs/`](docs/).
+
+## Samples
+
+Import samples from Package Manager after installing TaffyUGUI:
+
+- **Flex Quick Start**
+- **Grid and Responsive**
+- **Custom Measurement**
+
+## Local verification
 
 ```bash
-python3 build/build.py doctor
 python3 build/build.py quality
-```
-
-Final ABI verification on the exact content-addressed local source snapshot:
-
-```bash
-python3 build/build.py prepare
-python3 build/build.py verify-abi-final
-```
-
-That gate runs rustfmt, Clippy, Rust tests, a release build, and cbindgen header-drift verification locally. See [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
-
-## Android native release and Unity staging
-
-The active release target is Android ARM64. The exact content-addressed project-input snapshot must first pass:
-
-```bash
 python3 build/build.py verify-abi-final
 python3 build/build.py native android-arm64
+python3 build/build.py verify-native android-arm64
 python3 build/build.py verify-phase4
-```
-
-`verify-phase4` accepts the Android ARM64 artifact and writes `dist/native/phase4-index.json`. Phase 5 then stages and verifies the package payload with:
-
-```bash
 python3 build/build.py stage-phase5
 python3 build/build.py verify-phase5
 ```
 
-## Phase 6 final ABI state
-
-Final ABI stage `2` is frozen and Phase 6 is complete. Final Android Phase 4/5 artifacts were rebuilt/restaged from the same content-addressed source snapshot, and a fresh Unity IL2CPP APK build verified the accepted staged ARM64 payload. See [docs/PHASE6_MANAGED_ABI.md](docs/PHASE6_MANAGED_ABI.md).
-
-Deferred Windows, macOS, iOS, and WebGL build definitions remain available for future branches but do not gate or define support for the active Android-only release.
-
-### Unity 2022 WebGL: deferred legacy branch
-
-**Decision:** Unity 2022 WebGL native-plugin support will be delivered later on a dedicated, maintained legacy branch. It is not part of the active Phase 4 branch and must not change the mainline Rust, Taffy, or Unity 2021.3 WebGL baseline merely to make Unity 2022 build.
-
-**Why a separate branch is necessary:** Unity requires a WebGL native plugin to be compiled with the Emscripten version embedded in the consuming Unity Editor, because their LLVM-generated objects are binary-compatible only with the matching compiler version. Unity 2022's WebGL baseline is Emscripten `3.1.8`; the current project is Rust `1.97.1` with Taffy `0.13.0`, while mainline's current Unity 2021.3 WebGL baseline is Emscripten `2.0.19`. The latter fails before an archive is produced: LLVM 13 `wasm-ld` aborts on the Rust WebAssembly runtime objects with `unknown symbol kind`. Replacing only Emscripten is not valid for Unity 2022 because its Editor requires the matching `3.1.8` toolchain. Therefore supporting Unity 2022 natively requires an independently pinned legacy Rust/dependency/compiler stack, rather than a mainline toolchain change.
-
-**Tests performed:** these are all compiler-compatibility tests completed to date. No Unity 2022 `3.1.8` candidate build or Unity 2022 WebGL Player test has been run.
-
-- Rust `1.97.1` + Emscripten `2.0.19`: release WebGL link failed with `wasm-ld: unknown symbol kind` in Rust runtime archives.
-- The same build with `panic=abort`: failed with the same linker error; the runtime still supplied an unwind archive.
-- Unity 6.3/6.4 bundled Emscripten `3.1.39-git` and standalone Emscripten `3.1.38`: linking advanced further but optimized `wasm-opt` failed on unsupported `--enable-bulk-memory-opt`.
-- Standalone Emscripten `4.0.19`: the optimized Rust release build succeeded and its archive exposed all 31 required `tu_*` symbols. This is compiler-only evidence, not Unity Player validation, and it cannot be used by Unity 2022.
-
-**Required before that branch can claim Unity 2022 support:** pin and record the exact Unity 2022 Editor/WebGL Support package and its Emscripten `3.1.8` binaries; create a clean reproducible legacy build; validate the static archive and all 31 ABI exports; compile and build a Unity 2022 WebGL Player; then run representative Flexbox, Grid, Block, Calc, lifetime/error, and managed ABI-conformance tests in the browser. Until all of these pass, Unity 2022 WebGL is not a supported target. The compiler-matching requirement and Unity 2022 Emscripten baseline are from Unity's [Unity 2022.3 native Web plugin documentation](https://docs.unity3d.com/2022.3/Documentation/Manual/webgl-native-plugins-with-emscripten.html).
-
-## Unity package
-
-The package lives in `UnityPackage/` and targets Unity 2021.3+ until older Unity versions are explicitly validated. The low-level P/Invoke wrapper covers the full `tu_*` final ABI-v1 surface and requires stage `2` by default. User-facing Unity phases remain gated until the final Android native payload is rebuilt/restaged through the clean-tree release sequence.
+The project is local-first; remote CI is not the release authority.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

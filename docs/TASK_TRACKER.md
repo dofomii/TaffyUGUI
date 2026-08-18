@@ -549,31 +549,31 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 # Phase 14 — v1.0 Release
 
-**Status:** NOT STARTED
+**Status:** COMPLETE — v1.0.0 release-ready; publication intentionally deferred by owner instruction
 
-- [ ] P14.1 Final compatibility matrix.
-- [ ] P14.2 Complete Getting Started documentation.
-- [ ] P14.3 Flexbox documentation.
-- [ ] P14.4 Grid/Calc documentation.
-- [ ] P14.5 LayoutElement/measurement/TMP documentation.
-- [ ] P14.6 ScrollRect/responsive integration documentation.
-- [ ] P14.7 Migration documentation.
-- [ ] P14.8 Platform-support documentation.
-- [ ] P14.9 Troubleshooting/diagnostics documentation.
-- [ ] P14.10 Samples/regression examples packaged.
-- [ ] P14.11 Third-party license/notices audit.
-- [ ] P14.12 Changelog/release notes.
-- [ ] P14.13 Git/UPM installation validation.
-- [ ] P14.14 Final package archive validation.
-- [ ] P14.15 Version/tag/release packaging.
-- [ ] P14.16 Publish v1.0 only after all release gates pass.
+- [x] P14.1 Final compatibility matrix — fresh UPM consumer hosts pass on Unity 2021.3.39f1, 2022.3.62f1, and 6000.4.3f1.
+- [x] P14.2 Complete Getting Started documentation — packaged under `UnityPackage/Documentation~/`.
+- [x] P14.3 Flexbox documentation — packaged.
+- [x] P14.4 Grid/Calc documentation — packaged.
+- [x] P14.5 LayoutElement/measurement/TMP documentation — packaged.
+- [x] P14.6 ScrollRect/responsive integration documentation — packaged.
+- [x] P14.7 Migration documentation — packaged.
+- [x] P14.8 Platform-support documentation — Android ARM64 only Player claim documented.
+- [x] P14.9 Troubleshooting/diagnostics documentation — packaged.
+- [x] P14.10 Samples/regression examples packaged — Flex, Grid/Responsive, and Custom Measurement samples compile on all three validated Editors.
+- [x] P14.11 Third-party license/notices audit — locked runtime dependency licenses/notices recorded; Unity dependencies identified as externally resolved/not bundled.
+- [x] P14.12 Changelog/release notes — v1.0.0 release entry complete.
+- [x] P14.13 Git/UPM installation validation — local UPM installs pass on all three Editors; temporary ignored local Git tag/path install passes on Unity 6 without publishing.
+- [x] P14.14 Final package archive validation — deterministic local `.tgz` scans clean and installs through Unity 6 Package Manager.
+- [x] P14.15 Version/tag/release packaging — package/native versions frozen at 1.0.0; Android payload rebuilt; tag syntax validated only in ignored temporary Git repo.
+- [x] P14.16 Publication gate — all gates pass; **publication intentionally not performed** (no real tag, push, GitHub release, or registry publish).
 
 ---
 
 # Current Next Action
 
-Phase 13 is complete. Phase 14 is now authoritative.
+Phase 14 is complete under the unpublished-release constraint.
 
-**Next task:** P14.1 — produce the final compatibility matrix from the validated Android ARM64 release scope and completed Unity-version evidence.
+**Current state:** TaffyUGUI v1.0.0 is release-ready locally but intentionally not published, tagged in the real repository, or pushed as a release.
 
-Phase 14 owns v1.0 documentation, samples, installation/package validation, release notes, archive/version/tag preparation, and publication gates.
+Any future publication is a separate explicit action and must not happen without owner instruction.

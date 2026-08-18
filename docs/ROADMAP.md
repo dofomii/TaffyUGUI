@@ -1,6 +1,6 @@
 # TaffyUGUI Production Roadmap
 
-This document describes the gated production path from the current completed Phase 11 editor tooling/migration integration to v1.0.
+This document records the completed gated production path through the local, unpublished v1.0.0 release-ready state.
 
 ## Phase sequence
 
@@ -18,9 +18,9 @@ This document describes the gated production path from the current completed Pha
 | 9 | Complete Grid and Calc Unity Authoring | Complete |
 | 10 | Responsive and Integration Hardening | Complete |
 | 11 | Editor Tooling and Migration | Complete |
-| 12 | Real Unity Platform Validation | Active; P12.1 next |
-| 13 | Performance and Reliability Hardening | Not started |
-| 14 | v1.0 Release | Not started |
+| 12 | Real Unity Platform Validation | Complete for Android ARM64-only release scope |
+| 13 | Performance and Reliability Hardening | Complete |
+| 14 | v1.0 Release | Complete; release-ready and intentionally unpublished |
 
 ## Phase 5 — Unity-Ready Native Artifact Staging
 
@@ -120,7 +120,7 @@ The Phase 11 gate passes 38/38 Edit Mode and 9/9 Play Mode package tests on Unit
 
 ## Phase 12 — Real Unity Platform Validation
 
-Run real Unity Editor/player builds using the staged native payload:
+**Complete for the Android ARM64-only release scope.** The executed compatibility work covered:
 
 - Unity 2021.3 LTS primary baseline;
 - selected Unity 2022.3 LTS validation;
@@ -137,6 +137,8 @@ No target is advertised solely because a native binary compiled.
 
 ## Phase 13 — Performance and Reliability Hardening
 
+**Complete.** Final performance/reliability evidence includes:
+
 - allocation profiling;
 - dirty propagation profiling;
 - bulk-transfer performance;
@@ -149,6 +151,8 @@ No target is advertised solely because a native binary compiled.
 
 ## Phase 14 — v1.0 Release
 
+**Complete as a release-ready, intentionally unpublished v1.0.0 package.** Completed release work includes:
+
 - final compatibility matrix;
 - release notes/changelog;
 - third-party license audit/notices;
@@ -158,4 +162,7 @@ No target is advertised solely because a native binary compiled.
 - final package validation;
 - Git/UPM installation validation;
 - version/tag/release packaging;
-- publish only platforms that passed Phase 12.
+- advertise only platforms that passed Phase 12;
+- publication gate passed technically, but no real tag/push/release was performed by owner instruction.
+
+See [PHASE12_REAL_UNITY_VALIDATION.md](PHASE12_REAL_UNITY_VALIDATION.md), [PHASE13_PERFORMANCE_RELIABILITY.md](PHASE13_PERFORMANCE_RELIABILITY.md), and [PHASE14_V1_RELEASE.md](PHASE14_V1_RELEASE.md) for executed evidence.

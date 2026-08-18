@@ -96,8 +96,24 @@ A 100 fresh-process host startup profile records 291.115 µs median library load
 
 Final Phase 13 content-addressed project-input snapshot: `sha256:e1e047831c23047e8ab0a1e2fbad256453b63bd03b679b49e3b0af3ee778ffcb`. Android ARM64 native SHA-256 remains `7bdca92aae2939e5098292294ee7f7d730d5eee1c718d87f65a3f22349338f66`.
 
+## Phase 14 v1.0 release verification
+
+The package/native version is frozen at **1.0.0**. Fresh UPM consumer projects install the package, import all three release samples, and pass the full permanent regression matrix:
+
+- Unity `2021.3.39f1`: **41/41 Edit Mode**, **9/9 Play Mode**, sample compile PASS;
+- Unity `2022.3.62f1`: **41/41 Edit Mode**, **9/9 Play Mode**, sample compile PASS;
+- Unity `6000.4.3f1`: **41/41 Edit Mode**, **9/9 Play Mode**, sample compile PASS.
+
+UPM dependencies resolve compatibly across generations: 2021 uses uGUI 1.0.0/TMP 3.0.6, 2022 uses uGUI 1.0.0/TMP 3.0.7, and Unity 6 uses uGUI 2.0.0/TMP 5.0.0 shim.
+
+Installation gates: local package PASS on all three versions; temporary ignored local-Git `v1.0.0` + `?path=/UnityPackage` install PASS on Unity 6; deterministic local tarball install PASS on Unity 6. No real project tag or publication is performed.
+
+Final native/Android closeout passes 46/46 Rust tests, Clippy, cbindgen drift, Android ARM64 rebuild/verification, Phase 4, Phase 5, and fresh Unity 6 Android IL2CPP packaging. Source snapshot is `sha256:676771e84efb0f8ab0d8cfb14cbf4c388bce500d88fd1870c50babe0d368fed8`; staged Android `.so` SHA-256 is `85cb8ef34fc03c51cc40baaf4bdbbd45892a616d93958d21f4f86100303e51a7`. The APK's Taffy runtime-loaded `PT_LOAD` segments match the staged library exactly. ADB sees the prior device as offline, so Phase 12 remains the latest successful physical-device execution.
+
+Phase 14 publication is intentionally deferred by owner instruction.
+
 ## Phase status
 
-**Phase 13 is complete. Phase 14 is active; P14.1 is next.**
+**Phase 14 is complete. v1.0.0 is release-ready locally and intentionally unpublished.**
 
 Permanent Unity regression tests are tracked product tests. Disposable validation material remains local-only under ignored `.build/` paths and is excluded from Git by project policy.

@@ -59,33 +59,57 @@ namespace TaffyUGUI.Editor
     {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            SerializedProperty unit = property.FindPropertyRelative("unit");
-            if (unit == null)
-                return TaffyDrawerUtility.Line;
-
-            TaffyUnit kind = (TaffyUnit)unit.enumValueIndex;
-            if (kind == TaffyUnit.Auto)
-                return TaffyDrawerUtility.Line;
-            SerializedProperty payload = kind == TaffyUnit.Calc
-                ? property.FindPropertyRelative("calc")
-                : property.FindPropertyRelative("value");
-            return TaffyDrawerUtility.StackHeight(TaffyDrawerUtility.Line, TaffyDrawerUtility.Height(payload));
+            TaffyLengthIntent intent = TaffyLengthAuthoringUtility.GetIntent(property);
+            switch (intent)
+            {
+                case TaffyLengthIntent.Fixed:
+                case TaffyLengthIntent.Percent:
+                    return TaffyDrawerUtility.StackHeight(TaffyDrawerUtility.Line, TaffyDrawerUtility.Line);
+                case TaffyLengthIntent.Calculated:
+                    return TaffyDrawerUtility.StackHeight(
+                        TaffyDrawerUtility.Line,
+                        TaffyDrawerUtility.Height(property.FindPropertyRelative("calc"), true));
+                default:
+                    return TaffyDrawerUtility.Line;
+            }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
             Rect cursor = position;
-            SerializedProperty unit = property.FindPropertyRelative("unit");
-            EditorGUI.PropertyField(TaffyDrawerUtility.TakeLine(ref cursor), unit, label);
-            if (unit != null)
+            Rect modeLine = TaffyDrawerUtility.TakeLine(ref cursor);
+            Rect modeRect = EditorGUI.PrefixLabel(modeLine, label);
+
+            TaffyLengthIntent intent = TaffyLengthAuthoringUtility.GetIntent(property);
+            EditorGUI.BeginChangeCheck();
+            int selected = EditorGUI.Popup(modeRect, (int)intent, TaffyLengthAuthoringUtility.IntentLabels);
+            if (EditorGUI.EndChangeCheck())
             {
-                TaffyUnit kind = (TaffyUnit)unit.enumValueIndex;
-                if (kind == TaffyUnit.Calc)
-                    TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("calc"), new GUIContent("Expression"));
-                else if (kind != TaffyUnit.Auto)
-                    TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("value"), new GUIContent(kind == TaffyUnit.Percent ? "Fraction" : "Points"));
+                TaffyLengthAuthoringUtility.SetIntent(property, (TaffyLengthIntent)selected);
+                intent = TaffyLengthAuthoringUtility.GetIntent(property);
             }
+
+            if (intent == TaffyLengthIntent.Fixed || intent == TaffyLengthIntent.Percent)
+            {
+                Rect valueLine = TaffyDrawerUtility.TakeLine(ref cursor);
+                GUIContent valueLabel = intent == TaffyLengthIntent.Percent
+                    ? new GUIContent("Percent", "Human-readable percentage. The serialized runtime value remains a fraction, so 50% is stored as 0.5.")
+                    : new GUIContent("Pixels / Points", "Taffy points map to Unity UI units (pixels before Canvas scaling). The serialized runtime value remains a point value.");
+                EditorGUI.BeginChangeCheck();
+                float displayValue = EditorGUI.FloatField(valueLine, valueLabel, TaffyLengthAuthoringUtility.GetDisplayValue(property));
+                if (EditorGUI.EndChangeCheck())
+                    TaffyLengthAuthoringUtility.SetDisplayValue(property, displayValue);
+            }
+            else if (intent == TaffyLengthIntent.Calculated)
+            {
+                TaffyDrawerUtility.Draw(
+                    ref cursor,
+                    property.FindPropertyRelative("calc"),
+                    new GUIContent("Expression", "Advanced Calc expression. Existing expressions are preserved until explicitly edited."),
+                    true);
+            }
+
             EditorGUI.EndProperty();
         }
     }
@@ -93,25 +117,83 @@ namespace TaffyUGUI.Editor
     [CustomPropertyDrawer(typeof(TaffyEdges))]
     public sealed class TaffyEdgesDrawer : PropertyDrawer
     {
+        private static readonly GUIContent[] ModeLabels =
+        {
+            new GUIContent("Uniform", "Edit one value and apply it to all four sides."),
+            new GUIContent("Axis", "Link Left/Right as Horizontal and Top/Bottom as Vertical."),
+            new GUIContent("Individual", "Edit Left, Right, Top, and Bottom independently."),
+        };
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            TaffyEdgesAuthoringMode mode = TaffyEdgesAuthoringUtility.GetMode(property);
+            SerializedProperty left = property.FindPropertyRelative("left");
+            SerializedProperty right = property.FindPropertyRelative("right");
+            SerializedProperty top = property.FindPropertyRelative("top");
+            SerializedProperty bottom = property.FindPropertyRelative("bottom");
+
+            if (mode == TaffyEdgesAuthoringMode.Uniform)
+                return TaffyDrawerUtility.StackHeight(TaffyDrawerUtility.Line, TaffyDrawerUtility.Height(left));
+            if (mode == TaffyEdgesAuthoringMode.Axis)
+                return TaffyDrawerUtility.StackHeight(TaffyDrawerUtility.Line, TaffyDrawerUtility.Height(left), TaffyDrawerUtility.Height(top));
             return TaffyDrawerUtility.StackHeight(
                 TaffyDrawerUtility.Line,
-                TaffyDrawerUtility.Height(property.FindPropertyRelative("left")),
-                TaffyDrawerUtility.Height(property.FindPropertyRelative("right")),
-                TaffyDrawerUtility.Height(property.FindPropertyRelative("top")),
-                TaffyDrawerUtility.Height(property.FindPropertyRelative("bottom")));
+                TaffyDrawerUtility.Height(left),
+                TaffyDrawerUtility.Height(right),
+                TaffyDrawerUtility.Height(top),
+                TaffyDrawerUtility.Height(bottom));
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
             Rect cursor = position;
-            EditorGUI.LabelField(TaffyDrawerUtility.TakeLine(ref cursor), label, EditorStyles.boldLabel);
-            TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("left"), new GUIContent("Left"));
-            TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("right"), new GUIContent("Right"));
-            TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("top"), new GUIContent("Top"));
-            TaffyDrawerUtility.Draw(ref cursor, property.FindPropertyRelative("bottom"), new GUIContent("Bottom"));
+            Rect modeLine = TaffyDrawerUtility.TakeLine(ref cursor);
+            Rect modeRect = EditorGUI.PrefixLabel(modeLine, label);
+
+            TaffyEdgesAuthoringMode mode = TaffyEdgesAuthoringUtility.GetMode(property);
+            EditorGUI.BeginChangeCheck();
+            int selectedMode = EditorGUI.Popup(modeRect, (int)mode, ModeLabels);
+            if (EditorGUI.EndChangeCheck())
+            {
+                mode = (TaffyEdgesAuthoringMode)selectedMode;
+                TaffyEdgesAuthoringUtility.SetMode(property, mode);
+            }
+
+            SerializedProperty left = property.FindPropertyRelative("left");
+            SerializedProperty right = property.FindPropertyRelative("right");
+            SerializedProperty top = property.FindPropertyRelative("top");
+            SerializedProperty bottom = property.FindPropertyRelative("bottom");
+
+            if (mode == TaffyEdgesAuthoringMode.Uniform)
+            {
+                EditorGUI.BeginChangeCheck();
+                TaffyDrawerUtility.Draw(ref cursor, left, new GUIContent("All Sides"));
+                bool changed = EditorGUI.EndChangeCheck();
+                if (changed)
+                    TaffyEdgesAuthoringUtility.SynchronizeLinkedSides(property, mode, true, true);
+            }
+            else if (mode == TaffyEdgesAuthoringMode.Axis)
+            {
+                EditorGUI.BeginChangeCheck();
+                TaffyDrawerUtility.Draw(ref cursor, left, new GUIContent("Horizontal"));
+                bool horizontalChanged = EditorGUI.EndChangeCheck();
+
+                EditorGUI.BeginChangeCheck();
+                TaffyDrawerUtility.Draw(ref cursor, top, new GUIContent("Vertical"));
+                bool verticalChanged = EditorGUI.EndChangeCheck();
+
+                if (horizontalChanged || verticalChanged)
+                    TaffyEdgesAuthoringUtility.SynchronizeLinkedSides(property, mode, horizontalChanged, verticalChanged);
+            }
+            else
+            {
+                TaffyDrawerUtility.Draw(ref cursor, left, new GUIContent("Left"));
+                TaffyDrawerUtility.Draw(ref cursor, right, new GUIContent("Right"));
+                TaffyDrawerUtility.Draw(ref cursor, top, new GUIContent("Top"));
+                TaffyDrawerUtility.Draw(ref cursor, bottom, new GUIContent("Bottom"));
+            }
+
             EditorGUI.EndProperty();
         }
     }

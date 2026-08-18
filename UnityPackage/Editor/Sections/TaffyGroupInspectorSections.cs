@@ -17,9 +17,10 @@ namespace TaffyUGUI.Editor
         {
         }
 
-        protected override void DrawContent(TaffyInspectorContext context)
+                protected override void DrawContent(TaffyInspectorContext context)
         {
             TaffySerializedPropertyUtility.DrawProperties(context.SerializedObject, Properties);
+            EditorGUILayout.LabelField("Padding", TaffyInspectorSummaryUtility.RectOffsetSummary(context.SerializedObject.FindProperty("m_Padding")), EditorStyles.miniLabel);
         }
     }
 

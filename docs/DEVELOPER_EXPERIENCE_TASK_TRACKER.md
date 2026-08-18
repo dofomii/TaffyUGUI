@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 + DX1 + DX2 complete; DX3 ready
+**Program status:** ACTIVE — DX0 + DX1 + DX2 + DX3 complete; DX4 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -94,10 +94,10 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | COMPLETE |
 | DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | COMPLETE |
 | DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | COMPLETE |
-| DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | READY |
-| DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | NOT STARTED |
+| DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | COMPLETE |
+| DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | READY |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | NOT STARTED |
-| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
+| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |STARTED |
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | NOT STARTED |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
@@ -105,7 +105,7 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
 **Current authoritative task:** `DX3.1` — replace raw TaffyLength editing with intent-first sizing controls while preserving the serialized runtime model.
-
+**Current authoritative task:** `DX4.1` — implement the Horizontal layout quick action with Undo-safe serialized editing.
 ---
 
 # Program Milestones
@@ -356,60 +356,71 @@ A developer unfamiliar with Taffy terminology should be able to create a basic h
 ---
 
 # DX3 — Intent-First Property Editing
+# DX3 — Intent-First Property Editing
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX2  
 **Goal:** replace low-level serialized-type editing with visual/human authoring controls for the most common concepts.
 
 ## `TaffyLength`
 
-- [ ] DX3.1 Redesign `TaffyLengthDrawer` around intent-first choices.
-- [ ] DX3.2 Present Fixed values with explicit pixel/point semantics.
-- [ ] DX3.3 Present Percent values as human percentages while preserving runtime fraction representation.
-- [ ] DX3.4 Provide Fill Parent shortcut/mode where semantics are valid.
-- [ ] DX3.5 Clearly distinguish Auto/Fit Content semantics from fixed/percent values.
-- [ ] DX3.6 Keep Calc accessible without overwhelming Simple mode.
-- [ ] DX3.7 Preserve all existing serialized `TaffyLength` data through drawer changes.
+- [x] DX3.1 Redesign `TaffyLengthDrawer` around intent-first choices.
+- [x] DX3.2 Present Fixed values with explicit pixel/point semantics.
+- [x] DX3.3 Present Percent values as human percentages while preserving runtime fraction representation.
+- [x] DX3.4 Provide Fill Parent shortcut/mode where semantics are valid.
+- [x] DX3.5 Clearly distinguish Auto/Fit Content semantics from fixed/percent values.
+- [x] DX3.6 Keep Calc accessible without overwhelming Simple mode.
+- [x] DX3.7 Preserve all existing serialized `TaffyLength` data through drawer changes.
 
 ## Box model
 
-- [ ] DX3.8 Redesign `TaffyEdgesDrawer` with Uniform / Axis / Individual editing modes.
-- [ ] DX3.9 Add linked-side editing.
-- [ ] DX3.10 Add compact summary text for collapsed spacing sections.
-- [ ] DX3.11 Ensure Margin, Padding, Border, and Inset reuse consistent interaction patterns.
+- [x] DX3.8 Redesign `TaffyEdgesDrawer` with Uniform / Axis / Individual editing modes.
+- [x] DX3.9 Add linked-side editing.
+- [x] DX3.10 Add compact summary text for collapsed spacing sections.
+- [x] DX3.11 Ensure Margin, Padding, Border, and Inset reuse consistent interaction patterns.
 
 ## Alignment
 
-- [ ] DX3.12 Add visual direction buttons for Row/Column where appropriate.
-- [ ] DX3.13 Add visual main-axis alignment controls.
-- [ ] DX3.14 Add visual cross-axis alignment controls.
-- [ ] DX3.15 Keep full Safe/Flex/Self alignment variants available in Advanced mode.
+- [x] DX3.12 Add visual direction buttons for Row/Column where appropriate.
+- [x] DX3.13 Add visual main-axis alignment controls.
+- [x] DX3.14 Add visual cross-axis alignment controls.
+- [x] DX3.15 Keep full Safe/Flex/Self alignment variants available in Advanced mode.
 
 ## Smart summaries
 
-- [ ] DX3.16 Implement Size summaries such as `100% × Auto`.
-- [ ] DX3.17 Implement Flex summaries such as `Grow 1 • Shrink 1`.
-- [ ] DX3.18 Implement Padding/Margin summaries.
-- [ ] DX3.19 Implement Grid-placement summaries.
+- [x] DX3.16 Implement Size summaries such as `100% × Auto`.
+- [x] DX3.17 Implement Flex summaries such as `Grow 1 • Shrink 1`.
+- [x] DX3.18 Implement Padding/Margin summaries.
+- [x] DX3.19 Implement Grid-placement summaries.
 
 ## Tests
 
-- [ ] DX3.20 Test user-facing percentage ↔ runtime fraction mapping.
-- [ ] DX3.21 Test Fill Parent mapping.
-- [ ] DX3.22 Test linked/unlinked edge editing.
-- [ ] DX3.23 Test visual alignment controls write exact existing enum values.
-- [ ] DX3.24 Test existing complex Calc/Grid serialized values remain intact.
+- [x] DX3.20 Test user-facing percentage ↔ runtime fraction mapping.
+- [x] DX3.21 Test Fill Parent mapping.
+- [x] DX3.22 Test linked/unlinked edge editing.
+- [x] DX3.23 Test visual alignment controls write exact existing enum values.
+- [x] DX3.24 Test existing complex Calc/Grid serialized values remain intact.
+
+### DX3 validation note
+
+- `TaffyLengthDrawer` now exposes Auto / Content, Fixed, Percent, Fill Parent, and Calculated authoring intents while writing the existing `TaffyLength` serialized fields.
+- Percent editing is human-facing while the runtime fraction representation is preserved (`50%` ↔ `0.5`); Fill Parent maps to exact `Percent(1.0)`.
+- `TaffyEdgesDrawer` now supports Uniform, Axis, and Individual modes with linked-side synchronization while preserving Calc expressions and the existing serialized `TaffyEdges` shape.
+- Simple Group authoring now uses visual direction, main-axis alignment, and cross-axis alignment controls for common enum values; Advanced mode still exposes the full existing enum surface including Safe/Flex/Self variants.
+- Smart summaries are surfaced for item size, Flex grow/shrink, Margin/Padding/Border, Grid placement, and Group padding.
+- Permanent DX3 coverage added in `TaffyDX3IntentEditingTests.cs`.
+- Unity `6000.4.3f1` Edit Mode: **69/69 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **69/69 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX3.
 
 ### DX3 exit criteria
 
-- [ ] Common sizing and spacing can be edited without understanding internal serialized structure.
-- [ ] Visual alignment controls cover the common path.
-- [ ] Advanced modes still expose every supported value.
-- [ ] Existing data is preserved.
+- [x] Common sizing and spacing can be edited without understanding internal serialized structure.
+- [x] Visual alignment controls cover the common path.
+- [x] Advanced modes still expose every supported value.
+- [x] Existing data is preserved.
 
 ---
-
-# DX4 — One-Click Common Workflows
 
 **Status:** NOT STARTED  
 **Depends on:** DX3  
@@ -927,13 +938,14 @@ They can be revisited after the core developer experience is proven in real use.
 ---
 
 # Current Next Action
+# Current Next Action
 
-Start **DX1 — Editor Core & Inspector Refactor**.
+Start **DX4 — One-Click Common Workflows**.
 
 First authoritative task:
 
 ```text
-DX1.1 Create the modular Editor/Core structure.
+DX4.1 Implement the Horizontal layout action.
 ```
 
-Preserve the DX0 serialization/enum compatibility baseline while restructuring the Editor implementation. Do not introduce large visual UX changes until the modular DX1 foundation is validated.
+Build all quick actions on the existing serialized `TaffyLayoutGroup` / `TaffyLayoutItem` source of truth, keep them Undo/prefab-safe, and do not introduce a parallel runtime configuration model.

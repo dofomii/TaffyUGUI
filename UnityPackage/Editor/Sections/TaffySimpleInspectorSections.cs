@@ -22,21 +22,21 @@ namespace TaffyUGUI.Editor
 
             if (TaffyInspectorVisibility.GroupShowsFlexEssentials(context))
             {
-                TaffySerializedPropertyUtility.DrawProperty(serializedObject, "direction", TaffyEditorContent.Direction);
                 SerializedProperty directionProperty = serializedObject.FindProperty("direction");
+                TaffyVisualAuthoringControls.DrawDirection(directionProperty, TaffyEditorContent.Direction);
                 if (directionProperty != null && !directionProperty.hasMultipleDifferentValues)
                     EditorGUILayout.LabelField("Flow", TaffyInspectorVisibility.FlexDirectionSummary((TaffyFlexDirection)directionProperty.intValue), EditorStyles.miniLabel);
 
-                TaffySerializedPropertyUtility.DrawProperty(serializedObject, "justifyContent", TaffyEditorContent.MainAxisAlignment);
-                TaffySerializedPropertyUtility.DrawProperty(serializedObject, "alignItems", TaffyEditorContent.CrossAxisAlignment);
+                TaffyVisualAuthoringControls.DrawJustify(serializedObject.FindProperty("justifyContent"), TaffyEditorContent.MainAxisAlignment);
+                TaffyVisualAuthoringControls.DrawAlign(serializedObject.FindProperty("alignItems"), TaffyEditorContent.CrossAxisAlignment);
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "horizontalGap", TaffyEditorContent.HorizontalGap);
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "verticalGap", TaffyEditorContent.VerticalGap);
             }
             else if (TaffyInspectorVisibility.GroupShowsGridEssentials(context))
             {
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "gridAutoFlow", TaffyEditorContent.GridFlow);
-                TaffySerializedPropertyUtility.DrawProperty(serializedObject, "justifyContent", TaffyEditorContent.MainAxisAlignment);
-                TaffySerializedPropertyUtility.DrawProperty(serializedObject, "alignItems", TaffyEditorContent.CrossAxisAlignment);
+                TaffyVisualAuthoringControls.DrawJustify(serializedObject.FindProperty("justifyContent"), TaffyEditorContent.MainAxisAlignment);
+                TaffyVisualAuthoringControls.DrawAlign(serializedObject.FindProperty("alignItems"), TaffyEditorContent.CrossAxisAlignment);
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "horizontalGap", TaffyEditorContent.HorizontalGap);
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "verticalGap", TaffyEditorContent.VerticalGap);
             }
@@ -119,16 +119,19 @@ namespace TaffyUGUI.Editor
             SerializedObject serializedObject = context.SerializedObject;
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "width", TaffyEditorContent.Width);
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "height", TaffyEditorContent.Height);
+            EditorGUILayout.LabelField("Size", TaffyInspectorSummaryUtility.SizeSummary(serializedObject), EditorStyles.miniLabel);
 
             if (!context.IsMultiEditing && TaffyInspectorVisibility.ParentIsFlex(context))
             {
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "flexGrow", TaffyEditorContent.Grow);
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "alignSelf", TaffyEditorContent.AlignmentOverride);
+                EditorGUILayout.LabelField("Flex", TaffyInspectorSummaryUtility.FlexSummary(serializedObject), EditorStyles.miniLabel);
                 EditorGUILayout.HelpBox(TaffyInspectorVisibility.FlexGrowHelp(context), MessageType.None);
             }
             else if (!context.IsMultiEditing && TaffyInspectorVisibility.ParentIsGrid(context))
             {
                 TaffySerializedPropertyUtility.DrawProperty(serializedObject, "justifySelf", TaffyEditorContent.AlignmentOverride);
+                EditorGUILayout.LabelField("Placement", TaffyInspectorSummaryUtility.GridPlacementSummary(serializedObject), EditorStyles.miniLabel);
                 EditorGUILayout.HelpBox("This item is inside a Grid parent. Grid placement and track controls are available in Advanced mode.", MessageType.None);
             }
             else if (!context.IsMultiEditing && TaffyInspectorVisibility.ParentIsBlockLike(context))

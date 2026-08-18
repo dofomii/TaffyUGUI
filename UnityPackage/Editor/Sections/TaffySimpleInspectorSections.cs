@@ -19,6 +19,7 @@ namespace TaffyUGUI.Editor
         {
             SerializedObject serializedObject = context.SerializedObject;
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "containerDisplay", TaffyEditorContent.LayoutType);
+            DrawQuickLayouts(context);
 
             if (TaffyInspectorVisibility.GroupShowsFlexEssentials(context))
             {
@@ -43,9 +44,51 @@ namespace TaffyUGUI.Editor
 
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "m_Padding", TaffyEditorContent.Padding);
             DrawContainerSize(context);
+            DrawChildInitialization(context);
 
             if (context.IsSimpleMode)
                 DrawInactiveSettingWarnings(context);
+        }
+
+        private static void DrawQuickLayouts(TaffyInspectorContext context)
+        {
+            EditorGUILayout.LabelField("Quick Layout", EditorStyles.miniBoldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Horizontal")) ApplyGroupAction(context, TaffyGroupQuickLayout.Horizontal);
+                if (GUILayout.Button("Vertical")) ApplyGroupAction(context, TaffyGroupQuickLayout.Vertical);
+                if (GUILayout.Button("Grid")) ApplyGroupAction(context, TaffyGroupQuickLayout.Grid);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Centered")) ApplyGroupAction(context, TaffyGroupQuickLayout.CenteredPanel);
+                if (GUILayout.Button("Toolbar")) ApplyGroupAction(context, TaffyGroupQuickLayout.Toolbar);
+                if (GUILayout.Button("Cards")) ApplyGroupAction(context, TaffyGroupQuickLayout.Cards);
+            }
+        }
+
+        private static void DrawChildInitialization(TaffyInspectorContext context)
+        {
+            if (context.IsMultiEditing || !context.Group || context.Group.transform.childCount == 0)
+                return;
+
+            EditorGUILayout.LabelField("Initialize Existing Children", EditorStyles.miniBoldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Preserve Sizes")) TaffyLayoutActions.InitializeChildren(context.Group, TaffyChildInitialization.PreserveSizes);
+                if (GUILayout.Button("Stretch")) TaffyLayoutActions.InitializeChildren(context.Group, TaffyChildInitialization.Stretch);
+                if (GUILayout.Button("Fit Content")) TaffyLayoutActions.InitializeChildren(context.Group, TaffyChildInitialization.FitContent);
+            }
+        }
+
+        private static void ApplyGroupAction(TaffyInspectorContext context, TaffyGroupQuickLayout layout)
+        {
+            for (int i = 0; i < context.Targets.Length; i++)
+            {
+                if (context.Targets[i] is TaffyLayoutGroup group)
+                    TaffyLayoutActions.ApplyQuickLayout(group, layout);
+            }
+            context.SerializedObject.Update();
         }
 
         private static void DrawInactiveSettingWarnings(TaffyInspectorContext context)
@@ -99,6 +142,8 @@ namespace TaffyUGUI.Editor
             string summary = TaffyInspectorVisibility.ParentSummary(context);
             MessageType type = context.ParentGroup ? MessageType.Info : MessageType.Warning;
             EditorGUILayout.HelpBox(summary, type);
+            if (!context.ParentGroup && context.Item && GUILayout.Button("Add Taffy Layout Group to Parent"))
+                TaffyItemActions.AddGroupToParent(context.Item);
         }
     }
 
@@ -117,6 +162,7 @@ namespace TaffyUGUI.Editor
         protected override void DrawContent(TaffyInspectorContext context)
         {
             SerializedObject serializedObject = context.SerializedObject;
+            DrawQuickActions(context);
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "width", TaffyEditorContent.Width);
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "height", TaffyEditorContent.Height);
             EditorGUILayout.LabelField("Size", TaffyInspectorSummaryUtility.SizeSummary(serializedObject), EditorStyles.miniLabel);
@@ -140,6 +186,34 @@ namespace TaffyUGUI.Editor
             }
 
             DrawInactiveSettingWarnings(context);
+        }
+
+        private static void DrawQuickActions(TaffyInspectorContext context)
+        {
+            EditorGUILayout.LabelField("Quick Actions", EditorStyles.miniBoldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Fill Width")) ApplyItemAction(context, TaffyItemQuickAction.FillWidth);
+                if (GUILayout.Button("Fill Parent")) ApplyItemAction(context, TaffyItemQuickAction.FillParent);
+                if (GUILayout.Button("Fit Content")) ApplyItemAction(context, TaffyItemQuickAction.FitContent);
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Fixed 100")) ApplyItemAction(context, TaffyItemQuickAction.FixedSize);
+                if (GUILayout.Button("Flexible")) ApplyItemAction(context, TaffyItemQuickAction.Flexible);
+                if (GUILayout.Button("Spacer")) ApplyItemAction(context, TaffyItemQuickAction.Spacer);
+                if (GUILayout.Button("Center")) ApplyItemAction(context, TaffyItemQuickAction.Center);
+            }
+        }
+
+        private static void ApplyItemAction(TaffyInspectorContext context, TaffyItemQuickAction action)
+        {
+            for (int i = 0; i < context.Targets.Length; i++)
+            {
+                if (context.Targets[i] is TaffyLayoutItem item)
+                    TaffyItemActions.Apply(item, action);
+            }
+            context.SerializedObject.Update();
         }
 
         private static void DrawInactiveSettingWarnings(TaffyInspectorContext context)

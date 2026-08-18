@@ -95,17 +95,16 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | COMPLETE |
 | DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | COMPLETE |
 | DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | COMPLETE |
-| DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | READY |
-| DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | NOT STARTED |
-| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |STARTED |
+| DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | COMPLETE |
+| DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | READY |
+| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | NOT STARTED |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX3.1` — replace raw TaffyLength editing with intent-first sizing controls while preserving the serialized runtime model.
-**Current authoritative task:** `DX4.1` — implement the Horizontal layout quick action with Undo-safe serialized editing.
+**Current authoritative task:** `DX5.1` — create the diagnostic-rule abstraction without changing runtime/native layout behavior.
 ---
 
 # Program Milestones
@@ -356,7 +355,6 @@ A developer unfamiliar with Taffy terminology should be able to create a basic h
 ---
 
 # DX3 — Intent-First Property Editing
-# DX3 — Intent-First Property Editing
 
 **Status:** COMPLETE
 **Depends on:** DX2  
@@ -422,55 +420,69 @@ A developer unfamiliar with Taffy terminology should be able to create a basic h
 
 ---
 
-**Status:** NOT STARTED  
+# DX4 — One-Click Common Workflows
+
+**Status:** COMPLETE
 **Depends on:** DX3  
 **Goal:** make the most common layout operations one-click and Undo-safe.
 
 ## Group quick layouts
 
-- [ ] DX4.1 Implement Horizontal layout action.
-- [ ] DX4.2 Implement Vertical layout action.
-- [ ] DX4.3 Implement Centered Panel action.
-- [ ] DX4.4 Implement Toolbar action.
-- [ ] DX4.5 Implement basic wrapping Cards action.
-- [ ] DX4.6 Implement basic Grid action with sensible defaults.
+- [x] DX4.1 Implement Horizontal layout action.
+- [x] DX4.2 Implement Vertical layout action.
+- [x] DX4.3 Implement Centered Panel action.
+- [x] DX4.4 Implement Toolbar action.
+- [x] DX4.5 Implement basic wrapping Cards action.
+- [x] DX4.6 Implement basic Grid action with sensible defaults.
 
 ## Item quick actions
 
-- [ ] DX4.7 Implement Fill Width.
-- [ ] DX4.8 Implement Fill Parent.
-- [ ] DX4.9 Implement Fit Content.
-- [ ] DX4.10 Implement Fixed Size starter action.
-- [ ] DX4.11 Implement Flexible Item.
-- [ ] DX4.12 Implement Spacer.
-- [ ] DX4.13 Implement Center/Alignment convenience where parent semantics allow it.
+- [x] DX4.7 Implement Fill Width.
+- [x] DX4.8 Implement Fill Parent.
+- [x] DX4.9 Implement Fit Content.
+- [x] DX4.10 Implement Fixed Size starter action.
+- [x] DX4.11 Implement Flexible Item.
+- [x] DX4.12 Implement Spacer.
+- [x] DX4.13 Implement Center/Alignment convenience where parent semantics allow it.
 
 ## Setup helpers
 
-- [ ] DX4.14 Offer Add `TaffyLayoutGroup` to Parent when an item has no Taffy parent.
-- [ ] DX4.15 When adding/configuring a Group with existing children, offer Preserve Sizes / Stretch / Fit Content initialization choices.
-- [ ] DX4.16 Add basic Hierarchy create menu entries for Horizontal, Vertical, Grid, Spacer.
+- [x] DX4.14 Offer Add `TaffyLayoutGroup` to Parent when an item has no Taffy parent.
+- [x] DX4.15 When adding/configuring a Group with existing children, offer Preserve Sizes / Stretch / Fit Content initialization choices.
+- [x] DX4.16 Add basic Hierarchy create menu entries for Horizontal, Vertical, Grid, Spacer.
 
 ## Action infrastructure
 
-- [ ] DX4.17 Centralize actions in `Editor/Actions/`.
-- [ ] DX4.18 Ensure all actions use Undo.
-- [ ] DX4.19 Ensure actions support multi-selection where valid.
-- [ ] DX4.20 Ensure actions change only the properties they own.
+- [x] DX4.17 Centralize actions in `Editor/Actions/`.
+- [x] DX4.18 Ensure all actions use Undo.
+- [x] DX4.19 Ensure actions support multi-selection where valid.
+- [x] DX4.20 Ensure actions change only the properties they own.
 
 ## Tests
 
-- [ ] DX4.21 Test every built-in action produces exact intended serialized values.
-- [ ] DX4.22 Test Undo restores the prior state.
-- [ ] DX4.23 Test prefab instances remain connected.
-- [ ] DX4.24 Test multi-object action behavior.
+- [x] DX4.21 Test every built-in action produces exact intended serialized values.
+- [x] DX4.22 Test Undo restores the prior state.
+- [x] DX4.23 Test prefab instances remain connected.
+- [x] DX4.24 Test multi-object action behavior.
+
+### DX4 validation note
+
+- Quick actions are centralized in `Editor/Actions/TaffyAuthoringActions.cs`; inspectors invoke the shared action layer rather than mutating runtime fields directly.
+- Group actions cover Horizontal, Vertical, Centered Panel, Toolbar, wrapping Cards, and a basic Grid with sensible defaults.
+- Item actions cover Fill Width, Fill Parent, Fit Content, Fixed Size, Flexible Item, Spacer, and context-aware centering.
+- Setup helpers can add a `TaffyLayoutGroup` to a missing parent, initialize existing children as Preserve Sizes / Stretch / Fit Content, and create Horizontal / Vertical / Grid / Spacer hierarchy recipes.
+- All action mutations use Unity Undo and prefab-instance recording; supported item actions accept multi-selection while limiting changes to owned serialized properties.
+- Permanent DX4 coverage added in `TaffyDX4QuickActionTests.cs`.
+- Unity `6000.4.3f1` Edit Mode: **77/77 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **77/77 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX4.
 
 ### DX4 exit criteria
 
-- [ ] Common Group layouts take one click.
-- [ ] Common Item sizing behaviors take one click.
-- [ ] Missing-parent setup is directly repairable.
-- [ ] All actions are Undo/prefab safe.
+- [x] Common Group layouts take one click.
+- [x] Common Item sizing behaviors take one click.
+- [x] Missing-parent setup is directly repairable.
+- [x] All actions are Undo/prefab safe.
 
 ---
 

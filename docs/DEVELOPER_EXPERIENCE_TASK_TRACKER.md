@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 + DX1 + DX2 + DX3 complete; DX4 ready
+**Program status:** ACTIVE — DX0 through DX5 complete; DX6 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -96,15 +96,15 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX2 | Beginner-First Inspector | Simple/Advanced mode, essentials, contextual visibility, complete help | DX1 | COMPLETE |
 | DX3 | Intent-First Property Editing | Human-readable sizing, spacing, alignment, smart visual drawers | DX2 | COMPLETE |
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | COMPLETE |
-| DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | READY |
-| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
+| DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | COMPLETE |
+| DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | READY |
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | NOT STARTED |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX5.1` — create the diagnostic-rule abstraction without changing runtime/native layout behavior.
+**Current authoritative task:** `DX6.1` — define the apply-once Container preset representation with explicit property ownership.
 ---
 
 # Program Milestones
@@ -488,60 +488,72 @@ A developer unfamiliar with Taffy terminology should be able to create a basic h
 
 # DX5 — Layout Health & Smart Diagnostics
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX4  
 **Goal:** turn common configuration mistakes into understandable, actionable guidance.
 
 ## Diagnostic framework
 
-- [ ] DX5.1 Create `TaffyDiagnosticRule` abstraction.
-- [ ] DX5.2 Create structured diagnostic result/severity model.
-- [ ] DX5.3 Create `TaffyDiagnosticFix` abstraction.
-- [ ] DX5.4 Create aggregated `TaffyLayoutHealth` evaluation.
-- [ ] DX5.5 Ensure diagnostics are read-only unless a user explicitly invokes a fix.
+- [x] DX5.1 Create `TaffyDiagnosticRule` abstraction.
+- [x] DX5.2 Create structured diagnostic result/severity model.
+- [x] DX5.3 Create `TaffyDiagnosticFix` abstraction.
+- [x] DX5.4 Create aggregated `TaffyLayoutHealth` evaluation.
+- [x] DX5.5 Ensure diagnostics are read-only unless a user explicitly invokes a fix.
 
 ## Initial rules
 
-- [ ] DX5.6 Detect missing Taffy parent for Layout Items.
-- [ ] DX5.7 Detect competing Unity `HorizontalLayoutGroup` / `VerticalLayoutGroup` / `GridLayoutGroup` ownership.
-- [ ] DX5.8 Detect `ContentSizeFitter` axis conflicts.
-- [ ] DX5.9 Detect `AspectRatioFitter` ownership conflicts.
-- [ ] DX5.10 Surface ScrollRect content ownership conflicts using existing integration logic.
-- [ ] DX5.11 Detect missing intrinsic measurement source for content-dependent sizing where determinable.
-- [ ] DX5.12 Integrate existing responsive-profile validation.
-- [ ] DX5.13 Integrate existing Grid validation.
-- [ ] DX5.14 Integrate Calc validation.
-- [ ] DX5.15 Flag suspicious fixed-size vs narrow responsive-profile configurations where confidence is high.
-- [ ] DX5.16 Surface excessive rebuild suppression diagnostics.
+- [x] DX5.6 Detect missing Taffy parent for Layout Items.
+- [x] DX5.7 Detect competing Unity `HorizontalLayoutGroup` / `VerticalLayoutGroup` / `GridLayoutGroup` ownership.
+- [x] DX5.8 Detect `ContentSizeFitter` axis conflicts.
+- [x] DX5.9 Detect `AspectRatioFitter` ownership conflicts.
+- [x] DX5.10 Surface ScrollRect content ownership conflicts using existing integration logic.
+- [x] DX5.11 Detect missing intrinsic measurement source for content-dependent sizing where determinable.
+- [x] DX5.12 Integrate existing responsive-profile validation.
+- [x] DX5.13 Integrate existing Grid validation.
+- [x] DX5.14 Integrate Calc validation.
+- [x] DX5.15 Flag suspicious fixed-size vs narrow responsive-profile configurations where confidence is high.
+- [x] DX5.16 Surface excessive rebuild suppression diagnostics.
 
 ## Layout Health UI
 
-- [ ] DX5.17 Add top-level Healthy / Info / Warning / Error summary.
-- [ ] DX5.18 Add expandable diagnostic list.
-- [ ] DX5.19 Add direct fix buttons for safe repairs.
-- [ ] DX5.20 Add documentation/help link support per diagnostic.
+- [x] DX5.17 Add top-level Healthy / Info / Warning / Error summary.
+- [x] DX5.18 Add expandable diagnostic list.
+- [x] DX5.19 Add direct fix buttons for safe repairs.
+- [x] DX5.20 Add documentation/help link support per diagnostic.
 
 ## Fixes
 
-- [ ] DX5.21 Add Let Taffy Own Axis repair where safe.
-- [ ] DX5.22 Add Let Unity Fitter Own Axis repair where safe.
-- [ ] DX5.23 Add Add Taffy Parent repair.
-- [ ] DX5.24 Add safe Grid-placement/template repair actions only where unambiguous.
-- [ ] DX5.25 Require Undo and prefab safety for every fix.
+- [x] DX5.21 Add Let Taffy Own Axis repair where safe.
+- [x] DX5.22 Add Let Unity Fitter Own Axis repair where safe.
+- [x] DX5.23 Add Add Taffy Parent repair.
+- [x] DX5.24 Add safe Grid-placement/template repair actions only where unambiguous.
+- [x] DX5.25 Require Undo and prefab safety for every fix.
 
 ## Tests
 
-- [ ] DX5.26 Unit/Edit Mode test every diagnostic rule.
-- [ ] DX5.27 Test fixes independently from diagnostic rendering.
-- [ ] DX5.28 Test no false mutation occurs from simply opening/drawing the inspector.
-- [ ] DX5.29 Test multiple simultaneous diagnostics aggregate correctly.
+- [x] DX5.26 Unit/Edit Mode test every diagnostic rule.
+- [x] DX5.27 Test fixes independently from diagnostic rendering.
+- [x] DX5.28 Test no false mutation occurs from simply opening/drawing the inspector.
+- [x] DX5.29 Test multiple simultaneous diagnostics aggregate correctly.
+
+### DX5 validation note
+
+- Added `Editor/Diagnostics/TaffyLayoutHealth.cs` with rule, result/severity, fix, aggregation, runtime-validation bridge, and Inspector UI layers.
+- Layout Health appears in both Group and Item inspectors with Healthy / Info / Warning / Error summaries, expandable details, direct safe-fix buttons, and documentation-link support.
+- Diagnostics cover missing Taffy parents, Unity layout ownership, ContentSizeFitter/AspectRatioFitter conflicts, existing ScrollRect integration warnings, missing intrinsic measurement sources, responsive-profile validation, Grid placement/template validation, Calc validation, suspicious fixed sizing under narrow profiles, and rebuild suppression.
+- Grid/Calc checks reuse existing runtime validators through an Editor reflection bridge so evaluating diagnostics does not mutate the runtime validation cache.
+- Safe fixes use Unity Undo and prefab-instance recording; covered repairs include Taffy-vs-fitter ownership, missing parent setup, disabling competing Unity layout owners, Grid placement reset, AspectRatioFitter disable, and rebuild-counter reset.
+- Permanent DX5 coverage added in `TaffyDX5LayoutHealthTests.cs`; evaluation read-only behavior, simultaneous aggregation, Undo, and prefab safety are explicitly tested.
+- Unity `6000.4.3f1` Edit Mode: **87/87 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **87/87 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX5.
 
 ### DX5 exit criteria
 
-- [ ] Common setup conflicts explain what owns each affected axis.
-- [ ] Safe problems have one-click repairs.
-- [ ] Diagnostics reuse existing runtime validation rather than duplicating layout semantics.
-- [ ] Inspector remains clean when there are no problems.
+- [x] Common setup conflicts explain what owns each affected axis.
+- [x] Safe problems have one-click repairs.
+- [x] Diagnostics reuse existing runtime validation rather than duplicating layout semantics.
+- [x] Inspector remains clean when there are no problems.
 
 ### Core DX MVP milestone
 

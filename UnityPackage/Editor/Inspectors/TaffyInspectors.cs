@@ -43,6 +43,7 @@ namespace TaffyUGUI.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+            TaffyLayoutHealthGUI.Draw(context);
 
             if (!context.IsMultiEditing && context.Group)
                 TaffyEditorGUI.DrawValidation(context.Group);
@@ -99,6 +100,7 @@ namespace TaffyUGUI.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
+            TaffyLayoutHealthGUI.Draw(context);
             _postSection.Draw(context);
         }
     }

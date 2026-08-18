@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX6 complete; DX7 ready
+**Program status:** ACTIVE — DX0 through DX7 complete; DX8 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -98,13 +98,13 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | COMPLETE |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | COMPLETE |
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | COMPLETE |
-| DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | READY |
-| DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | NOT STARTED |
+| DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | COMPLETE |
+| DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | READY |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX7.1` — replace raw responsive-profile list presentation with a breakpoint-oriented editor.
+**Current authoritative task:** `DX8.1` — refactor current Scene visualization into modular overlay drawing helpers.
 ---
 
 # Program Milestones
@@ -635,43 +635,55 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 
 # DX7 — Visual Responsive & Grid Authoring
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX6  
 **Goal:** make the two most complex authoring areas—responsive overrides and Grid—understandable visually.
 
 ## Responsive profiles
 
-- [ ] DX7.1 Replace raw responsive-profile list presentation with a breakpoint-oriented editor.
-- [ ] DX7.2 Show profile name, priority, and width/height bounds clearly.
-- [ ] DX7.3 Show only enabled overrides in the normal profile view.
-- [ ] DX7.4 Add `+ Override Property` workflow mapped to existing override booleans.
-- [ ] DX7.5 Add duplicate/overlap diagnostics where they are objectively meaningful.
-- [ ] DX7.6 Show the currently active profile in the inspector.
-- [ ] DX7.7 Preserve full raw profile access in Advanced mode.
+- [x] DX7.1 Replace raw responsive-profile list presentation with a breakpoint-oriented editor.
+- [x] DX7.2 Show profile name, priority, and width/height bounds clearly.
+- [x] DX7.3 Show only enabled overrides in the normal profile view.
+- [x] DX7.4 Add `+ Override Property` workflow mapped to existing override booleans.
+- [x] DX7.5 Add duplicate/overlap diagnostics where they are objectively meaningful.
+- [x] DX7.6 Show the currently active profile in the inspector.
+- [x] DX7.7 Preserve full raw profile access in Advanced mode.
 
 ## Grid builder
 
-- [ ] DX7.8 Replace raw track-list-first workflow with visual Columns / Rows editing.
-- [ ] DX7.9 Support quick 2/3/4-column Grid starters.
-- [ ] DX7.10 Support Points / Percent / Fraction / Auto / MinContent / MaxContent cleanly.
-- [ ] DX7.11 Support MinMax editor.
-- [ ] DX7.12 Support Repeat editor including Count / AutoFit / AutoFill.
-- [ ] DX7.13 Add visual gap editing.
-- [ ] DX7.14 Improve Grid item Row/Column/Span authoring.
-- [ ] DX7.15 Keep named-line/area advanced authoring reachable.
+- [x] DX7.8 Replace raw track-list-first workflow with visual Columns / Rows editing.
+- [x] DX7.9 Support quick 2/3/4-column Grid starters.
+- [x] DX7.10 Support Points / Percent / Fraction / Auto / MinContent / MaxContent cleanly.
+- [x] DX7.11 Support MinMax editor.
+- [x] DX7.12 Support Repeat editor including Count / AutoFit / AutoFill.
+- [x] DX7.13 Add visual gap editing.
+- [x] DX7.14 Improve Grid item Row/Column/Span authoring.
+- [x] DX7.15 Keep named-line/area advanced authoring reachable.
 
 ## Tests
 
-- [ ] DX7.16 Test responsive editor maps exactly to existing profile fields.
-- [ ] DX7.17 Test visual Grid track editing against existing Grid compiler structures.
-- [ ] DX7.18 Test complex existing Grid data survives new visual editors.
-- [ ] DX7.19 Test Grid validation continues to reject invalid structures.
+- [x] DX7.16 Test responsive editor maps exactly to existing profile fields.
+- [x] DX7.17 Test visual Grid track editing against existing Grid compiler structures.
+- [x] DX7.18 Test complex existing Grid data survives new visual editors.
+- [x] DX7.19 Test Grid validation continues to reject invalid structures.
+
+### DX7 validation note
+
+- Added `Editor/Authoring/TaffyResponsiveGridAuthoring.cs` with breakpoint-oriented responsive-profile cards and visual Grid authoring utilities/GUI; all controls write the existing serialized `TaffyLayoutGroup` / `TaffyLayoutItem` fields.
+- Responsive cards show name, priority, width/height bounds, active breakpoint feedback, only enabled overrides, and a `+ Override Property` menu backed by the existing override booleans.
+- Ambiguous same-priority breakpoint overlaps are surfaced while the existing runtime `ValidateResponsiveProfiles` path continues to handle duplicate names and invalid bounds.
+- Grid authoring now presents visual Columns/Rows lists, 2/3/4 equal-fraction starters, Points/Percent/Fraction/Auto/MinContent/MaxContent/MinMax/Repeat through the existing track drawers, visual gap controls, and clearer item Row/Column/Span actions.
+- Named lines/areas and raw profile data remain explicitly reachable in Advanced foldouts; complex existing Grid/Calc data is read without rewrite.
+- Permanent DX7 coverage added in `TaffyDX7VisualAuthoringTests.cs`; responsive mapping, overlap detection, Grid starters/placement, complex Grid preservation, and existing Grid validation are covered.
+- Unity `6000.4.3f1` Edit Mode: **99/99 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **99/99 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX7.
 
 ### DX7 exit criteria
 
-- [ ] A normal responsive workflow does not require manually expanding every override boolean.
-- [ ] Common Grid layouts can be authored visually.
-- [ ] Advanced Grid/Responsive capability remains intact.
+- [x] A normal responsive workflow does not require manually expanding every override boolean.
+- [x] Common Grid layouts can be authored visually.
+- [x] Advanced Grid/Responsive capability remains intact.
 
 ---
 

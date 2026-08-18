@@ -58,7 +58,7 @@ namespace TaffyUGUI.Editor
 
         protected override void DrawContent(TaffyInspectorContext context)
         {
-            TaffySerializedPropertyUtility.DrawProperties(context.SerializedObject, Properties);
+            TaffyGridAuthoringGUI.DrawGroup(context);
             if (context.ResolvedAuthoringDisplay != TaffyContainerDisplay.Grid)
                 EditorGUILayout.HelpBox(TaffyEditorContent.InactiveGridMessage, MessageType.Info);
         }
@@ -78,9 +78,10 @@ namespace TaffyUGUI.Editor
 
         protected override void DrawContent(TaffyInspectorContext context)
         {
-            TaffySerializedPropertyUtility.DrawProperties(context.SerializedObject, Properties);
+            TaffyResponsiveAuthoringGUI.Draw(context);
         }
     }
+
 
     internal sealed class TaffyGroupDiagnosticsSection : TaffyInspectorSection
     {

@@ -49,9 +49,9 @@ namespace TaffyUGUI.Editor
     {
         internal static readonly string[] Properties = { "gridRowStart", "gridRowEnd", "gridColumnStart", "gridColumnEnd", "justifySelf" };
         internal TaffyItemGridSection() : base("Item", "Grid", TaffyEditorContent.GridItem, false) { }
-        protected override void DrawContent(TaffyInspectorContext context)
+                protected override void DrawContent(TaffyInspectorContext context)
         {
-            TaffySerializedPropertyUtility.DrawProperties(context.SerializedObject, Properties);
+            TaffyGridAuthoringGUI.DrawItem(context);
             EditorGUILayout.LabelField("Placement", TaffyInspectorSummaryUtility.GridPlacementSummary(context.SerializedObject), EditorStyles.miniLabel);
         }
     }

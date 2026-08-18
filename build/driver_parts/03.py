@@ -14,6 +14,11 @@ def target_toolchain_evidence(spec: TargetSpec, env: dict[str, str]) -> dict[str
         linker = bins[0] / f"aarch64-linux-android{ANDROID_API}-clang{suffix}"
         evidence["android_ndk_revision"] = ANDROID_NDK_REVISION
         evidence["android_api"] = ANDROID_API
+        evidence["android_page_size"] = ANDROID_PAGE_SIZE
+        evidence["android_page_size_linker_flags"] = [
+            f"-Wl,-z,max-page-size={ANDROID_PAGE_SIZE}",
+            f"-Wl,-z,common-page-size={ANDROID_PAGE_SIZE}",
+        ]
         evidence["android_clang"] = run(str(linker), "--version", capture=True, env=env).splitlines()[0]
     elif spec.name == "webgl":
         emcc = require("emcc")
@@ -32,7 +37,18 @@ def validate_manifest_architecture_evidence(spec: TargetSpec, evidence: object) 
     if not isinstance(evidence, dict) or not evidence.get("method"):
         raise SystemExit(f"Architecture evidence missing from manifest: {spec.name}")
     method = str(evidence.get("method"))
-    if spec.name == "ios-arm64":
+    if spec.name == "android-arm64":
+        alignments = evidence.get("load_segment_alignments")
+        required = evidence.get("required_page_size")
+        if (
+            method != "ELF program headers"
+            or required != ANDROID_PAGE_SIZE
+            or not isinstance(alignments, list)
+            or not alignments
+            or any(not isinstance(value, int) or value < ANDROID_PAGE_SIZE for value in alignments)
+        ):
+            raise SystemExit(f"Android 16 KB page-alignment evidence is invalid: {evidence}")
+    elif spec.name == "ios-arm64":
         detail = str(evidence.get("detail", "")).lower()
         if method != "lipo -info" or "arm64" not in detail or "x86_64" in detail:
             raise SystemExit(f"iOS ARM64 architecture evidence is invalid: {evidence}")

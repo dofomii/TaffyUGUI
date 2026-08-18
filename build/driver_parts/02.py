@@ -14,8 +14,12 @@ def target_env(spec: TargetSpec) -> dict[str, str]:
         env["CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"] = str(linker)
         env["CC_aarch64_linux_android"] = str(linker)
         unwind_shim = android_unwind_shim(ndk)
-        link_flag = f"-C link-arg=-L{unwind_shim}"
-        env["RUSTFLAGS"] = f"{env.get('RUSTFLAGS', '').strip()} {link_flag}".strip()
+        link_flags = (
+            f"-C link-arg=-L{unwind_shim}",
+            f"-C link-arg=-Wl,-z,max-page-size={ANDROID_PAGE_SIZE}",
+            f"-C link-arg=-Wl,-z,common-page-size={ANDROID_PAGE_SIZE}",
+        )
+        env["RUSTFLAGS"] = " ".join(part for part in (env.get("RUSTFLAGS", "").strip(), *link_flags) if part)
     elif spec.name == "webgl":
         emcc = require("emcc", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
         require("emar", f"Install the Unity-compatible Emscripten {WEBGL_EMSCRIPTEN_VERSION} toolchain.")
@@ -33,6 +37,37 @@ def target_env(spec: TargetSpec) -> dict[str, str]:
         env["CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_LINKER"] = emcc
         env["CC_wasm32_unknown_emscripten"] = emcc
     return env
+
+
+def android_elf_load_alignments(artifact: Path, env: dict[str, str] | None = None) -> tuple[int, ...]:
+    env = env or base_env()
+    ndk = find_android_ndk()
+    candidates = sorted((ndk / "toolchains/llvm/prebuilt").glob("*/bin/llvm-readelf*"))
+    readelf = str(candidates[0]) if candidates else require("readelf", "Android ELF alignment verification requires llvm-readelf/readelf.")
+    output = run(readelf, "-lW", str(artifact), capture=True, env=env)
+    alignments: list[int] = []
+    for line in output.splitlines():
+        fields = line.split()
+        if fields and fields[0] == "LOAD":
+            try:
+                alignments.append(int(fields[-1], 0))
+            except ValueError as exc:
+                raise SystemExit(f"Unable to parse Android LOAD alignment from: {line}") from exc
+    if not alignments:
+        raise SystemExit(f"Android artifact has no ELF LOAD segments: {artifact}")
+    return tuple(alignments)
+
+
+def verify_android_page_alignment(artifact: Path, env: dict[str, str] | None = None) -> tuple[int, ...]:
+    alignments = android_elf_load_alignments(artifact, env)
+    too_small = [alignment for alignment in alignments if alignment < ANDROID_PAGE_SIZE]
+    if too_small:
+        rendered = ", ".join(hex(alignment) for alignment in alignments)
+        raise SystemExit(
+            f"Android artifact is not {ANDROID_PAGE_SIZE // 1024} KB page compatible: "
+            f"ELF LOAD alignments are [{rendered}], expected every LOAD alignment >= {hex(ANDROID_PAGE_SIZE)}."
+        )
+    return alignments
 
 
 def webgl_nm(env: dict[str, str]) -> str:
@@ -87,6 +122,8 @@ def inspect_artifact(spec: TargetSpec, artifact: Path, env: dict[str, str] | Non
     }[spec.name]
     if not all(token in lower for token in expected_tokens):
         raise SystemExit(f"Artifact architecture/format mismatch for {spec.name}: {description}")
+    if spec.name == "android-arm64":
+        verify_android_page_alignment(artifact, env)
     return description
 
 
@@ -102,6 +139,15 @@ def target_architecture_evidence(
         if "arm64" not in lower or "x86_64" in lower:
             raise SystemExit(f"iOS archive is not a device-only ARM64 archive: {info}")
         return {"method": "lipo -info", "detail": info}
+
+    if spec.name == "android-arm64":
+        alignments = verify_android_page_alignment(artifact, env)
+        return {
+            "method": "ELF program headers",
+            "detail": description,
+            "load_segment_alignments": list(alignments),
+            "required_page_size": ANDROID_PAGE_SIZE,
+        }
 
     if spec.name == "webgl":
         emar = require("emar", f"WebGL verification requires Emscripten {WEBGL_EMSCRIPTEN_VERSION} emar.")

@@ -1,6 +1,6 @@
 # Local Verification Status
 
-**Date:** 2026-08-18
+**Date:** 2026-08-19
 
 This document records checks actually executed locally. Remote CI is not build authority.
 
@@ -111,6 +111,21 @@ Installation gates: local package PASS on all three versions; temporary ignored 
 Final native/Android closeout passes 46/46 Rust tests, Clippy, cbindgen drift, Android ARM64 rebuild/verification, Phase 4, Phase 5, and fresh Unity 6 Android IL2CPP packaging. Source snapshot is `sha256:676771e84efb0f8ab0d8cfb14cbf4c388bce500d88fd1870c50babe0d368fed8`; staged Android `.so` SHA-256 is `85cb8ef34fc03c51cc40baaf4bdbbd45892a616d93958d21f4f86100303e51a7`. The APK's Taffy runtime-loaded `PT_LOAD` segments match the staged library exactly. ADB sees the prior device as offline, so Phase 12 remains the latest successful physical-device execution.
 
 Phase 14 publication is intentionally deferred by owner instruction.
+
+## DX0 Developer Experience compatibility verification
+
+DX0 adds a permanent compatibility baseline before the Editor refactor begins. The tracked reference is `DX0_EDITOR_COMPATIBILITY_BASELINE.md` and the permanent suite is `TaffyDX0CompatibilityTests.cs`.
+
+Unity `6000.4.3f1` local-path package validation on the ignored Unity host:
+
+- Edit Mode: **50 total, 50 passed, 0 failed, 0 skipped**;
+- Play Mode: **9 total, 9 passed, 0 failed, 0 skipped**;
+- the 9 new DX0 Edit Mode tests pin declared Group/Item authoring fields, nested serialized authoring fields, enum numeric compatibility, representative Group/Item Editor serialization round-trips, Editor/runtime assembly isolation, custom editor construction, and multi-object editor construction;
+- VS Code Problems: **0 warnings/errors** after the DX0 changes;
+- no runtime/native implementation or layout semantics changed;
+- Unity result XML/logs remain under ignored `.build/` paths.
+
+DX0 is complete and DX1 Editor Core & Inspector Refactor is the next Developer Experience phase.
 
 ## Phase status
 

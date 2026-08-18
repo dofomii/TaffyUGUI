@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** READY TO START  
+**Program status:** ACTIVE — DX0 complete; DX1 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -98,8 +98,8 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX4 | One-Click Common Workflows | Quick actions and common hierarchy creation | DX3 | NOT STARTED |
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | NOT STARTED |
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | NOT STARTED |
-| DX7 | Visual Responsive & Grid Authoring | Breakpoint/override UI and visual Grid workflows | DX6 | NOT STARTED |
-| DX8 | Scene View Authoring & Preview | Layout overlays, responsive preview, optional safe handles | DX7 | NOT STARTED |
+| DX0 | Architecture & Compatibility Baseline | Safe implementation contract and permanent baseline tests | — | COMPLETE |
+| DX1 | Editor Core & Inspector Refactor | Modular editor foundation with no semantic UX/runtime regression | DX0 | READY |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
@@ -111,7 +111,7 @@ A task being implemented does not make its phase complete. The phase closes only
 # Program Milestones
 
 ## Milestone A — Safe Editor Foundation
-
+**Current authoritative task:** `DX1.1` — create the modular `Editor/Core/` foundation while preserving current inspector/runtime semantics.
 Complete when `DX0 + DX1` are complete.
 
 Result: Editor internals are modular enough to evolve safely without changing layout semantics.
@@ -156,48 +156,59 @@ Result: the redesigned experience is documented, regression-tested, package-safe
 
 # DX0 — Architecture & Compatibility Baseline
 
-**Status:** READY  
+**Status:** COMPLETE
 **Goal:** freeze the runtime/serialization assumptions and create permanent Editor regression coverage before restructuring the inspectors.
 
-This phase intentionally avoids major UX changes.
+This phase intentionally avoided major UX/runtime changes.
 
 ## Serialization contract
 
-- [ ] DX0.1 Inventory and document all serialized `TaffyLayoutGroup` field names.
-- [ ] DX0.2 Inventory and document all serialized `TaffyLayoutItem` field names.
-- [ ] DX0.3 Inventory responsive, Grid, Calc, measurement, and nested serializable field names used by scenes/prefabs.
-- [ ] DX0.4 Record enum numeric values that must remain serialization-compatible.
-- [ ] DX0.5 Document fields that may be relabeled in the Editor but must not be renamed in runtime serialization.
+- [x] DX0.1 Inventory and document all serialized `TaffyLayoutGroup` field names.
+- [x] DX0.2 Inventory and document all serialized `TaffyLayoutItem` field names.
+- [x] DX0.3 Inventory responsive, Grid, Calc, measurement, and nested serializable field names used by scenes/prefabs.
+- [x] DX0.4 Record enum numeric values that must remain serialization-compatible.
+- [x] DX0.5 Document fields that may be relabeled in the Editor but must not be renamed in runtime serialization.
 
 ## Current Editor behavior baseline
 
-- [ ] DX0.6 Record the current Group inspector sections and serialized-property coverage.
-- [ ] DX0.7 Record the current Item inspector sections and serialized-property coverage.
-- [ ] DX0.8 Record current custom property drawers and the types they own.
-- [ ] DX0.9 Record current debugger, migration, and Scene visualization responsibilities.
+- [x] DX0.6 Record the current Group inspector sections and serialized-property coverage.
+- [x] DX0.7 Record the current Item inspector sections and serialized-property coverage.
+- [x] DX0.8 Record current custom property drawers and the types they own.
+- [x] DX0.9 Record current debugger, migration, and Scene visualization responsibilities.
 
 ## Permanent safety tests
 
-- [ ] DX0.10 Add Edit Mode tests proving representative existing serialized Group data survives Editor serialization/deserialization.
-- [ ] DX0.11 Add Edit Mode tests proving representative existing serialized Item data survives Editor serialization/deserialization.
-- [ ] DX0.12 Add enum-contract Editor/runtime regression tests where not already covered.
-- [ ] DX0.13 Add tests ensuring the Editor assembly remains excluded from Player runtime dependencies.
-- [ ] DX0.14 Add a permanent baseline test for current custom inspectors instantiating without exceptions on representative components.
-- [ ] DX0.15 Add multi-object baseline coverage for Group and Item inspectors.
+- [x] DX0.10 Add Edit Mode tests proving representative existing serialized Group data survives Editor serialization/deserialization.
+- [x] DX0.11 Add Edit Mode tests proving representative existing serialized Item data survives Editor serialization/deserialization.
+- [x] DX0.12 Add enum-contract Editor/runtime regression tests where not already covered.
+- [x] DX0.13 Add tests ensuring the Editor assembly remains excluded from Player runtime dependencies.
+- [x] DX0.14 Add a permanent baseline test for current custom inspectors instantiating without exceptions on representative components.
+- [x] DX0.15 Add multi-object baseline coverage for Group and Item inspectors.
 
 ## Documentation
 
-- [ ] DX0.16 Add a short architecture note linking runtime source-of-truth rules to this tracker.
-- [ ] DX0.17 Document the explicit non-goal that 32-bit ABI work is separate from DX implementation.
+- [x] DX0.16 Add a short architecture note linking runtime source-of-truth rules to this tracker.
+- [x] DX0.17 Document the explicit non-goal that 32-bit ABI work is separate from DX implementation.
+
+### DX0 validation note
+
+- Compatibility reference: `DX0_EDITOR_COMPATIBILITY_BASELINE.md`.
+- Permanent compatibility suite added in `TaffyDX0CompatibilityTests.cs` with 9 DX0 tests.
+- Unity `6000.4.3f1` Edit Mode: **50/50 PASS** (existing 41 maintained tests + 9 DX0 compatibility tests).
+- Unity `6000.4.3f1` Play Mode: **9/9 PASS**.
+- New tests pin Group/Item declared authoring fields, nested serializable authoring fields, serialized enum numeric values, representative Editor JSON round-trips, Editor/runtime assembly isolation, custom editor creation, and multi-object editor creation.
+- Validation uses inactive test objects for DX0 serialization/editor construction where possible, so the compatibility tests themselves do not require layout computation.
+- No runtime/native implementation or layout semantics changed in DX0.
+- Disposable Unity result XML/log files remain under ignored `.build/`.
 
 ### DX0 exit criteria
 
-- [ ] Serialized field/enum compatibility contract is explicit.
-- [ ] Existing Editor surfaces are inventoried.
-- [ ] Permanent tests protect representative existing data.
-- [ ] No runtime/native semantics changed.
-- [ ] VS Code Problems contains no new warnings/errors.
-- [ ] Maintained Edit Mode and Play Mode suites remain green.
+- [x] Serialized field/enum compatibility contract is explicit.
+- [x] Existing Editor surfaces are inventoried.
+- [x] Permanent tests protect representative existing data.
+- [x] No runtime/native semantics changed.
+- [x] VS Code Problems contains no new warnings/errors.
+- [x] Maintained Edit Mode and Play Mode suites remain green.
 
 ### Recommended commit boundary
 
@@ -207,7 +218,7 @@ One focused commit containing compatibility documentation and permanent baseline
 
 # DX1 — Editor Core & Inspector Refactor
 
-**Status:** NOT STARTED  
+**Status:** READY
 **Depends on:** DX0  
 **Goal:** build a modular Editor architecture while preserving the existing visible behavior as closely as practical.
 
@@ -897,12 +908,12 @@ They can be revisited after the core developer experience is proven in real use.
 
 # Current Next Action
 
-Start **DX0 — Architecture & Compatibility Baseline**.
+Start **DX1 — Editor Core & Inspector Refactor**.
 
 First authoritative task:
 
 ```text
-DX0.1 Inventory and freeze the serialized TaffyLayoutGroup authoring contract.
+DX1.1 Create the modular Editor/Core structure.
 ```
 
-Do not start large inspector visual changes before DX0 and DX1 establish the compatibility and modular Editor foundation.
+Preserve the DX0 serialization/enum compatibility baseline while restructuring the Editor implementation. Do not introduce large visual UX changes until the modular DX1 foundation is validated.

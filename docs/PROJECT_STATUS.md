@@ -1,6 +1,6 @@
 # TaffyUGUI Project Status
 
-**Status date:** 2026-08-18
+**Status date:** 2026-08-19
 **Canonical workflow:** local development, local build, local verification
 **Active release scope:** Android ARM64 only
 **Native ABI:** final ABI v1 (`version=1`, `stage=2`) on exact Taffy `0.13.0`
@@ -22,6 +22,8 @@
 - Phase 12 real Unity platform validation: **complete for the Android ARM64-only release scope**.
 - Phase 13 performance/reliability hardening: **complete**.
 - Phase 14 v1.0 release: **complete; v1.0.0 is release-ready and intentionally unpublished**.
+- Post-v1 Developer Experience DX0 compatibility baseline: **complete**.
+- Post-v1 Developer Experience DX1 Editor Core & Inspector Refactor: **ready; next active work**.
 
 ## Phase 11 production boundary
 
@@ -103,3 +105,4 @@ Publication is **not performed**: no real `v1.0.0` tag, push, GitHub release, or
 ## Current authoritative state
 
 **v1.0.0 is release-ready locally and intentionally unpublished.** Future publication requires a separate explicit owner instruction.
+**v1.0.0 is release-ready locally and intentionally unpublished.** The active post-v1 workstream is Developer Experience Improvement: DX0 is complete and DX1 Editor Core & Inspector Refactor is ready. Future publication remains a separate explicit owner action.

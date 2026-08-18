@@ -578,6 +578,8 @@ Phase 14 is complete under the unpublished-release constraint.
 
 **Active post-v1 workstream:** Developer Experience Improvement. The authoritative implementation plan is [`DEVELOPER_EXPERIENCE_TASK_TRACKER.md`](DEVELOPER_EXPERIENCE_TASK_TRACKER.md).
 
-**Next implementation task:** DX0.1 — inventory and freeze the serialized `TaffyLayoutGroup` authoring contract before restructuring the Editor UI.
+**DX status:** DX0 Architecture & Compatibility Baseline is complete; DX1 Editor Core & Inspector Refactor is ready.
+
+**Next implementation task:** DX1.1 — create the modular `Editor/Core/` structure while preserving the DX0 compatibility baseline.
 
 Any future publication remains a separate explicit action and must not happen without owner instruction.

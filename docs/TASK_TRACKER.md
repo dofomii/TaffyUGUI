@@ -574,6 +574,10 @@ Production behavior now includes persistent native contexts/root nodes, stable `
 
 Phase 14 is complete under the unpublished-release constraint.
 
-**Current state:** TaffyUGUI v1.0.0 is release-ready locally but intentionally not published, tagged in the real repository, or pushed as a release.
+**Release state:** TaffyUGUI v1.0.0 is release-ready locally but intentionally not published, tagged in the real repository, or pushed as a release.
 
-Any future publication is a separate explicit action and must not happen without owner instruction.
+**Active post-v1 workstream:** Developer Experience Improvement. The authoritative implementation plan is [`DEVELOPER_EXPERIENCE_TASK_TRACKER.md`](DEVELOPER_EXPERIENCE_TASK_TRACKER.md).
+
+**Next implementation task:** DX0.1 — inventory and freeze the serialized `TaffyLayoutGroup` authoring contract before restructuring the Editor UI.
+
+Any future publication remains a separate explicit action and must not happen without owner instruction.

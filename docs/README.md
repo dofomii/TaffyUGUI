@@ -4,6 +4,7 @@
 
 - [PROJECT_STATUS.md](PROJECT_STATUS.md) — authoritative high-level progress and current phase.
 - [TASK_TRACKER.md](TASK_TRACKER.md) — complete phase/task history and next work.
+- [DEVELOPER_EXPERIENCE_TASK_TRACKER.md](DEVELOPER_EXPERIENCE_TASK_TRACKER.md) — authoritative post-v1 implementation tracker for the developer-friendly inspector, presets, diagnostics, visual authoring, and guided workflows.
 - [LOCAL_VERIFICATION_STATUS.md](LOCAL_VERIFICATION_STATUS.md) — checks actually executed in the current local environment.
 - [ROADMAP.md](ROADMAP.md) — gated production roadmap through v1.0.
 

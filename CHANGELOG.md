@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Added the importable **Responsive Dashboard** sample scene: a desktop-to-mobile admin dashboard built from one TaffyUGUI hierarchy using nested Flex layouts, wrapping, responsive profiles, and ScrollRect content expansion.
+
 ## [1.1.2] - 2026-08-19
 
 Windows PluginImporter correction release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.

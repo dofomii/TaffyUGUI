@@ -43,6 +43,11 @@
       "displayName": "Custom Measurement",
       "description": "A custom ITaffyMeasurementProvider example showing intrinsic measurement without native callbacks.",
       "path": "Samples~/Custom Measurement"
+    },
+    {
+      "displayName": "Responsive Dashboard",
+      "description": "A complete responsive admin dashboard scene that reflows from desktop to mobile using TaffyUGUI Flex, responsive profiles, and ScrollRect integration.",
+      "path": "Samples~/Responsive Dashboard"
     }
   ]
 }

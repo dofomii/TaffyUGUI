@@ -62,6 +62,7 @@ Import samples from Package Manager after installing TaffyUGUI:
 - **Flex Quick Start**
 - **Grid and Responsive**
 - **Custom Measurement**
+- **Responsive Dashboard** — complete desktop-to-mobile dashboard scene using nested Taffy Flex layouts, wrapping, responsive profiles, and ScrollRect integration.
 
 ## Local verification
 

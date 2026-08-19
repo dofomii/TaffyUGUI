@@ -55,7 +55,7 @@ Scene visualization is controlled from **Tools > TaffyUGUI > Scene Overlays**. C
 
 ## Import samples
 
-Open Package Manager, select **TaffyUGUI**, expand **Samples**, and import **Flex Quick Start**, **Grid and Responsive**, or **Custom Measurement**. The sample READMEs point back to the recommended Inspector, recipe, preview, and debugging workflows.
+Open Package Manager, select **TaffyUGUI**, expand **Samples**, and import **Flex Quick Start**, **Grid and Responsive**, **Custom Measurement**, or **Responsive Dashboard**. The dashboard sample is a complete serialized scene that reflows from desktop to mobile using the same Taffy hierarchy; the sample READMEs point back to the recommended Inspector, recipe, preview, and debugging workflows.and debugging workflows.
 
 ## Important ownership rule
 

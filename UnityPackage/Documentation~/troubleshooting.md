@@ -2,7 +2,7 @@
 
 ## `DllNotFoundException` / native library does not load
 
-v1.1.1 bundles native plugins for **Android ARM64, Windows x86/x64, and Linux x86/x64**. Unity should select the binary that matches the active Editor/Player platform and architecture. macOS, iOS, and WebGL binaries are not bundled in this release.
+v1.1.2 bundles native plugins for **Android ARM64, Windows x86/x64, and Linux x86/x64**. Unity should select the binary that matches the active Editor/Player platform and architecture. macOS, iOS, and WebGL binaries are not bundled in this release.
 
 If loading fails, confirm the expected file exists under `Plugins/<platform>/<architecture>/`, then inspect Unity's Plugin Importer settings. Windows x86 and Linux x86 are legacy binaries; current Unity desktop Editors are 64-bit.
 

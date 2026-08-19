@@ -6,7 +6,7 @@ Responsive Flexbox, Grid, Block, and CSS-style layout for Unity uGUI, powered by
 
 **This project is currently fully AI-generated, including source code, project structure, documentation, build scripts, and configuration.** Automated and manual tests reduce risk but do not guarantee correctness, security, reliability, production readiness, or suitability for a particular product. Review and test the code independently before shipping it. The software is provided **AS IS**, without warranty.
 
-## v1.1.1 release scope
+## v1.1.2 release scope
 
 - Final native ABI v1 (`version=1`, `stage=2`), exact Taffy `0.13.0`.
 - Unity package baseline: **2021.3+**.
@@ -16,10 +16,10 @@ Responsive Flexbox, Grid, Block, and CSS-style layout for Unity uGUI, powered by
 
 ## Install
 
-After you choose to create the `v1.1.1` Git tag, the Git/UPM dependency will be:
+After you choose to create the `v1.1.2` Git tag, the Git/UPM dependency will be:
 
 ```json
-"com.dofomii.taffyugui": "https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.1"
+"com.dofomii.taffyugui": "https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.2"
 ```
 
 For local testing, open **Window > Package Manager > + > Add package from disk...** and select:

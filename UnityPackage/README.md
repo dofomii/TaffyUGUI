@@ -1,4 +1,4 @@
-# TaffyUGUI 1.1.1
+# TaffyUGUI 1.1.2
 
 TaffyUGUI adds Flexbox, Grid, Block/Float, intrinsic measurement, and responsive layout to existing Unity uGUI hierarchies. Unity continues to own rendering, input, animation, prefabs, TextMeshPro, ScrollRect, and the EventSystem; a Rust/Taffy native library computes layout geometry.
 
@@ -10,10 +10,10 @@ TaffyUGUI adds Flexbox, Grid, Block/Float, intrinsic measurement, and responsive
 
 ## Install
 
-After a `v1.1.1` tag is intentionally created, add this dependency to `Packages/manifest.json`:
+After a `v1.1.2` tag is intentionally created, add this dependency to `Packages/manifest.json`:
 
 ```json
-"com.dofomii.taffyugui": "https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.1"
+"com.dofomii.taffyugui": "https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.2"
 ```
 
 For a local checkout, use **Window > Package Manager > + > Add package from disk...** and select this package's `package.json`.

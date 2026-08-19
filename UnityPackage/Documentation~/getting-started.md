@@ -2,14 +2,14 @@
 
 ## Requirements
 
-TaffyUGUI 1.1.1 targets Unity **2021.3 or newer**. The package declares uGUI and TextMeshPro dependencies. Native plugins are bundled for Android ARM64, Windows x86/x64, and Linux x86/x64.
+TaffyUGUI 1.1.2 targets Unity **2021.3 or newer**. The package declares uGUI and TextMeshPro dependencies. Native plugins are bundled for Android ARM64, Windows x86/x64, and Linux x86/x64.
 
 ## Install
 
-After the repository owner intentionally creates the `v1.1.1` tag, choose **Add package from git URL...** in Package Manager and enter:
+After the repository owner intentionally creates the `v1.1.2` tag, choose **Add package from git URL...** in Package Manager and enter:
 
 ```text
-https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.1
+https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.1.2
 ```
 
 For a local checkout, choose **Add package from disk...** and select `UnityPackage/package.json`.

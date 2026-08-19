@@ -1,6 +1,6 @@
 # Platform Support and Compatibility
 
-## v1.1.1 bundled native targets
+## v1.1.2 bundled native targets
 
 The package bundles native plugins for **Android ARM64, Windows x86/x64, and Linux x86/x64**. macOS, iOS, and WebGL binaries are not part of this release archive.
 
@@ -16,7 +16,7 @@ The package bundles native plugins for **Android ARM64, Windows x86/x64, and Lin
 | Windows x86 | n/a | n/a | n/a | Bundled for legacy consumers; PE i386 architecture, ABI exports, and embedded version verified on Linux build host |
 | Linux x64 | n/a | n/a | n/a | Bundled; ELF x86-64 architecture, ABI exports, and embedded version verified locally |
 | Linux x86 | n/a | n/a | n/a | Bundled for legacy consumers; ELF i386 architecture, ABI exports, and embedded version verified locally; modern Unity Linux Players are 64-bit |
-| macOS / iOS / WebGL | n/a | n/a | n/a | Not bundled in 1.1.1 |
+| macOS / iOS / WebGL | n/a | n/a | n/a | Not bundled in 1.1.2 |
 
 Windows runtime execution is not available on this Linux release host, so Windows validation is intentionally limited to deterministic cross-build plus binary architecture/export/version inspection. Linux x86 is included because the native library can still be built and consumed by legacy 32-bit hosts, but current Unity Linux Player tooling is 64-bit.
 

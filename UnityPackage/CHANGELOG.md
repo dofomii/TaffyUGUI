@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.2] - 2026-08-19
+
+Windows PluginImporter correction release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.
+
+### Fixed
+
+- Windows x86 native plugin metadata now marks the DLL as **Win32 Player only** and explicitly disables it for the Unity Editor and Win64.
+- Windows x64 remains the only Windows native plugin eligible for the 64-bit Windows Editor and Win64 Player, preventing the `expected x64 architecture, but was x86 architecture` load failure.
+
+### Validation
+
+- The release gate now rejects Windows x86 importer metadata that is Editor- or Win64-compatible and requires the Windows x64 importer to remain Windows/x86_64 Editor + Win64 compatible.
+- All five native libraries are rebuilt from 1.1.2 source so their embedded build version matches the package version.
+- Unity 6000.4.3f1 PluginImporter API validation confirms Windows x86 is Editor/Win64-incompatible while Windows x64 is Windows/x86_64 Editor + Win64 compatible.
+- Unity 6000.4.3f1 package-folder validation passes 140/140 Edit Mode and 9/9 Play Mode tests.
+
 ## [1.1.1] - 2026-08-19
 
 Packaging correction release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.

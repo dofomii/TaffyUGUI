@@ -58,6 +58,8 @@ PHASE5_DESKTOP_PLUGINS = {
     "windows-x86": ROOT / "UnityPackage" / "Plugins" / "Windows" / "x86" / "taffy_ugui.dll",
     "windows-x64": ROOT / "UnityPackage" / "Plugins" / "Windows" / "x86_64" / "taffy_ugui.dll",
 }
+PHASE5_WINDOWS_X86_META = Path(str(PHASE5_DESKTOP_PLUGINS["windows-x86"]) + ".meta")
+PHASE5_WINDOWS_X64_META = Path(str(PHASE5_DESKTOP_PLUGINS["windows-x64"]) + ".meta")
 PHASE5_ANDROID_META_TEXT = """fileFormatVersion: 2
 guid: 4e8aa0f9ef154b56a50b8c302f27fe56
 PluginImporter:
@@ -179,6 +181,34 @@ def verify_phase5() -> None:
         "windows-x86": ("pe32 executable", "80386"),
         "windows-x64": ("pe32+ executable", "x86-64"),
     }
+    windows_x86_meta = PHASE5_WINDOWS_X86_META.read_text(encoding="utf-8")
+    required_x86_importer_fragments = (
+        "PluginImporter:",
+        "Editor:\n      enabled: 0",
+        "Win:\n      enabled: 1\n      settings:\n        CPU: x86",
+        "Win64:\n      enabled: 0",
+    )
+    missing_x86_importer = [fragment for fragment in required_x86_importer_fragments if fragment not in windows_x86_meta]
+    if missing_x86_importer:
+        raise SystemExit(
+            "Windows x86 PluginImporter must be Win32-only and disabled for Editor/Win64. "
+            f"Missing importer rules: {missing_x86_importer}"
+        )
+
+    windows_x64_meta = PHASE5_WINDOWS_X64_META.read_text(encoding="utf-8")
+    required_x64_importer_fragments = (
+        "PluginImporter:",
+        "Editor:\n      enabled: 1\n      settings:\n        CPU: x86_64",
+        "OS: Windows",
+        "Win64:\n      enabled: 1\n      settings:\n        CPU: x86_64",
+    )
+    missing_x64_importer = [fragment for fragment in required_x64_importer_fragments if fragment not in windows_x64_meta]
+    if missing_x64_importer:
+        raise SystemExit(
+            "Windows x64 PluginImporter must remain Windows/x86_64 Editor + Win64 compatible. "
+            f"Missing importer rules: {missing_x64_importer}"
+        )
+
     expected_exports = header_export_contract()
     for name, artifact in PHASE5_DESKTOP_PLUGINS.items():
         description = run(file_bin, "-b", str(artifact), capture=True, env=base_env()).strip().lower()

@@ -2,6 +2,12 @@
 /target/
 /.build/
 /native/target/
+/native/web/target/
+/native/web/*.a
+/native/web/*.wasm
+/native/web/*.o
+/native/web/*.bc
+/native/web/*.js
 /dist/
 /.toolchain/
 

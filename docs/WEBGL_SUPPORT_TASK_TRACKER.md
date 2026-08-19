@@ -3,8 +3,9 @@
 **Program status:** ACTIVE  
 **Support target:** Unity `2021.3 LTS` through the latest current Unity release  
 **Current latest release at plan verification:** Unity `6000.5.7f1` (2026-08-05)  
-**Current phase:** WEB1 ACTIVE
-**Authoritative next task:** WEB1.6
+**Current phase:** WEB2 ACTIVE
+**Authoritative next task:** WEB2.1
+
 
 This tracker is the authoritative implementation plan for adding Unity Web/WebGL Player support without changing existing Android/desktop runtime behavior. Complete phases in order. Commit only when the active phase is complete.
 
@@ -113,20 +114,19 @@ The oldest Unity Web module is not installed on this machine yet, so WEB0 does n
 
 # WEB1 — Production generic Wasm native artifact
 
-**Status: ACTIVE**
+**Status: COMPLETE**
+**Completed: 2026-08-20**
 
 - [x] **WEB1.1** Add a Web-only Cargo manifest that reuses `native/src/lib.rs` and emits only `staticlib`.
 - [x] WEB1.2 Add a reproducible build command/target for `wasm32-unknown-unknown`.
 - [x] WEB1.3 Pin Web build flags to `-Ctarget-cpu=mvp -Cpanic=abort` unless a stricter compatibility gate proves another setting is needed.
 - [x] WEB1.4 Ensure the Web build remains independent of Unity/Emscripten headers and libraries.
-- [x] WEB1.5 Verify the archive contains exactly the expected public `tu_*` ABI surface and no accidental public ABI expansion. public ABI expansion.
-- [ ] WEB1.6 Add a permanent native/Web link harness based on `include/taffy_ugui.h` covering ABI version, context lifecycle, node creation, layout compute, and layout retrieval.
-- [ ] WEB1.7 Audit Web panic behavior. Because the compatibility build uses `panic=abort`, remove avoidable internal `expect`/panic paths at the Web boundary where practical and document the remaining invariant behavior.
-- [ ] WEB1.8 Decide and test Web handling for `CapThreadLocalContexts` without weakening non-Web behavior.
-- [ ] WEB1.9 Measure release archive size and apply safe size optimizations only if they do not reduce old-linker compatibility.
-- [ ] WEB1.10 Keep all generated/probe artifacts outside tracked source except the intentional staged package artifact.
-
 - [x] WEB1.5 Verify the archive contains exactly the expected public `tu_*` ABI surface and no accidental public ABI expansion.
+- [x] WEB1.6 Add a permanent native/Web link harness based on `include/taffy_ugui.h` covering ABI version, context lifecycle, node creation, layout compute, and layout retrieval.
+- [x] WEB1.7 Audit Web panic behavior. Because the compatibility build uses `panic=abort`, remove avoidable internal `expect`/panic paths at the Web boundary where practical and document the remaining invariant behavior.
+- [x] WEB1.8 Decide and test Web handling for `CapThreadLocalContexts` without weakening non-Web behavior.
+- [x] WEB1.9 Measure release archive size and apply safe size optimizations only if they do not reduce old-linker compatibility.
+- [x] WEB1.10 Keep all generated/probe artifacts outside tracked source except the intentional staged package artifact.
 
 WEB1.1:
 
@@ -164,13 +164,52 @@ WEB1.5:
 - Added the permanent `python3 build/build.py verify-web-abi-surface` gate. It builds the canonical generic Web archive, inspects globally defined symbols with the pinned Rust `llvm-nm`, and compares the complete `tu_*` set against the checked-in C header contract.
 - The gate fails on any missing export, unexpected `tu_*` export, or duplicate public definition, preventing accidental Web-only ABI drift.
 - Current verification passes with exactly `31` expected `tu_*` exports and no additions or omissions.
-**WEB1 phase gate:** generic archive reproducibly builds from clean source; ABI/link harness passes; non-Web Rust tests and native artifacts remain unchanged.
+WEB1.6:
+
+- Added the permanent `native/web/link_harness.c` public-C-ABI smoke and the `python3 build/build.py verify-web-link-harness` gate.
+- The build driver discovers installed Unity Hub WebGL Emscripten toolchains and supports an explicit `TAFFYUGUI_UNITY_EMSCRIPTEN_ROOT` override so later compatibility phases can select an exact Unity toolchain without changing the harness.
+- The harness includes only `include/taffy_ugui.h`, links the canonical generic `libtaffy_ugui.a`, and validates ABI version/stage, context create/clear/destroy, node creation before and after clear, layout compute, and layout retrieval with an exact `42 x 17` fixed-size result.
+- Runtime verification passes under Unity `6000.3.9f1` using bundled Emscripten `3.1.39-git` and bundled Node. The harness link intentionally uses `-O0`: optimization is irrelevant to this ABI/link smoke, and this avoids a Unity-bundled Binaryen post-link option mismatch observed at `-O2`; the Rust archive itself remains the canonical optimized release build.
+
+WEB1.7:
+
+- Added the permanent `python3 build/build.py verify-web-panic-boundary` gate. It requires the canonical `-Cpanic=abort` Web configuration, scans production Rust sources for `.unwrap()`, explicit `panic!`, assertion/unreachable/todo-style panic sites, and rejects new `.expect()` calls outside the pinned Taffy tree callbacks.
+- The production audit found no recoverable `.unwrap()` or explicit panic/assertion paths in the ABI/runtime implementation. The remaining `expect` sites are the Taffy `LayoutPartialTree`/Flex/Grid/Block/Cache/Round callback invariants that require a live node/parent/child and cannot return `Result`; one child-index access is similarly pinned to Taffy's `child_count`/`get_child_id` contract. Release-disabled `debug_assert!` checks remain internal diagnostics only.
+- `guard()`/`tu_copy_last_error` still use `catch_unwind` for native unwind builds, but Web `panic=abort` cannot rely on that containment. The Web contract is therefore to validate caller-controlled input before reaching Taffy, while an actual violated Taffy live-tree invariant remains a fatal internal bug rather than a recoverable ABI status.
+- Extended the permanent Web C harness with malformed-input cases for null pointers, zero context/node handles, invalid enum values, NaN layout dimensions, and invalid node handles. The real optimized `panic=abort` archive returns `NullPointer`, `InvalidContext`, `InvalidEnum`, `InvalidNumber`, and `InvalidNode` as expected and continues executing normally under Unity Emscripten `3.1.39-git`.
+- `verify-web-panic-boundary` passes end-to-end and then reruns the public-header link harness, proving the audited boundary behavior against the actual Web archive rather than only through static source inspection.
+
+WEB1.8:
+
+- The supported default/single-thread Web path keeps `CapThreadLocalContexts` advertised. The Rust implementation still stores contexts in `thread_local!` state, and Unity's managed ABI handshake continues to require bit 8 exactly as it does on native platforms; no Web-only capability fork was introduced.
+- Added the permanent `python3 build/build.py verify-web-thread-local-contexts` gate. It pins the native capability definition/aggregation, thread-local registry, wrong-thread rejection path, and managed required-capability contract, then runs the real Web public-header harness to verify the generated archive actually reports the capability.
+- The same gate runs the existing native `p3_7_wrong_thread_use_is_rejected` integration test, which passes and confirms cross-thread context use still returns `WrongThread`; WEB1 therefore does not weaken desktop/native ownership semantics to accommodate Web.
+- Threaded Unity Web remains a separate WEB7 compatibility problem. If Web workers/native calls become multi-threaded there, ownership and artifact behavior must be validated under that configuration before making a threaded-Web support claim; the default Web claim does not depend on that future work.
+
+WEB1.9:
+
+- Added the permanent `python3 build/build.py verify-web-size` gate. It verifies the Web-only release profile remains `lto = "thin"`, `codegen-units = 1`, and `strip = "symbols"`, and refuses compatibility-changing Rust flags beyond the locked `-Ctarget-cpu=mvp -Cpanic=abort` baseline.
+- A clean canonical release build currently produces `libtaffy_ugui.a` at `5,059,192` bytes (`4.8248 MiB`), SHA-256 `bfba5b81c7c8cf4b7becc3c4ace0fb599819d0be831560c9944f7abdb6b3253a`. A second clean rebuild reproduced the same size and hash, making this the current authoritative WEB1 size baseline.
+- The permanent gate uses a `6 MiB` review threshold, not a product/download-size limit. Crossing it intentionally fails validation so archive growth is reviewed before anyone reaches for compatibility-sensitive optimization or Wasm feature flags.
+- No additional size flags were adopted in WEB1.9. Options such as a new size-focused optimization level or more aggressive LTO are deferred because the mandatory Unity `2021.3` old-linker gate has not run yet; preserving `target-cpu=mvp` compatibility is more important than reducing the intermediate archive prematurely.
+- The existing public-header link harness still passes with the canonical archive under Unity Emscripten `3.1.39-git`. Its intentionally unoptimized `-O0` linked Wasm is `474,015` bytes, showing that normal final linking already dead-strips most unused archive code; the `.a` size is therefore not the eventual Unity Player download size.
+- The earlier WEB1.2 size/hash note records the earlier build snapshot. WEB1.9's two clean rebuilds are the current measurement used for ongoing size review.
+
+WEB1.10:
+
+- Added the permanent `python3 build/build.py verify-web-source-cleanliness` gate. It rejects tracked or unignored disposable build/probe paths and generated Web `.a`, `.wasm`, `.o`, `.bc`, or `.js` outputs under `native/web/`.
+- Hardened `.gitignore` for direct `native/web/target/` Cargo output and accidental Web archive/object/Wasm/JavaScript products, while preserving the intentional Web source files (`Cargo.toml`, `Cargo.lock`, and `link_harness.c`).
+- The cleanliness gate verifies `.build/`, local harness/probe trees, direct nested Cargo targets, and representative Web generated outputs remain ignored. Final verification reports no generated/probe artifact tracked or leaking as untracked source.
+- WEB1 closeout reran the exact `31`-symbol ABI surface gate, independent clean Web build, panic-boundary harness, thread-local-context gate, size gate, and source-cleanliness gate successfully.
+- Non-Web regression remained green: rustfmt, Clippy `-D warnings`, `37/37` maintained Rust unit tests, `9/9` native verification tests, release build, cbindgen drift check, and final ABI v1 gate all passed. `native/src`, `native/Cargo.toml`, `include/taffy_ugui.h`, and all existing `UnityPackage/Plugins` payloads have no diff, proving WEB1 did not alter native runtime/ABI/plugin artifacts.
+
+**WEB1 phase gate: PASS** — generic archive reproducibly builds from clean source; ABI/link harness passes; non-Web Rust tests and native artifacts remain unchanged.
 
 ---
 
 # WEB2 — Unity package integration
 
-**Status: BLOCKED BY WEB1**
+**Status: ACTIVE**
 
 - [ ] WEB2.1 Stage `libtaffy_ugui.a` under `UnityPackage/Plugins/WebGL/`.
 - [ ] WEB2.2 Add deterministic `.meta` importer settings: Web/WebGL enabled, Editor and all non-Web targets disabled.

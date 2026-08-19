@@ -328,6 +328,113 @@ def verify_web_abi_surface() -> tuple[str, ...]:
 
 
 
+def _unity_version_key(value: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in re.findall(r"\d+", value))
+
+
+def find_unity_web_emscripten() -> tuple[Path, Path, Path, str]:
+    override = os.environ.get(WEB_UNITY_EMSCRIPTEN_ROOT_ENV)
+    candidates: list[tuple[tuple[int, ...], str, Path]] = []
+
+    if override:
+        root = Path(override).expanduser().resolve()
+        candidates.append(((), "override", root))
+    else:
+        hub_roots = [
+            Path.home() / "Unity" / "Hub" / "Editor",
+            Path("/Applications/Unity/Hub/Editor"),
+        ]
+        for env_name in ("PROGRAMFILES", "PROGRAMFILES(X86)"):
+            if value := os.environ.get(env_name):
+                hub_roots.append(Path(value) / "Unity" / "Hub" / "Editor")
+        if value := os.environ.get("UNITY_HUB_EDITORS_PATH"):
+            hub_roots.insert(0, Path(value).expanduser())
+
+        seen: set[Path] = set()
+        for hub_root in hub_roots:
+            hub_root = hub_root.expanduser()
+            if hub_root in seen or not hub_root.is_dir():
+                continue
+            seen.add(hub_root)
+            for editor in hub_root.iterdir():
+                emscripten_root = (
+                    editor
+                    / "Editor"
+                    / "Data"
+                    / "PlaybackEngines"
+                    / "WebGLSupport"
+                    / "BuildTools"
+                    / "Emscripten"
+                )
+                if emscripten_root.is_dir():
+                    candidates.append((_unity_version_key(editor.name), editor.name, emscripten_root))
+
+    if not candidates:
+        raise SystemExit(
+            "No Unity WebGL Emscripten toolchain was found. Install WebGL Build Support for a local Unity Editor "
+            f"or set {WEB_UNITY_EMSCRIPTEN_ROOT_ENV} to its BuildTools/Emscripten directory."
+        )
+
+    _, label, root = max(candidates, key=lambda item: item[0])
+    emcc = root / "emscripten" / "emcc.py"
+    node = root / "node" / ("node.exe" if os.name == "nt" else "node")
+    config = root / ".emscripten"
+    version_file = root / "emscripten" / "emscripten-version.txt"
+    missing = [path for path in (emcc, node, config) if not path.is_file()]
+    if missing:
+        raise SystemExit(
+            f"Unity WebGL toolchain '{label}' is incomplete; missing: "
+            + ", ".join(str(path) for path in missing)
+        )
+    version = version_file.read_text(encoding="utf-8").strip() if version_file.is_file() else "unknown"
+    return root, emcc, node, version
+
+
+def verify_web_link_harness() -> None:
+    if not WEB_LINK_HARNESS.is_file():
+        raise SystemExit(f"Permanent Web link harness is missing: {WEB_LINK_HARNESS.relative_to(ROOT)}")
+
+    artifact = build_web_native()
+    emscripten_root, emcc, node, emscripten_version = find_unity_web_emscripten()
+    env = base_env()
+    env["EM_CONFIG"] = str(emscripten_root / ".emscripten")
+    env["EM_CACHE"] = str(emscripten_root / "emscripten" / "cache")
+
+    shutil.rmtree(WEB_LINK_HARNESS_DIR, ignore_errors=True)
+    WEB_LINK_HARNESS_DIR.mkdir(parents=True, exist_ok=True)
+    output_js = WEB_LINK_HARNESS_DIR / "taffy_web_link_harness.js"
+
+    run(
+        sys.executable,
+        str(emcc),
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I",
+        str(HEADER.parent),
+        f"-DTAFFY_EXPECTED_ABI_VERSION={parse_u32_const('TU_ABI_VERSION')}",
+        f"-DTAFFY_EXPECTED_ABI_STAGE={parse_u32_const('TU_ABI_STAGE')}",
+        str(WEB_LINK_HARNESS),
+        str(artifact),
+        "-O0",
+        "-sASSERTIONS=1",
+        "-sENVIRONMENT=node",
+        "-sEXIT_RUNTIME=1",
+        "-o",
+        str(output_js),
+        env=env,
+    )
+    output = run(str(node), str(output_js), capture=True, cwd=WEB_LINK_HARNESS_DIR, env=env)
+    marker = "TAFFY_WEB_LINK_HARNESS_PASS"
+    if marker not in output:
+        raise SystemExit(f"Web link harness did not report {marker}. Output: {output.strip() or '<empty>'}")
+    print(
+        "WEB LINK HARNESS VERIFY: PASS — public header ABI linked and executed "
+        f"with Unity Emscripten {emscripten_version}"
+    )
+
+
 def verify_web_independence() -> None:
     cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
     env = web_native_env(WEB_INDEPENDENCE_TARGET_DIR, poison_external_toolchain=True)
@@ -361,6 +468,236 @@ def verify_web_independence() -> None:
     print("WEB NATIVE INDEPENDENCE VERIFY: PASS — no Unity/Emscripten toolchain or native-library dependency")
 
 
+def _production_rust_text(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    test_module = re.search(r"(?m)^#\[cfg\(test\)\]\s*\nmod\s+[A-Za-z0-9_]+\s*\{", text)
+    return text[: test_module.start()] if test_module else text
+
+
+def verify_web_panic_boundary() -> None:
+    if "-Cpanic=abort" not in WEB_RUSTFLAGS:
+        raise SystemExit("Web panic audit requires the canonical -Cpanic=abort compatibility build.")
+
+    panic_tokens = (
+        ".unwrap(",
+        "panic!(",
+        "assert!(",
+        "assert_eq!(",
+        "assert_ne!(",
+        "unreachable!(",
+        "unimplemented!(",
+        "todo!(",
+    )
+    violations: list[str] = []
+    production_sources: dict[Path, str] = {}
+    for path in sorted((ROOT / "native" / "src").glob("*.rs")):
+        text = _production_rust_text(path)
+        production_sources[path] = text
+        panic_scan_text = (
+            text.replace("debug_assert!(", "")
+            .replace("debug_assert_eq!(", "")
+            .replace("debug_assert_ne!(", "")
+        )
+        for token in panic_tokens:
+            if token in panic_scan_text:
+                violations.append(f"{path.relative_to(ROOT)} contains production {token}")
+        if path.name != "context.rs" and ".expect(" in text:
+            violations.append(f"{path.relative_to(ROOT)} contains a production .expect() outside Taffy callbacks")
+
+    context_path = ROOT / "native" / "src" / "context.rs"
+    context_text = production_sources[context_path]
+    expected_invariant_counts = {
+        "Taffy only requests live nodes": 2,
+        "live parent": 3,
+        "live node": 11,
+        "live child": 3,
+    }
+    actual_invariant_counts: dict[str, int] = {}
+    for message in re.findall(r'\.expect\("([^\"]+)"\)', context_text):
+        actual_invariant_counts[message] = actual_invariant_counts.get(message, 0) + 1
+    if actual_invariant_counts != expected_invariant_counts:
+        violations.append(
+            "native/src/context.rs Taffy invariant expect inventory changed: "
+            f"expected={expected_invariant_counts} actual={actual_invariant_counts}"
+        )
+    if context_text.count("children[child_index]") != 1:
+        violations.append("native/src/context.rs Taffy child-index invariant inventory changed")
+
+    if violations:
+        raise SystemExit("Web panic-boundary audit failed:\n- " + "\n- ".join(violations))
+
+    verify_web_link_harness()
+    print(
+        "WEB PANIC BOUNDARY VERIFY: PASS — recoverable ABI errors return status under panic=abort; "
+        "remaining panic-capable sites are pinned Taffy live-tree invariants or release-disabled debug assertions"
+    )
+
+
+def verify_web_thread_local_contexts() -> None:
+    version_text = (ROOT / "native" / "src" / "version.rs").read_text(encoding="utf-8")
+    context_text = (ROOT / "native" / "src" / "context.rs").read_text(encoding="utf-8")
+    managed_text = (ROOT / "UnityPackage" / "Runtime" / "TaffyNative.cs").read_text(encoding="utf-8")
+
+    required_source_contract = (
+        (version_text, "pub const TU_CAP_THREAD_LOCAL_CONTEXTS: u64 = 1 << 8;", "native capability bit"),
+        (version_text, "| TU_CAP_THREAD_LOCAL_CONTEXTS", "native capability aggregation"),
+        (context_text, "thread_local!", "thread-local context registry"),
+        (context_text, "Some(_) => Err(NativeError::WrongThread)", "native wrong-thread rejection"),
+        (managed_text, "CapThreadLocalContexts = 1UL << 8", "managed capability bit"),
+        (managed_text, "CapThreadLocalContexts;", "managed required-capability handshake"),
+    )
+    missing = [label for text, needle, label in required_source_contract if needle not in text]
+    if missing:
+        raise SystemExit(
+            "Web thread-local-context contract drifted; missing: " + ", ".join(missing)
+        )
+
+    verify_web_link_harness()
+
+    cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    run(
+        cargo_bin,
+        "test",
+        "--manifest-path",
+        str(MANIFEST),
+        "--locked",
+        "--test",
+        "native_verification",
+        "p3_7_wrong_thread_use_is_rejected",
+        "--",
+        "--exact",
+        env=base_env(),
+    )
+    print(
+        "WEB THREAD-LOCAL CONTEXT VERIFY: PASS — default Web keeps CapThreadLocalContexts; "
+        "native wrong-thread enforcement remains unchanged"
+    )
+
+
+def verify_web_size() -> None:
+    manifest_text = WEB_MANIFEST.read_text(encoding="utf-8")
+    required_profile = (
+        'lto = "thin"',
+        "codegen-units = 1",
+        'strip = "symbols"',
+    )
+    missing_profile = [entry for entry in required_profile if entry not in manifest_text]
+    if missing_profile:
+        raise SystemExit(
+            "Web release-size profile drifted; missing: " + ", ".join(missing_profile)
+        )
+    if WEB_RUSTFLAGS != ("-Ctarget-cpu=mvp", "-Cpanic=abort"):
+        raise SystemExit(
+            "Web size review refuses compatibility-changing Rust flags; expected only target-cpu=mvp and panic=abort."
+        )
+
+    artifact = build_web_native()
+    archive_bytes = artifact.stat().st_size
+    archive_sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    review_threshold = 6 * 1024 * 1024
+    if archive_bytes > review_threshold:
+        raise SystemExit(
+            f"Web archive is {archive_bytes} bytes, above the {review_threshold}-byte review threshold. "
+            "Review size growth before changing compatibility-sensitive build settings."
+        )
+
+    verify_web_link_harness()
+    linked_wasm = WEB_LINK_HARNESS_DIR / "taffy_web_link_harness.wasm"
+    linked_bytes = linked_wasm.stat().st_size if linked_wasm.is_file() else 0
+    print(
+        "WEB SIZE VERIFY: PASS — "
+        f"archive={archive_bytes} bytes ({archive_bytes / (1024 * 1024):.4f} MiB) "
+        f"sha256={archive_sha256} harness_wasm={linked_bytes} bytes; "
+        "no additional size flags adopted before the Unity 2021.3 old-linker gate"
+    )
+
+
+def verify_web_source_cleanliness() -> None:
+    git_bin = require("git", "Web source-cleanliness verification requires Git.")
+    tracked = set(run(git_bin, "ls-files", capture=True, env=base_env()).splitlines())
+
+    disposable_prefixes = (
+        ".build/",
+        "target/",
+        "native/target/",
+        "native/web/target/",
+        ".local-validation/",
+        ".harness/",
+        ".probes/",
+        "tests/harness/",
+        "tests/probes/",
+        "scripts/harness/",
+        "scripts/probes/",
+    )
+    generated_web_suffixes = (".a", ".wasm", ".o", ".bc", ".js")
+    violations = [
+        path
+        for path in sorted(tracked)
+        if path.startswith(disposable_prefixes)
+        or (path.startswith("native/web/") and path.endswith(generated_web_suffixes))
+    ]
+
+    status = run(
+        git_bin,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+        capture=True,
+        env=base_env(),
+    )
+    leaked_untracked: list[str] = []
+    for line in status.splitlines():
+        if not line.startswith("?? "):
+            continue
+        path = line[3:]
+        if path.startswith(disposable_prefixes) or (
+            path.startswith("native/web/") and path.endswith(generated_web_suffixes)
+        ):
+            leaked_untracked.append(path)
+    if leaked_untracked:
+        violations.extend(f"unignored:{path}" for path in leaked_untracked)
+
+    expected_ignored_paths = (
+        ".build/web-cargo-target/probe.o",
+        ".build/web-link-harness/probe.wasm",
+        "native/web/target/probe.o",
+        "native/web/libtaffy_ugui.a",
+        "native/web/probe.wasm",
+        "native/web/probe.o",
+        "native/web/probe.bc",
+        "native/web/probe.js",
+        ".harness/web-probe",
+        ".probes/web-probe",
+    )
+    for relative_path in expected_ignored_paths:
+        completed = subprocess.run(
+            [git_bin, "check-ignore", "--no-index", "-q", relative_path],
+            cwd=ROOT,
+            env=base_env(),
+            check=False,
+        )
+        if completed.returncode != 0:
+            violations.append(f"not-ignored:{relative_path}")
+
+    required_web_sources = (
+        ROOT / "native" / "web" / "Cargo.toml",
+        ROOT / "native" / "web" / "Cargo.lock",
+        WEB_LINK_HARNESS,
+    )
+    missing_sources = [str(path.relative_to(ROOT)) for path in required_web_sources if not path.is_file()]
+    if missing_sources:
+        violations.extend(f"missing-source:{path}" for path in missing_sources)
+
+    if violations:
+        raise SystemExit(
+            "Web generated/probe source-cleanliness check failed:\n- " + "\n- ".join(violations)
+        )
+
+    print(
+        "WEB SOURCE CLEANLINESS VERIFY: PASS — disposable build/probe paths are ignored, "
+        "no generated Web archive/object/Wasm/JS artifact is tracked or leaking as untracked source"
+    )
+
 
 def list_targets() -> None:
     for spec in TARGETS.values():
@@ -384,6 +721,11 @@ def main() -> int:
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")
     sub.add_parser("verify-web-abi-surface", help="Verify the Web archive exposes exactly the checked-in public tu_* ABI")
     sub.add_parser("web-native", help="Build the generic wasm32-unknown-unknown Web static archive")
+    sub.add_parser("verify-web-link-harness", help="Link and execute the permanent public-header Web ABI harness with Unity Emscripten")
+    sub.add_parser("verify-web-panic-boundary", help="Audit panic=abort Web boundary invariants and run malformed-input ABI regressions")
+    sub.add_parser("verify-web-thread-local-contexts", help="Verify Web thread-local capability semantics without weakening native wrong-thread enforcement")
+    sub.add_parser("verify-web-size", help="Measure the canonical Web archive and reject unreviewed size or compatibility-profile drift")
+    sub.add_parser("verify-web-source-cleanliness", help="Reject tracked or unignored generated/probe Web artifacts and verify disposable paths stay ignored")
     sub.add_parser("verify-web-independence", help="Prove the Web archive builds without Unity/Emscripten or external native libraries")
     sub.add_parser("phase4-status", help="Show local Phase 4 artifact/evidence status")
     sub.add_parser("phase4-host", help="Build all canonical Phase 4 targets assigned to this local OS")
@@ -408,7 +750,12 @@ def main() -> int:
     elif args.command == "verify-web-abi-surface": verify_web_abi_surface()
     elif args.command == "phase4-host": phase4_host()
     elif args.command == "verify-phase4": verify_phase4()
+    elif args.command == "verify-web-link-harness": verify_web_link_harness()
     elif args.command == "web-native": build_web_native()
+    elif args.command == "verify-web-panic-boundary": verify_web_panic_boundary()
+    elif args.command == "verify-web-thread-local-contexts": verify_web_thread_local_contexts()
+    elif args.command == "verify-web-size": verify_web_size()
+    elif args.command == "verify-web-source-cleanliness": verify_web_source_cleanliness()
     elif args.command == "verify-web-independence": verify_web_independence()
     elif args.command == "native":
         if args.target == "macos-universal": macos_universal()

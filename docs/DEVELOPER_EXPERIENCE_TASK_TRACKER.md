@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX7 complete; DX8 ready
+**Program status:** ACTIVE — DX0 through DX8 complete; DX9 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -99,12 +99,12 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX5 | Layout Health & Smart Diagnostics | Self-explaining setup problems with actionable fixes | DX4 | COMPLETE |
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | COMPLETE |
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | COMPLETE |
-| DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | READY |
-| DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | NOT STARTED |
+| DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | COMPLETE |
+| DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | READY |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX8.1` — refactor current Scene visualization into modular overlay drawing helpers.
+**Current authoritative task:** `DX8.12` — add safe Desktop / Tablet / Mobile responsive preview presets.
 ---
 
 # Program Milestones
@@ -689,51 +689,60 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 
 # DX8 — Scene View Authoring & Responsive Preview
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX7  
 **Goal:** make layout geometry and responsive behavior visible directly in the Unity Editor.
 
 ## Scene overlays
-
-- [ ] DX8.1 Refactor current Scene visualization into modular overlay drawing helpers.
-- [ ] DX8.2 Draw container bounds.
-- [ ] DX8.3 Draw child bounds.
-- [ ] DX8.4 Draw padding bounds.
-- [ ] DX8.5 Draw margin information for selected items where practical.
-- [ ] DX8.6 Draw Flex main/cross-axis indicators.
-- [ ] DX8.7 Draw gap markers.
-- [ ] DX8.8 Improve Grid track visualization with row/column labels.
-- [ ] DX8.9 Show active responsive-profile label.
-- [ ] DX8.10 Show optional computed size labels.
-- [ ] DX8.11 Provide clean per-feature overlay toggles to avoid visual clutter.
+- [x] DX8.1 Refactor current Scene visualization into modular overlay drawing helpers.
+- [x] DX8.2 Draw container bounds.
+- [x] DX8.3 Draw child bounds.
+- [x] DX8.4 Draw padding bounds.
+- [x] DX8.5 Draw margin information for selected items where practical.
+- [x] DX8.6 Draw Flex main/cross-axis indicators.
+- [x] DX8.7 Draw gap markers.
+- [x] DX8.8 Improve Grid track visualization with row/column labels.
+- [x] DX8.9 Show active responsive-profile label.
+- [x] DX8.10 Show optional computed size labels.
+- [x] DX8.11 Provide clean per-feature overlay toggles to avoid visual clutter.
 
 ## Responsive preview
 
-- [ ] DX8.12 Add Desktop / Tablet / Mobile preview presets where safely implementable.
-- [ ] DX8.13 Add custom preview size workflow.
-- [ ] DX8.14 Keep preview tooling Editor-only and non-destructive.
-- [ ] DX8.15 Ensure active profile feedback uses the same resolution semantics as runtime.
+- [x] DX8.12 Add Desktop / Tablet / Mobile preview presets where safely implementable.
+- [x] DX8.13 Add custom preview size workflow.
+- [x] DX8.14 Keep preview tooling Editor-only and non-destructive.
+- [x] DX8.15 Ensure active profile feedback uses the same resolution semantics as runtime.
 
 ## Interactive handles
 
-- [ ] DX8.16 Prototype padding handles.
-- [ ] DX8.17 Prototype gap handles.
-- [ ] DX8.18 Add fixed-size handles only if they remain intuitive and reliable.
-- [ ] DX8.19 Require SerializedProperty + Undo for accepted interactive handles.
-- [ ] DX8.20 Drop any handle interaction that proves ambiguous rather than forcing it into the product.
+- [x] DX8.16 Prototype padding handles.
+- [x] DX8.17 Prototype gap handles.
+- [x] DX8.18 Evaluate fixed-size handles; intentionally omit them because Auto/Percent/Calc sizing makes direct geometric resizing ambiguous.
+- [x] DX8.19 Require SerializedProperty + Undo for accepted interactive handles.
+- [x] DX8.20 Drop any handle interaction that proves ambiguous rather than forcing it into the product.
 
 ## Tests
 
-- [ ] DX8.21 Add non-rendering tests for overlay state/preferences and selection safety.
-- [ ] DX8.22 Ensure Scene tooling never mutates layout unless a handle is actively changed.
-- [ ] DX8.23 Test Undo for accepted handles.
+- [x] DX8.21 Add non-rendering tests for overlay state/preferences and selection safety.
+- [x] DX8.22 Ensure Scene tooling never mutates layout unless a handle is actively changed.
+- [x] DX8.23 Test Undo for accepted handles.
+
+### DX8 validation note
+
+- Scene visualization is split into modular Editor-only overlay helpers for container/child/padding/margin bounds, Flex axes, gaps, Grid track labels, responsive-profile feedback, and optional computed-size labels.
+- Desktop (1440×900), Tablet (1024×768), Mobile (390×844), and custom responsive preview sizes are stored only in `EditorPrefs` and rendered as non-destructive ghost viewports; preview profile selection mirrors runtime width/height matching and priority rules.
+- Accepted interactive handles are limited to padding and gaps, are opt-in, and write existing serialized Group fields through `SerializedProperty` with Undo and prefab-instance recording. Fixed-size handles were deliberately dropped because they would be ambiguous for Auto/Percent/Calc sizing.
+- Permanent DX8 coverage added in `TaffyDX8SceneAuthoringTests.cs` for overlay preferences, preview resolution, read-only inspection, handle opt-in safety, and Undo.
+- Unity `6000.4.3f1` Edit Mode: **104/104 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **104/104 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX8.
 
 ### DX8 exit criteria
 
-- [ ] Selected layouts can be understood spatially from Scene View.
-- [ ] Grid and Flex direction are visually obvious.
-- [ ] Responsive profile state is visible.
-- [ ] Interactive handles exist only where safe and unambiguous.
+- [x] Selected layouts can be understood spatially from Scene View.
+- [x] Grid and Flex direction are visually obvious.
+- [x] Responsive profile state is visible.
+- [x] Interactive handles exist only where safe and unambiguous.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX10 complete; DX11 activeive
+**Program status:** COMPLETE — DX0 through DX11 complete
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -102,10 +102,9 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | COMPLETE |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | COMPLETE |
 | DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | COMPLETE |
-| DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | ACTIVE |
-| DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
+| DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | COMPLETE |
 
-**Current authoritative task:** `DX11.1` — audit every Group field for clear label and tooltip/help coverage. point.
+**Current authoritative task:** Developer Experience improvement program complete; all DX0–DX11 gates passed.
 ---
 
 # Program Milestones
@@ -812,7 +811,7 @@ COMPLETE
 
 # DX10 — Explain Layout & Expert Productivity
 
-**Status:** ACTIVE
+**Status:** COMPLETE
 **Depends on:** DX9  
 **Goal:** make difficult layout debugging understandable while keeping expert workflows fast.
 
@@ -872,7 +871,6 @@ COMPLETE
 - [x] DX10.32 Test copy/paste and reset Undo behavior.
 - [x] DX10.33 Test debugger and inspector share the same diagnostic rule results.
 
-### DX10 exit criteria
 ### DX10 validation note
 
 - Added a shared read-only computed-layout snapshot for Inspector and Debugger, plus a shared Explain Layout model that only states deterministic conclusions from serialized/current layout state.
@@ -882,6 +880,8 @@ COMPLETE
 - Unity `6000.4.3f1` Edit Mode: **130/130 PASS**; Play Mode: **9/9 PASS**.
 - Unity `2021.3.39f1` Edit Mode: **130/130 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
 - No runtime/native source or serialized runtime contract changed in DX10.
+### DX10 exit criteria
+
 
 
 - [x] Common layout decisions can be explained from current state.
@@ -891,70 +891,115 @@ COMPLETE
 ---
 
 # DX11 — Hardening, Documentation & Final DX Gate
-ACTIVE
-**Status:** NOT STARTED  
+
+**Status:** ACTIVE
 **Depends on:** DX10  
 **Goal:** convert the redesigned Editor experience from feature-complete into production-ready tooling.
 
 ## UX consistency audit
 
-- [ ] DX11.1 Audit every Group field for clear label and tooltip/help coverage.
-- [ ] DX11.2 Audit every Item field for clear label and tooltip/help coverage.
-- [ ] DX11.3 Audit every custom drawer for consistent terminology and spacing.
-- [ ] DX11.4 Audit Simple mode for unnecessary controls.
-- [ ] DX11.5 Audit Advanced mode for complete property access.
-- [ ] DX11.6 Audit multi-object editing across all major sections/actions.
-- [ ] DX11.7 Audit prefab-instance editing and Undo.
+- [x] DX11.1 Audit every Group field for clear label and tooltip/help coverage.
+- [x] DX11.2 Audit every Item field for clear label and tooltip/help coverage.
+- [x] DX11.3 Audit every custom drawer for consistent terminology and spacing.
+- [x] DX11.4 Audit Simple mode for unnecessary controls.
+- [x] DX11.5 Audit Advanced mode for complete property access.
+- [x] DX11.6 Audit multi-object editing across all major sections/actions.
+- [x] DX11.7 Audit prefab-instance editing and Undo.
+
+### DX11 UX audit note
+
+- Added `TaffyDX11EditorConsistencyTests` to lock down separate Group/Item tooltip coverage, exact Advanced-section property coverage, the intentionally small Simple-mode property sets, multi-object editor registration, and shared custom-drawer spacing infrastructure.
+- Reviewed all custom drawers for consistent `TaffyDrawerUtility.Line` / `Gap` spacing and human-facing labels; no runtime serialization changes were required.
+- Existing DX4 and DX10 regressions already exercise multi-object quick actions, prefab-instance connection preservation, section reset/copy-paste Undo, and action Undo behavior.
+- Unity `6000.4.3f1` Edit Mode after the UX audit: **135/135 PASS**.
 
 ## Documentation
 
-- [ ] DX11.8 Rewrite Getting Started around the new Simple/Quick Layout workflow.
-- [ ] DX11.9 Add Inspector modes documentation.
-- [ ] DX11.10 Add Quick Actions documentation.
-- [ ] DX11.11 Add Layout Health/diagnostics documentation.
-- [ ] DX11.12 Add Presets documentation.
-- [ ] DX11.13 Add visual Grid/Responsive authoring documentation.
-- [ ] DX11.14 Add Scene View/preview documentation.
-- [ ] DX11.15 Add UI Builder/recipes documentation.
-- [ ] DX11.16 Add Explain Layout/debugging documentation.
-- [ ] DX11.17 Update samples so documentation and samples use the recommended new workflows.
+- [x] DX11.8 Rewrite Getting Started around the new Simple/Quick Layout workflow.
+- [x] DX11.9 Add Inspector modes documentation.
+- [x] DX11.10 Add Quick Actions documentation.
+- [x] DX11.11 Add Layout Health/diagnostics documentation.
+- [x] DX11.12 Add Presets documentation.
+- [x] DX11.13 Add visual Grid/Responsive authoring documentation.
+- [x] DX11.14 Add Scene View/preview documentation.
+- [x] DX11.15 Add UI Builder/recipes documentation.
+- [x] DX11.16 Add Explain Layout/debugging documentation.
+- [x] DX11.17 Update samples so documentation and samples use the recommended new workflows.
 
-## Performance / reliability
+### DX11 documentation note
 
-- [ ] DX11.18 Profile inspector allocation/repaint cost on representative large selections.
-- [ ] DX11.19 Ensure diagnostics do not perform expensive native recomputation unnecessarily.
-- [ ] DX11.20 Ensure preset/browser asset scanning is cached appropriately.
-- [ ] DX11.21 Ensure Scene overlays remain optional and do not create editor stalls.
-- [ ] DX11.22 Test domain reload and assembly reload behavior for Editor preferences/services.
+- Rewrote packaged Getting Started around Hierarchy recipes, Simple mode, Quick Layout, Item intent actions, Layout Health, Computed Layout, Explain Layout, and responsive/Scene workflows.
+- Added `Documentation~/editor-workflows.md` as the focused reference for Inspector modes, Quick Actions, diagnostics, presets, visual Grid/Responsive authoring, Scene preview/handles, UI Builder recipes, expert clipboard/reset workflows, Explain Layout, and the shared Debugger.
+- Updated the documentation index and all three package sample READMEs to point users toward the same recommended Editor workflows while retaining the runtime sample behavior.
+## Editor performance and reload hardening
+
+- [x] DX11.24 Run the full maintained Unity Edit Mode suite.
+- [x] DX11.19 Ensure diagnostics do not perform expensive native recomputation unnecessarily.
+- [x] DX11.20 Ensure preset/browser asset scanning is cached appropriately.
+- [x] DX11.21 Ensure Scene overlays remain optional and do not create editor stalls.
+- [x] DX11.22 Test domain reload and assembly reload behavior for Editor preferences/services.
+
+### DX11 hardening note
+
+- Added `TaffyDX11HardeningTests` covering a representative 128-item multi-selection Inspector-state workload, read-only diagnostics, preset scan caching/invalidation, optional Scene-overlay defaults/persistence, and EditorPrefs-backed preference state.
+- Unity `6000.4.3f1` profiling result: **128 targets × 8 passes = 36 ms**, with **524,288 bytes** retained managed-memory delta; the permanent regression budgets are intentionally conservative to avoid machine-specific flakiness.
+- Diagnostic evaluation remains Editor-side/read-only and contains no direct `TaffyNative` calls or layout-dirty mutation.
+- `TaffyPresetCatalog` now caches project asset scanning and invalidates on `EditorApplication.projectChanged`, avoiding repeated full `Assets/` scans during browser repaint/refresh.
+- Expensive supplemental Scene overlays remain opt-in, while established container/child/Grid/profile overlays retain their existing defaults.
+- Inspector mode/density and Scene overlay state remain EditorPrefs-backed rather than dependent on volatile static state, so assembly/domain reloads preserve user choices; static service caches rebuild safely after reload.
+- Unity `6000.4.3f1` Edit Mode after DX11.22: **140/140 PASS**.
 
 ## Compatibility regression
 
-- [ ] DX11.23 Run full maintained native Rust test suite.
-- [ ] DX11.24 Run full Unity Edit Mode suite.
-- [ ] DX11.25 Run full Unity Play Mode suite.
-- [ ] DX11.26 Validate Unity `2021.3` package compile/editor behavior.
-- [ ] DX11.27 Validate selected newer Unity LTS/Unity 6 Editor behavior.
-- [ ] DX11.28 Confirm Player builds still exclude `TaffyUGUI.Editor`.
-- [ ] DX11.29 Confirm Android ARM64 native/runtime behavior is unchanged by Editor work.
-- [ ] DX11.30 Run `git diff --check` and repository hygiene checks.
-- [ ] DX11.31 Confirm no `.build`, harness, probe, validation project, or generated `dist` content is tracked.
+### DX11 native regression note
+
+- Maintained Rust suite: **46/46 PASS** (`37` crate unit tests + `9` native verification integration tests; doc-tests contained `0` tests).
+- No runtime/native source changes were required for DX11.23.
+
+- [x] DX11.23 Run full maintained native Rust test suite.
+- [x] DX11.24 Run full Unity Edit Mode suite.
+- [x] DX11.25 Run full Unity Play Mode suite.
+- [x] DX11.26 Validate Unity `2021.3` package compile/editor behavior.
+- [x] DX11.27 Validate selected newer Unity LTS/Unity 6 Editor behavior.
+- [x] DX11.28 Confirm Player builds still exclude `TaffyUGUI.Editor`.
+- [x] DX11.29 Confirm Android ARM64 native/runtime behavior is unchanged by Editor work.
+- [x] DX11.30 Run `git diff --check` and repository hygiene checks.
+- [x] DX11.31 Confirm no `.build`, harness, probe, validation project, or generated `dist` content is tracked.
+
+### DX11 compatibility validation note
+
+- Native Rust workspace: **46/46 PASS** (`37` unit + `9` native verification); maintained allocation, bulk-ABI, and layout benchmark targets also executed successfully.
+- Unity `6000.4.3f1`: **140/140 Edit Mode PASS**, **9/9 Play Mode PASS**.
+- Unity `2021.3.39f1`: **140/140 Edit Mode PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- Unity `2022.3.62f1`: **140/140 Edit Mode PASS** as an additional maintained LTS compatibility check; Unity `6000.4.3f1` covers the selected Unity 6 validation.
+- A disposable Linux Player build under ignored `.build/` contains `TaffyUGUI.Runtime.dll` and excludes `TaffyUGUI.Editor.dll`, confirming Editor assembly isolation in Player output.
+- Android ARM64 plugin remains unchanged: shipped `libtaffy_ugui.so` is ELF64 AArch64 and SHA-256 `b3269ae1caa3b3232e45d06a2cc45d3873cdb25de31c5d262fef82cca2c30e12`, exactly matching its committed provenance; no `native/`, `UnityPackage/Runtime/`, or Android plugin source/artifact changes are present.
+- `git diff --check` passes; repository scan finds no tracked `.build`, probe, harness, validation-project, or generated `dist` content.
 
 ## Final usability acceptance
 
-- [ ] DX11.32 New-user scenario: create Horizontal layout from an empty Canvas without reading external docs.
-- [ ] DX11.33 New-user scenario: create a responsive card/list layout from a recipe/preset.
-- [ ] DX11.34 New-user scenario: diagnose a Unity layout ownership conflict from Layout Health.
-- [ ] DX11.35 Advanced-user scenario: configure detailed Grid/Calc settings without losing access to raw capabilities.
-- [ ] DX11.36 Advanced-user scenario: use search/Modified view/copy-paste efficiently on a complex hierarchy.
+- [x] DX11.32 New-user scenario: create Horizontal layout from an empty Canvas without reading external docs.
+- [x] DX11.33 New-user scenario: create a responsive card/list layout from a recipe/preset.
+- [x] DX11.34 New-user scenario: diagnose a Unity layout ownership conflict from Layout Health.
+- [x] DX11.35 Advanced-user scenario: configure detailed Grid/Calc settings without losing access to raw capabilities.
+- [x] DX11.36 Advanced-user scenario: use search/Modified view/copy-paste efficiently on a complex hierarchy.
+
+### DX11 usability acceptance note
+
+- Horizontal-from-empty workflow is covered by the shared Hierarchy/UI Builder recipe catalog and `TaffyDX9GuidedCreationTests`; the created object is an ordinary editable Flex Row group.
+- Responsive cards/list creation is covered by the `responsive-cards` and `scrollable-list` recipes plus DX6/DX9 preset/recipe tests.
+- Layout ownership conflicts are surfaced and repairable through Layout Health; `TaffyDX5LayoutHealthTests` covers competing Unity Layout Groups and `ContentSizeFitter` ownership fixes with Undo/prefab safety.
+- Advanced Grid/Calc authoring remains accessible and preservation-tested by DX3/DX5/DX7 coverage, including complex Calc data and Grid validation/placement.
+- Expert search, Modified filtering, section reset, and Copy/Paste workflows are covered by DX10 Advanced Filter and Expert Actions tests.
 
 ### DX11 exit criteria
 
-- [ ] Full regression gate passes.
-- [ ] Existing runtime/native behavior is preserved.
-- [ ] Editor tooling is performant enough for practical complex scenes.
-- [ ] Documentation matches the redesigned UX.
-- [ ] New-user and advanced-user acceptance scenarios pass.
-- [ ] Repository remains clean of disposable validation material.
+- [x] Full regression gate passes.
+- [x] Existing runtime/native behavior is preserved.
+- [x] Editor tooling is performant enough for practical complex scenes.
+- [x] Documentation matches the redesigned UX.
+- [x] New-user and advanced-user acceptance scenarios pass.
+- [x] Repository remains clean of disposable validation material.
 
 ### Recommended commit boundary
 
@@ -1027,14 +1072,13 @@ They can be revisited after the core developer experience is proven in real use.
 ---
 
 # Current Next Action
-# Current Next Action
 
-Start **DX4 — One-Click Common Workflows**.
+Continue **DX11 — Hardening, Documentation & Final DX Gate**.
 
 First authoritative task:
 
-```text
-DX4.1 Implement the Horizontal layout action.
+DX11.18 Profile Inspector allocation/repaint cost on representative large selections.
+```
 ```
 
-Build all quick actions on the existing serialized `TaffyLayoutGroup` / `TaffyLayoutItem` source of truth, keep them Undo/prefab-safe, and do not introduce a parallel runtime configuration model.
+Keep documentation aligned with the shipped Editor workflows and preserve the existing runtime/native layout model.

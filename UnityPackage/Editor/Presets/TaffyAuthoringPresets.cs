@@ -295,8 +295,37 @@ namespace TaffyUGUI.Editor
 
     internal static class TaffyPresetCatalog
     {
+            private static List<TaffyPresetEntry> s_cachedEntries;
+        private static int s_scanCount;
+
+        static TaffyPresetCatalog()
+        {
+            EditorApplication.projectChanged += Invalidate;
+        }
+
+        internal static int ScanCountForTests => s_scanCount;
+
         internal static List<TaffyPresetEntry> LoadAll()
         {
+            if (s_cachedEntries == null)
+                s_cachedEntries = ScanAll();
+            return new List<TaffyPresetEntry>(s_cachedEntries);
+        }
+
+        internal static void Invalidate()
+        {
+            s_cachedEntries = null;
+        }
+
+        internal static void ResetCacheForTests()
+        {
+            s_cachedEntries = null;
+            s_scanCount = 0;
+        }
+
+        private static List<TaffyPresetEntry> ScanAll()
+        {
+            s_scanCount++;
             var entries = new List<TaffyPresetEntry>();
             IReadOnlyList<TaffyAuthoringPresetData> builtIns = TaffyBuiltInPresets.All;
             for (int i = 0; i < builtIns.Count; i++)

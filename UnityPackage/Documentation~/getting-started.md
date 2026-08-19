@@ -2,11 +2,11 @@
 
 ## Requirements
 
-TaffyUGUI 1.0.0 targets Unity **2021.3 or newer**. The package declares uGUI and TextMeshPro dependencies; Unity 6 resolves the modern uGUI/TMP shim versions automatically. The v1.0 Player target is Android ARM64.
+TaffyUGUI 1.0.0 targets Unity **2021.3 or newer**. The package declares uGUI and TextMeshPro dependencies. The v1.0 Player target is Android ARM64.
 
-## Install from Git
+## Install
 
-After the repository owner intentionally creates the `v1.0.0` tag, choose **Add package from git URL...** and enter:
+After the repository owner intentionally creates the `v1.0.0` tag, choose **Add package from git URL...** in Package Manager and enter:
 
 ```text
 https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.0.0
@@ -14,41 +14,51 @@ https://github.com/dofomii/TaffyUGUI.git?path=/UnityPackage#v1.0.0
 
 For a local checkout, choose **Add package from disk...** and select `UnityPackage/package.json`.
 
-## First layout
+## Create your first layout
 
-1. Create or select a uGUI object with a `RectTransform` under a Canvas.
-2. Remove any `HorizontalLayoutGroup`, `VerticalLayoutGroup`, or `GridLayoutGroup` from that same object. Unity layout groups are mutually exclusive with `TaffyLayoutGroup`.
-3. Add **Taffy Layout Group**.
-4. Leave **Formatting Context = Flex** and choose a Flex Direction.
-5. Add child `RectTransform` objects.
-6. Add `TaffyLayoutItem` to children that need explicit width/height, margin, flex growth/shrink, Grid placement, aspect ratio, or measurement control.
+The fastest path is the guided Editor workflow; you do not need to configure raw Flex properties first.
 
-Example:
+1. Create a Canvas if the scene does not already have one.
+2. In the Hierarchy, choose **GameObject > TaffyUGUI > Horizontal Layout**.
+3. Select the created object. The Inspector opens in **Simple** mode by default.
+4. Use **Quick Layout** to switch between common layouts such as Horizontal, Vertical, Centered Panel, Toolbar, Cards, or Grid.
+5. Add or select child UI objects. Add **Taffy Layout Item** only when a child needs explicit sizing, Flex growth, Grid placement, spacing, or measurement behavior.
+6. Use the Item quick actions for common intent: **Fill Width**, **Fill Parent**, **Fit Content**, **Fixed Size**, **Flexible Item**, **Spacer**, or contextual centering.
 
-```csharp
-var group = root.gameObject.AddComponent<TaffyLayoutGroup>();
-group.direction = TaffyFlexDirection.Row;
-group.horizontalGap = 12f;
-group.alignItems = TaffyAlign.Center;
+Simple mode edits the same serialized `TaffyLayoutGroup` and `TaffyLayoutItem` fields as Advanced mode. Switch to **Advanced** when you need the complete Flex, Grid, Block, Calc, measurement, responsive, or integration surface.
 
-var item = child.gameObject.AddComponent<TaffyLayoutItem>();
-item.width = TaffyLength.Points(160f);
-item.height = TaffyLength.Points(48f);
-item.flexShrink = 1f;
-```
+## Start from a recipe or preset
 
-`TaffyLayoutGroup` participates in Unity's normal `ILayoutElement` / `ILayoutController` rebuild flow. Do not call the native library directly for normal uGUI use.
+For common UI structures, use one of these paths instead of building the hierarchy manually:
+
+- **GameObject > TaffyUGUI**: Horizontal Layout, Vertical Layout, Centered Panel, Toolbar, Sidebar + Content, Scrollable List, Responsive Cards, Modal, Form, Grid Layout, and Spacer.
+- **Window > TaffyUGUI > UI Builder**: searchable access to the same ordinary scene-object recipes.
+- **Window > TaffyUGUI > Preset Browser**: apply reusable built-in or project presets to an existing Group or Item.
+
+Recipes and presets write ordinary TaffyUGUI serialized state. They do not introduce a separate runtime document or live preset model.
+
+## Understand a selected layout
+
+The Inspector provides three increasingly detailed levels of feedback:
+
+- **Computed Layout** shows current RectTransform geometry, responsive profile, parent/effective layout context, measured content information where available, and Grid validation state.
+- **Layout Health** reports common setup conflicts and offers explicit fixes where safe.
+- **Explain Layout** summarizes deterministic reasons for fixed/percent/content sizing, padding, active responsive overrides, common Flex Grow behavior, and Grid placement. It avoids claiming internal reasoning when the available state is insufficient.
+
+For a broader view, open **Tools > TaffyUGUI > Layout Debugger**. The Debugger reuses the same diagnostic and computed-layout data as the Inspector.
+
+## Responsive and Scene workflows
+
+Use the visual responsive and Grid controls in the Group Inspector for normal authoring. For non-destructive responsive inspection, choose **Tools > TaffyUGUI > Responsive Preview** and select Desktop, Tablet, Mobile, or a custom size.
+
+Scene visualization is controlled from **Tools > TaffyUGUI > Scene Overlays**. Container/child bounds, padding, margins, Flex axes, gaps, Grid tracks, responsive-profile labels, and computed-size labels can be enabled independently. Optional padding and gap handles are under **Tools > TaffyUGUI > Scene Handles** and use normal serialized editing with Undo.
 
 ## Import samples
 
-Open Package Manager, select **TaffyUGUI**, expand **Samples**, and import **Flex Quick Start**, **Grid and Responsive**, or **Custom Measurement**. Each sample is a small runtime bootstrap that can be placed on an empty `RectTransform` under a Canvas.
-
-## Editor tools
-
-- **Tools > TaffyUGUI > Layout Debugger** shows resolved layout and diagnostics.
-- **Tools > TaffyUGUI > Migration Window** analyzes and migrates supported built-in uGUI layout groups.
-- Selecting a Taffy layout in Scene view enables layout visualization supplied by the Editor assembly.
+Open Package Manager, select **TaffyUGUI**, expand **Samples**, and import **Flex Quick Start**, **Grid and Responsive**, or **Custom Measurement**. The sample READMEs point back to the recommended Inspector, recipe, preview, and debugging workflows.
 
 ## Important ownership rule
 
-Let one system own each axis. `ContentSizeFitter`, `AspectRatioFitter`, ScrollRect content sizing, and Taffy can otherwise request competing geometry. Taffy contains explicit bridges and warnings for common combinations; see [ScrollRect and Responsive Integration](responsive-and-scrollrect.md).
+Let one system own each axis. Do not keep Unity `HorizontalLayoutGroup`, `VerticalLayoutGroup`, or `GridLayoutGroup` on the same object as `TaffyLayoutGroup`. `ContentSizeFitter`, `AspectRatioFitter`, ScrollRect content sizing, and Taffy can also request competing geometry. Layout Health surfaces common conflicts; see [ScrollRect and Responsive Integration](responsive-and-scrollrect.md) for integration details.
+
+For the complete Editor workflow reference, see [Editor Workflows](editor-workflows.md).

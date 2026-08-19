@@ -3,6 +3,7 @@
 TaffyUGUI 1.0.0 is a uGUI layout package backed by Rust and Taffy 0.13.0.
 
 - [Getting Started](getting-started.md)
+- [Editor Workflows](editor-workflows.md)
 - [Flexbox and Block](flexbox.md)
 - [Grid and Calc](grid-and-calc.md)
 - [LayoutElement, Measurement, and TextMeshPro](measurement.md)

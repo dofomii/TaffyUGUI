@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.1.0] - 2026-08-19
+
+Developer Experience release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.
+
+### Added
+
+- Beginner-first Simple/Advanced inspectors with contextual help, smart summaries, and intent-first sizing, spacing, alignment, Grid, and responsive authoring.
+- One-click Quick Layout and Item actions, hierarchy recipes, guided onboarding, and the reusable UI Builder workflow.
+- Layout Health diagnostics with Undo/prefab-safe repairs for common ownership, sizing, Grid, Calc, responsive, and measurement problems.
+- Apply-once built-in/project presets with a searchable preset browser and cached project-asset discovery.
+- Scene View layout overlays, responsive preview presets, safe padding/gap handles, computed-layout inspection, and Explain Layout.
+- Advanced Inspector search/aliases, Essentials/Modified/All filtering, section reset, safe layout copy/paste, density preference, and shared Debugger diagnostics.
+
+### Changed
+
+- Getting Started, package documentation, and samples now use the recommended guided Editor workflows.
+- Editor diagnostics, preset scanning, overlays, and preference/reload behavior were hardened for large selections and normal domain reloads.
+
+### Compatibility
+
+- Full maintained native regression: 46/46 tests passed.
+- Unity 6000.4.3f1: 140/140 Edit Mode and 9/9 Play Mode tests passed.
+- Unity 2021.3.39f1 and 2022.3.62f1: 140/140 Edit Mode compatibility validation passed.
+- Advertised Player target remains Android ARM64 only.
+
 ## [1.0.0] - 2026-08-18
 
 First production release.

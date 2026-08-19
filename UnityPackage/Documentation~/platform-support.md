@@ -1,16 +1,16 @@
 # Platform Support and Compatibility
 
-## v1.0 support claim
+## v1.1 support claim
 
-**Advertised Player target: Android ARM64 only.** Other Player targets are intentionally not advertised in v1.0 even where build definitions or historical experiments exist.
+**Advertised Player target: Android ARM64 only.** Other Player targets are intentionally not advertised in v1.1 even where build definitions or historical experiments exist.
 
 ## Final compatibility matrix
 
 | Environment | Package compile | Edit Mode | Play Mode | Player claim |
 |---|---:|---:|---:|---|
-| Unity 2021.3.39f1 / Linux Editor | Pass | 41/41 | 9/9 | Editor/package validation only |
-| Unity 2022.3.62f1 / Linux Editor | Pass | 41/41 | 9/9 | Editor/package validation only |
-| Unity 6000.4.3f1 / Linux Editor | Pass | 41/41 | 9/9 | Android ARM64 IL2CPP validated |
+| Unity 2021.3.39f1 / Linux Editor | Pass | 140/140 | 9/9 maintained runtime baseline | Editor/package validation only |
+| Unity 2022.3.62f1 / Linux Editor | Pass | 140/140 | 9/9 maintained runtime baseline | Editor/package validation only |
+| Unity 6000.4.3f1 / Linux Editor | Pass | 140/140 | 9/9 | Android ARM64 IL2CPP validated |
 | Android ARM64 / Unity 6 IL2CPP | n/a | n/a | n/a | **Supported**; physical-device smoke passed during Phase 12 and fresh Phase 13 packaging/ELF validation passed |
 | Windows x64 Player | n/a | n/a | n/a | Not advertised |
 | macOS Intel / Apple Silicon Player | n/a | n/a | n/a | Not advertised |

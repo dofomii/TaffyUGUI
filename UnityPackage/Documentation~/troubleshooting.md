@@ -2,7 +2,7 @@
 
 ## `DllNotFoundException` / native library does not load
 
-v1.0 ships a native plugin for **Android ARM64 only**. The plugin is deliberately disabled in Editor and other Player targets. Build an Android ARM64 Player; do not expect the package native library to run in a Windows/macOS/Linux Player.
+v1.1 ships a native plugin for **Android ARM64 only**. The plugin is deliberately disabled in Editor and other Player targets. Build an Android ARM64 Player; do not expect the package native library to run in a Windows/macOS/Linux Player.
 
 The Editor regression hosts use a separate local validation library that is not part of the distributed package.
 

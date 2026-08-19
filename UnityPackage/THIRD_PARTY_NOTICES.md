@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-TaffyUGUI 1.0.0 links the following Rust runtime dependencies into the distributed native library. This list was produced from `cargo tree --edges normal` with the locked v1.0 source tree. Build-only tooling is not part of the shipped runtime library.
+TaffyUGUI 1.1.0 links the following Rust runtime dependencies into the distributed native library. This list was produced from `cargo tree --edges normal` with the locked v1.1 source tree. Build-only tooling is not part of the shipped runtime library.
 
 | Dependency | Version | Declared license | License used for this distribution |
 |---|---:|---|---|

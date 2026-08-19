@@ -1,6 +1,6 @@
 # TaffyUGUI documentation
 
-TaffyUGUI 1.0.0 is a uGUI layout package backed by Rust and Taffy 0.13.0.
+TaffyUGUI 1.1.0 is a uGUI layout package backed by Rust and Taffy 0.13.0.
 
 - [Getting Started](getting-started.md)
 - [Editor Workflows](editor-workflows.md)
@@ -12,4 +12,4 @@ TaffyUGUI 1.0.0 is a uGUI layout package backed by Rust and Taffy 0.13.0.
 - [Platform Support and Compatibility](platform-support.md)
 - [Troubleshooting and Diagnostics](troubleshooting.md)
 
-The v1.0 Player support claim is deliberately narrow: **Android ARM64 only**. Editor/package regression coverage is broader and is listed in the compatibility document.
+The v1.1 Player support claim is deliberately narrow: **Android ARM64 only**. Editor/package regression coverage is broader and is listed in the compatibility document.

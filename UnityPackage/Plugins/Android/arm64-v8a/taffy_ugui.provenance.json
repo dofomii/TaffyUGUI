@@ -12,7 +12,7 @@
   "schema": 1,
   "sha256": "896bafb9d74fb9efdfd9d76854118122b103f51a54ac9240ccb9702c90c41bf0",
   "source_manifest": "dist/native/android/arm64-v8a/manifest.json",
-  "source_revision": "5e13c2047b45f4e264a4fc6b0ecef12143ea6b00+working-tree",
+  "source_revision": "443bd026af2565f3a97294b750d3a2a0283797c4",
   "source_tree": "sha256:0e64118bade19b7207144767cd9c17769d9365968336e9628a52bbbdddeb1e73",
   "taffy_version": "0.13.0"
 }

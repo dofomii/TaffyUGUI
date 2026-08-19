@@ -933,7 +933,7 @@ COMPLETE
 - Updated the documentation index and all three package sample READMEs to point users toward the same recommended Editor workflows while retaining the runtime sample behavior.
 ## Editor performance and reload hardening
 
-- [x] DX11.24 Run the full maintained Unity Edit Mode suite.
+- [x] DX11.18 Profile Inspector allocation/repaint cost on representative large selections.
 - [x] DX11.19 Ensure diagnostics do not perform expensive native recomputation unnecessarily.
 - [x] DX11.20 Ensure preset/browser asset scanning is cached appropriately.
 - [x] DX11.21 Ensure Scene overlays remain optional and do not create editor stalls.
@@ -1073,12 +1073,4 @@ They can be revisited after the core developer experience is proven in real use.
 
 # Current Next Action
 
-Continue **DX11 — Hardening, Documentation & Final DX Gate**.
-
-First authoritative task:
-
-DX11.18 Profile Inspector allocation/repaint cost on representative large selections.
-```
-```
-
-Keep documentation aligned with the shipped Editor workflows and preserve the existing runtime/native layout model.
+DX0–DX11 are complete. Start no additional DX work unless a new post-DX task is explicitly approved.

@@ -4,6 +4,7 @@
 
 - [PROJECT_STATUS.md](PROJECT_STATUS.md) — authoritative high-level progress and current phase.
 - [TASK_TRACKER.md](TASK_TRACKER.md) — complete phase/task history and next work.
+- [WEBGL_SUPPORT_TASK_TRACKER.md](WEBGL_SUPPORT_TASK_TRACKER.md) — authoritative Unity 2021.3-to-current Web/WebGL support implementation and validation tracker.
 - [DEVELOPER_EXPERIENCE_TASK_TRACKER.md](DEVELOPER_EXPERIENCE_TASK_TRACKER.md) — authoritative post-v1 implementation tracker for the developer-friendly inspector, presets, diagnostics, visual authoring, and guided workflows.
 - [DX0_EDITOR_COMPATIBILITY_BASELINE.md](DX0_EDITOR_COMPATIBILITY_BASELINE.md) — frozen serialized/editor compatibility contract for the DX program.
 - [LOCAL_VERIFICATION_STATUS.md](LOCAL_VERIFICATION_STATUS.md) — checks actually executed in the current local environment.
@@ -29,7 +30,8 @@
 ## Active phase
 
 Phase 14 — v1.0 Release is **complete and intentionally unpublished**. See [PHASE14_V1_RELEASE.md](PHASE14_V1_RELEASE.md).
-Post-v1 Developer Experience Improvement is active. **DX0 is complete; DX1 — Editor Core & Inspector Refactor is ready to start.** See [DEVELOPER_EXPERIENCE_TASK_TRACKER.md](DEVELOPER_EXPERIENCE_TASK_TRACKER.md).
+The Developer Experience program is complete. Unity Web/WebGL support is now active: **WEB0 feasibility is complete and WEB1 — Production generic Wasm native artifact is ready to start.** See [WEBGL_SUPPORT_TASK_TRACKER.md](WEBGL_SUPPORT_TASK_TRACKER.md).
+
 ## Local development
 
 - [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md)

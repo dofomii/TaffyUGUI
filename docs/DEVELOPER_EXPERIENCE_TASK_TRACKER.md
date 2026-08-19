@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX9 complete; DX10 ready
+**Program status:** ACTIVE — DX0 through DX10 complete; DX11 activeive
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -101,10 +101,11 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | COMPLETE |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | COMPLETE |
 | DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | COMPLETE |
-| DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | READY |
+| DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | COMPLETE |
+| DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | ACTIVE |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX10.1` — show computed position/size for the selected Group/Item where available.
+**Current authoritative task:** `DX11.1` — audit every Group field for clear label and tooltip/help coverage. point.
 ---
 
 # Program Milestones
@@ -802,7 +803,7 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 - No runtime/native source or serialized runtime contract changed in DX9.
 
 ### DX9 exit criteria
-
+COMPLETE
 - [x] First-time users can create useful layouts from guided workflows.
 - [x] Builder and Hierarchy menus reuse the same recipe/action infrastructure.
 - [x] No special runtime representation is introduced.
@@ -811,68 +812,86 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 
 # DX10 — Explain Layout & Expert Productivity
 
-**Status:** NOT STARTED  
+**Status:** ACTIVE
 **Depends on:** DX9  
 **Goal:** make difficult layout debugging understandable while keeping expert workflows fast.
 
 ## Computed layout panel
 
-- [ ] DX10.1 Show computed position/size for the selected Group/Item where available.
-- [ ] DX10.2 Show resolved responsive profile.
-- [ ] DX10.3 Show measured content information where available.
-- [ ] DX10.4 Show parent context and effective display/direction.
-- [ ] DX10.5 Show relevant Grid diagnostics inline.
+- [x] DX10.1 Show computed position/size for the selected Group/Item where available.
+- [x] DX10.2 Show resolved responsive profile.
+- [x] DX10.3 Show measured content information where available.
+- [x] DX10.4 Show parent context and effective display/direction.
+- [x] DX10.5 Show relevant Grid diagnostics inline.
+
+### DX10 computed-layout progress note
+
+- Shared `TaffyComputedLayoutSnapshot` now reports current RectTransform geometry, resolved responsive profile, parent/effective display and Flex direction, intrinsic measurement data when a source is available, and read-only Grid validation feedback.
+- The computed panel is shared by Group and Item inspectors and does not write serialized layout state.
+- Permanent DX10 computed-state coverage now includes responsive overrides, parent context, intrinsic measurement, Grid validation, and non-mutation checks.
+- Unity `6000.4.3f1` Edit Mode after DX10.5: **112/112 PASS**.
+- No runtime/native source or serialized runtime contract changed.
 
 ## Explain Layout
 
-- [ ] DX10.6 Add `Explain Layout` entry point.
-- [ ] DX10.7 Explain fixed size.
-- [ ] DX10.8 Explain percentage size.
-- [ ] DX10.9 Explain content/intrinsic measurement contribution.
-- [ ] DX10.10 Explain padding contribution.
-- [ ] DX10.11 Explain active responsive overrides.
-- [ ] DX10.12 Explain common Flex Grow allocation at a useful high level.
-- [ ] DX10.13 Explain Grid placement/track result where deterministically available.
-- [ ] DX10.14 Avoid claiming exact internal reasoning when the data is insufficient.
+- [x] DX10.6 Add `Explain Layout` entry point.
+- [x] DX10.7 Explain fixed size.
+- [x] DX10.8 Explain percentage size.
+- [x] DX10.9 Explain content/intrinsic measurement contribution.
+- [x] DX10.10 Explain padding contribution.
+- [x] DX10.11 Explain active responsive overrides.
+- [x] DX10.12 Explain common Flex Grow allocation at a useful high level.
+- [x] DX10.13 Explain Grid placement/track result where deterministically available.
+- [x] DX10.14 Avoid claiming exact internal reasoning when the data is insufficient.
 
 ## Expert productivity
 
-- [ ] DX10.15 Add Inspector search for Advanced settings.
-- [ ] DX10.16 Add alias keywords such as `clip` → Overflow and `center` → alignment.
-- [ ] DX10.17 Add `Essentials | Modified | All` view filter.
-- [ ] DX10.18 Add section-level Reset.
-- [ ] DX10.19 Add Copy/Paste Size.
-- [ ] DX10.20 Add Copy/Paste Spacing.
-- [ ] DX10.21 Add Copy/Paste Flex.
-- [ ] DX10.22 Add Copy/Paste Grid placement where safe.
-- [ ] DX10.23 Add Comfortable / Compact inspector density preference.
-- [ ] DX10.24 Add Beginner / CSS-Taffy terminology preference if it proves useful after real use.
-- [ ] DX10.25 Add direct contextual documentation links.
-- [ ] DX10.26 Add optional compact hierarchy badges/icons only if they remain unobtrusive.
+- [x] DX10.15 Add Inspector search for Advanced settings.
+- [x] DX10.16 Add alias keywords such as `clip` → Overflow and `center` → alignment.
+- [x] DX10.17 Add `Essentials | Modified | All` view filter.
+- [x] DX10.18 Add section-level Reset.
+- [x] DX10.19 Add Copy/Paste Size.
+- [x] DX10.20 Add Copy/Paste Spacing.
+- [x] DX10.21 Add Copy/Paste Flex.
+- [x] DX10.22 Add Copy/Paste Grid placement where safe.
+- [x] DX10.23 Add Comfortable / Compact inspector density preference.
+- [x] DX10.24 Evaluate Beginner / CSS-Taffy terminology preference; deliberately omit until real-use evidence justifies duplicated terminology.
+- [x] DX10.25 Add direct contextual documentation links.
+- [x] DX10.26 Evaluate compact hierarchy badges/icons; deliberately omit to keep hierarchy presentation unobtrusive.
 
 ## Debugger integration
 
-- [ ] DX10.27 Upgrade `TaffyLayoutDebuggerWindow` to reuse formal diagnostics and computed-layout data.
-- [ ] DX10.28 Avoid duplicate diagnostic logic between Inspector and Debugger.
-- [ ] DX10.29 Add selection/navigation helpers where useful.
+- [x] DX10.27 Upgrade `TaffyLayoutDebuggerWindow` to reuse formal diagnostics and computed-layout data.
+- [x] DX10.28 Avoid duplicate diagnostic logic between Inspector and Debugger.
+- [x] DX10.29 Add selection/navigation helpers where useful.
 
 ## Tests
 
-- [ ] DX10.30 Test Explain Layout output for deterministic representative cases.
-- [ ] DX10.31 Test Modified filtering and search aliases.
-- [ ] DX10.32 Test copy/paste and reset Undo behavior.
-- [ ] DX10.33 Test debugger and inspector share the same diagnostic rule results.
+- [x] DX10.30 Test Explain Layout output for deterministic representative cases.
+- [x] DX10.31 Test Modified filtering and search aliases.
+- [x] DX10.32 Test copy/paste and reset Undo behavior.
+- [x] DX10.33 Test debugger and inspector share the same diagnostic rule results.
 
 ### DX10 exit criteria
+### DX10 validation note
 
-- [ ] Common layout decisions can be explained from current state.
-- [ ] Advanced users can search/filter/copy layout settings efficiently.
-- [ ] Debugger and Inspector share underlying diagnostic/computed state instead of diverging.
+- Added a shared read-only computed-layout snapshot for Inspector and Debugger, plus a shared Explain Layout model that only states deterministic conclusions from serialized/current layout state.
+- Advanced Inspector productivity now includes search aliases, Essentials/Modified/All filtering, section reset, safe Copy/Paste for Size/Spacing/Flex/Grid placement, density preference, and direct contextual documentation links.
+- The formal Debugger reuses the same computed-layout and diagnostic rule results as the Inspector rather than duplicating logic.
+- Permanent DX10 coverage includes computed layout, Explain Layout, Advanced search/filter behavior, expert actions/Undo, and Debugger integration.
+- Unity `6000.4.3f1` Edit Mode: **130/130 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **130/130 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX10.
+
+
+- [x] Common layout decisions can be explained from current state.
+- [x] Advanced users can search/filter/copy layout settings efficiently.
+- [x] Debugger and Inspector share underlying diagnostic/computed state instead of diverging.
 
 ---
 
 # DX11 — Hardening, Documentation & Final DX Gate
-
+ACTIVE
 **Status:** NOT STARTED  
 **Depends on:** DX10  
 **Goal:** convert the redesigned Editor experience from feature-complete into production-ready tooling.

@@ -221,6 +221,7 @@ namespace TaffyUGUI.Editor
     internal static class TaffyEditorGUI
     {
         private static readonly string[] ModeNames = { "Simple", "Advanced" };
+        private static readonly string[] DensityNames = { "Comfortable", "Compact" };
 
         internal static void DrawScript(SerializedObject serializedObject)
         {
@@ -243,6 +244,15 @@ namespace TaffyUGUI.Editor
                 TaffyEditorPreferences.InspectorMode = (TaffyInspectorMode)next;
                 GUI.FocusControl(null);
             }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel("Density");
+                int density = (int)TaffyEditorPreferences.InspectorDensity;
+                int nextDensity = GUILayout.Toolbar(density, DensityNames);
+                if (nextDensity != density)
+                    TaffyEditorPreferences.InspectorDensity = (TaffyInspectorDensity)nextDensity;
+            }
         }
 
         internal static void DrawSimpleModeHint()
@@ -252,7 +262,7 @@ namespace TaffyUGUI.Editor
 
         internal static void DrawSectionLabel(GUIContent title)
         {
-            EditorGUILayout.Space(4f);
+            EditorGUILayout.Space(TaffyEditorPreferences.InspectorDensity == TaffyInspectorDensity.Compact ? 1f : 4f);
             EditorGUILayout.LabelField(title ?? GUIContent.none, EditorStyles.boldLabel);
         }
 

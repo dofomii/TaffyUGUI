@@ -30,6 +30,15 @@ namespace TaffyUGUI.Editor
             var context = new TaffyInspectorContext(this);
             TaffyEditorGUI.DrawScript(serializedObject);
             TaffyEditorGUI.DrawInspectorMode();
+
+            string advancedSearch = string.Empty;
+            TaffyAdvancedViewMode advancedView = TaffyAdvancedViewMode.All;
+            if (context.IsAdvancedMode)
+            {
+                advancedSearch = TaffyAdvancedInspectorSearch.Draw("Group");
+                advancedView = TaffyAdvancedViewFilter.Draw("Group");
+            }
+
             _quickSetupSection.Draw(context);
 
             if (context.IsSimpleMode)
@@ -39,10 +48,18 @@ namespace TaffyUGUI.Editor
             else
             {
                 for (int i = 0; i < _authoringSections.Length; i++)
-                    _authoringSections[i].Draw(context);
+                {
+                    TaffyInspectorSection section = _authoringSections[i];
+                    if (TaffyAdvancedInspectorSearch.Matches("Group", section.SectionKey, advancedSearch)
+                        && TaffyAdvancedViewFilter.ShouldShow(context, "Group", section.SectionKey, advancedView))
+                    {
+                        section.Draw(context);
+                    }
+                }
             }
 
             serializedObject.ApplyModifiedProperties();
+            TaffyComputedLayoutGUI.Draw(context);
             TaffyLayoutHealthGUI.Draw(context);
 
             if (!context.IsMultiEditing && context.Group)
@@ -86,6 +103,15 @@ namespace TaffyUGUI.Editor
             var context = new TaffyInspectorContext(this);
             TaffyEditorGUI.DrawScript(serializedObject);
             TaffyEditorGUI.DrawInspectorMode();
+
+            string advancedSearch = string.Empty;
+            TaffyAdvancedViewMode advancedView = TaffyAdvancedViewMode.All;
+            if (context.IsAdvancedMode)
+            {
+                advancedSearch = TaffyAdvancedInspectorSearch.Draw("Item");
+                advancedView = TaffyAdvancedViewFilter.Draw("Item");
+            }
+
             _parentSummarySection.Draw(context);
             _essentialsSection.Draw(context);
 
@@ -96,10 +122,19 @@ namespace TaffyUGUI.Editor
             else
             {
                 for (int i = 0; i < _authoringSections.Length; i++)
-                    _authoringSections[i].Draw(context);
+                {
+                    TaffyInspectorSection section = _authoringSections[i];
+                    if (TaffyAdvancedInspectorSearch.Matches("Item", section.SectionKey, advancedSearch)
+                        && TaffyAdvancedViewFilter.ShouldShow(context, "Item", section.SectionKey, advancedView))
+                    {
+                        section.Draw(context);
+                    }
+                }
             }
 
             serializedObject.ApplyModifiedProperties();
+            TaffyExpertClipboardGUI.Draw(context);
+            TaffyComputedLayoutGUI.Draw(context);
             TaffyLayoutHealthGUI.Draw(context);
             _postSection.Draw(context);
         }

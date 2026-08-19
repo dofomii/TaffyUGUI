@@ -28,6 +28,8 @@ namespace TaffyUGUI.Editor
             _defaultExpanded = defaultExpanded;
         }
 
+        internal string SectionKey => _sectionKey;
+
         internal virtual bool IsRelevant(TaffyInspectorContext context)
         {
             return context != null;
@@ -52,6 +54,7 @@ namespace TaffyUGUI.Editor
             if (!_useFoldout)
             {
                 TaffyEditorGUI.DrawSectionLabel(_title);
+                DrawResetButton(context);
                 DrawContent(context);
                 return;
             }
@@ -63,8 +66,27 @@ namespace TaffyUGUI.Editor
             if (next != expanded)
                 TaffyEditorPreferences.SetFoldout(_inspectorKey, _sectionKey, next);
             if (next)
+            {
+                DrawResetButton(context);
                 DrawContent(context);
+            }
             EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        private void DrawResetButton(TaffyInspectorContext context)
+        {
+            if (context == null || !context.IsAdvancedMode || !TaffySectionResetActions.CanReset(_inspectorKey, _sectionKey))
+                return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Reset Section", EditorStyles.miniButton, GUILayout.Width(96f)))
+                {
+                    TaffySectionResetActions.Reset(context.SerializedObject.targetObjects, _inspectorKey, _sectionKey);
+                    context.SerializedObject.Update();
+                }
+            }
         }
 
         protected abstract void DrawContent(TaffyInspectorContext context);

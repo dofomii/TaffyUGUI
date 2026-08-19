@@ -2,7 +2,7 @@
 
 **Program:** post-v1 Editor/authoring experience improvement  
 **Status date:** 2026-08-19  
-**Program status:** ACTIVE — DX0 through DX8 complete; DX9 ready
+**Program status:** ACTIVE — DX0 through DX9 complete; DX10 ready
 **Runtime baseline:** TaffyUGUI `1.0.0`, final ABI-v1 `1/2`, Taffy `0.13.0`  
 **Unity compatibility baseline:** `2021.3 LTS` minimum; maintained validation also covers newer supported Editors  
 **Authoritative implementation rule:** improve the Editor/authoring layer first; preserve the existing runtime/native layout model unless a task explicitly requires otherwise.
@@ -100,11 +100,11 @@ A task being implemented does not make its phase complete. The phase closes only
 | DX6 | Presets & Reusable Layout Patterns | Apply-once built-in/project presets and searchable browser | DX5 | COMPLETE |
 | DX7 | Visual Responsive & Grid Authoring | Visual responsive-profile and Grid authoring | DX6 | COMPLETE |
 | DX8 | Scene View Authoring & Responsive Preview | Scene geometry overlays and responsive preview workflows | DX7 | COMPLETE |
-| DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | READY |
-| DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | NOT STARTED |
+| DX9 | Guided Creation & Onboarding | Hierarchy recipes, first-use guide, UI Builder workflow | DX8 | COMPLETE |
+| DX10 | Explain Layout & Expert Productivity | Computed reasoning, search, clipboard, hierarchy/editor polish | DX9 | READY |
 | DX11 | Hardening, Documentation & Final DX Gate | Full regression, usability audit, docs, release-ready DX system | DX10 | NOT STARTED |
 
-**Current authoritative task:** `DX8.12` — add safe Desktop / Tablet / Mobile responsive preview presets.
+**Current authoritative task:** `DX10.1` — show computed position/size for the selected Group/Item where available.
 ---
 
 # Program Milestones
@@ -748,53 +748,64 @@ After DX5, TaffyUGUI should already be substantially easier to learn and configu
 
 # DX9 — Guided Creation & Onboarding
 
-**Status:** NOT STARTED  
+**Status:** COMPLETE
 **Depends on:** DX8  
 **Goal:** let a new developer create useful Taffy layouts without manually assembling every GameObject/component relationship.
 
 ## Hierarchy recipes
 
-- [ ] DX9.1 Expand `TaffyUGUI` Hierarchy create menu.
-- [ ] DX9.2 Horizontal Layout recipe.
-- [ ] DX9.3 Vertical Layout recipe.
-- [ ] DX9.4 Centered Panel recipe.
-- [ ] DX9.5 Toolbar recipe.
-- [ ] DX9.6 Sidebar + Content recipe.
-- [ ] DX9.7 Scrollable List recipe.
-- [ ] DX9.8 Responsive Grid/Cards recipe.
-- [ ] DX9.9 Modal structure recipe.
-- [ ] DX9.10 Basic Form layout recipe.
-- [ ] DX9.11 Ensure recipes create ordinary Unity/Taffy objects only.
+- [x] DX9.1 Expand `TaffyUGUI` Hierarchy create menu.
+- [x] DX9.2 Horizontal Layout recipe.
+- [x] DX9.3 Vertical Layout recipe.
+- [x] DX9.4 Centered Panel recipe.
+- [x] DX9.5 Toolbar recipe.
+- [x] DX9.6 Sidebar + Content recipe.
+- [x] DX9.7 Scrollable List recipe.
+- [x] DX9.8 Responsive Grid/Cards recipe.
+- [x] DX9.9 Modal structure recipe.
+- [x] DX9.10 Basic Form layout recipe.
+- [x] DX9.11 Ensure recipes create ordinary Unity/Taffy objects only.
 
 ## First-use onboarding
 
-- [ ] DX9.12 Create dismissible first-use guide.
-- [ ] DX9.13 Add Create Your First Layout workflow.
-- [ ] DX9.14 Link directly to relevant package samples.
-- [ ] DX9.15 Link directly to Getting Started documentation.
-- [ ] DX9.16 Add optional small inspector getting-started checklist for newly configured Groups.
+- [x] DX9.12 Create dismissible first-use guide.
+- [x] DX9.13 Add Create Your First Layout workflow.
+- [x] DX9.14 Link directly to relevant package samples.
+- [x] DX9.15 Link directly to Getting Started documentation.
+- [x] DX9.16 Add optional small inspector getting-started checklist for newly configured Groups.
 
 ## UI Builder
 
-- [ ] DX9.17 Create `Window > TaffyUGUI > UI Builder`.
-- [ ] DX9.18 Reuse the preset/recipe libraries instead of duplicating layout definitions.
-- [ ] DX9.19 Provide category/search workflow.
-- [ ] DX9.20 Provide concise preview/summary.
-- [ ] DX9.21 Create selected recipe in the current scene with Undo.
-- [ ] DX9.22 Avoid introducing a separate persistent Builder document/state model.
+- [x] DX9.17 Create `Window > TaffyUGUI > UI Builder`.
+- [x] DX9.18 Reuse the preset/recipe libraries instead of duplicating layout definitions.
+- [x] DX9.19 Provide category/search workflow.
+- [x] DX9.20 Provide concise preview/summary.
+- [x] DX9.21 Create selected recipe in the current scene with Undo.
+- [x] DX9.22 Avoid introducing a separate persistent Builder document/state model.
 
 ## Tests
 
-- [ ] DX9.23 Test each hierarchy recipe structure and serialized settings.
-- [ ] DX9.24 Test Undo removes/restores created recipe objects correctly.
-- [ ] DX9.25 Test onboarding preference/dismissal behavior.
-- [ ] DX9.26 Test Builder-created results are ordinary editable TaffyUGUI scene objects.
+- [x] DX9.23 Test each hierarchy recipe structure and serialized settings.
+- [x] DX9.24 Test Undo removes/restores created recipe objects correctly.
+- [x] DX9.25 Test onboarding preference/dismissal behavior.
+- [x] DX9.26 Test Builder-created results are ordinary editable TaffyUGUI scene objects.
+
+### DX9 validation note
+
+- Added a central Editor-only creation recipe catalog shared by Hierarchy menu commands and `Window > TaffyUGUI > UI Builder`.
+- Recipes cover Horizontal, Vertical, Centered Panel, Toolbar, Sidebar + Content, Scrollable List, Responsive Cards, Modal, and Basic Form using ordinary Unity/Taffy scene objects.
+- Scrollable List and Responsive Cards reuse the existing DX6 built-in preset semantics rather than introducing duplicate runtime configuration models.
+- Added a dismissible first-use guide, Create Your First Layout action, direct package sample/documentation links, and optional per-Group inspector checklist.
+- Permanent DX9 coverage added in `TaffyDX9GuidedCreationTests.cs` for recipe structure/settings, Undo, onboarding preferences, shared Builder infrastructure, and ordinary editable scene objects.
+- Unity `6000.4.3f1` Edit Mode: **108/108 PASS**; Play Mode: **9/9 PASS**.
+- Unity `2021.3.39f1` Edit Mode: **108/108 PASS** using the documented temporary local `bee_backend --stdin-canary` workaround; the Editor installation was restored to SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`.
+- No runtime/native source or serialized runtime contract changed in DX9.
 
 ### DX9 exit criteria
 
-- [ ] First-time users can create useful layouts from guided workflows.
-- [ ] Builder and Hierarchy menus reuse the same recipe/action infrastructure.
-- [ ] No special runtime representation is introduced.
+- [x] First-time users can create useful layouts from guided workflows.
+- [x] Builder and Hierarchy menus reuse the same recipe/action infrastructure.
+- [x] No special runtime representation is introduced.
 
 ---
 

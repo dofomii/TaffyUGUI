@@ -44,6 +44,9 @@ namespace TaffyUGUI.Editor
 
             TaffySerializedPropertyUtility.DrawProperty(serializedObject, "m_Padding", TaffyEditorContent.Padding);
             DrawContainerSize(context);
+            if (!context.IsMultiEditing && context.Group)
+                TaffyOnboardingUI.DrawGroupChecklist(context.Group);
+
             DrawChildInitialization(context);
 
             if (context.IsSimpleMode)

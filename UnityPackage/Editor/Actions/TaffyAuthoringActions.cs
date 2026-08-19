@@ -287,13 +287,40 @@ namespace TaffyUGUI.Editor
 
     internal static class TaffyHierarchyActions
     {
+        [MenuItem("GameObject/TaffyUGUI/Layout Group", false, 1)]
+        private static void CreateLayoutGroupMenu() => CreateLayoutGroup();
+
+        [MenuItem("GameObject/TaffyUGUI/Layout Item", false, 2)]
+        private static void CreateLayoutItemMenu() => CreateLayoutItem();
+
         [MenuItem("GameObject/TaffyUGUI/Horizontal Layout", false, 10)]
-        private static void CreateHorizontal() => CreateGroup("Horizontal Layout", TaffyGroupQuickLayout.Horizontal);
+        private static void CreateHorizontal() => TaffyCreationRecipeCatalog.Create("horizontal");
 
         [MenuItem("GameObject/TaffyUGUI/Vertical Layout", false, 11)]
-        private static void CreateVertical() => CreateGroup("Vertical Layout", TaffyGroupQuickLayout.Vertical);
+        private static void CreateVertical() => TaffyCreationRecipeCatalog.Create("vertical");
 
-        [MenuItem("GameObject/TaffyUGUI/Grid Layout", false, 12)]
+        [MenuItem("GameObject/TaffyUGUI/Centered Panel", false, 12)]
+        private static void CreateCenteredPanel() => TaffyCreationRecipeCatalog.Create("centered-panel");
+
+        [MenuItem("GameObject/TaffyUGUI/Toolbar", false, 13)]
+        private static void CreateToolbar() => TaffyCreationRecipeCatalog.Create("toolbar");
+
+        [MenuItem("GameObject/TaffyUGUI/Sidebar + Content", false, 14)]
+        private static void CreateSidebarContent() => TaffyCreationRecipeCatalog.Create("sidebar-content");
+
+        [MenuItem("GameObject/TaffyUGUI/Scrollable List", false, 15)]
+        private static void CreateScrollableList() => TaffyCreationRecipeCatalog.Create("scrollable-list");
+
+        [MenuItem("GameObject/TaffyUGUI/Responsive Cards", false, 16)]
+        private static void CreateResponsiveCards() => TaffyCreationRecipeCatalog.Create("responsive-cards");
+
+        [MenuItem("GameObject/TaffyUGUI/Modal", false, 17)]
+        private static void CreateModal() => TaffyCreationRecipeCatalog.Create("modal");
+
+        [MenuItem("GameObject/TaffyUGUI/Form", false, 18)]
+        private static void CreateForm() => TaffyCreationRecipeCatalog.Create("form");
+
+        [MenuItem("GameObject/TaffyUGUI/Grid Layout", false, 19)]
         private static void CreateGrid() => CreateGroup("Grid Layout", TaffyGroupQuickLayout.Grid);
 
         [MenuItem("GameObject/TaffyUGUI/Spacer", false, 20)]
@@ -305,6 +332,22 @@ namespace TaffyUGUI.Editor
             Selection.activeGameObject = go;
         }
 
+        internal static GameObject CreateLayoutGroup()
+        {
+            GameObject go = CreateRect("Taffy Layout Group");
+            Undo.AddComponent<TaffyLayoutGroup>(go);
+            Selection.activeGameObject = go;
+            return go;
+        }
+
+        internal static GameObject CreateLayoutItem()
+        {
+            GameObject go = CreateRect("Taffy Layout Item");
+            Undo.AddComponent<TaffyLayoutItem>(go);
+            Selection.activeGameObject = go;
+            return go;
+        }
+
         internal static GameObject CreateGroup(string name, TaffyGroupQuickLayout layout)
         {
             GameObject go = CreateRect(name);
@@ -314,7 +357,30 @@ namespace TaffyUGUI.Editor
             return go;
         }
 
-        private static GameObject CreateRect(string name)
+        internal static TaffyLayoutItem CreateChildItem(Transform parent, string name)
+        {
+            GameObject go = CreateChildRect(parent, name);
+            return Undo.AddComponent<TaffyLayoutItem>(go);
+        }
+
+        internal static TaffyLayoutGroup CreateChildGroup(Transform parent, string name, TaffyGroupQuickLayout layout)
+        {
+            GameObject go = CreateChildRect(parent, name);
+            TaffyLayoutGroup group = Undo.AddComponent<TaffyLayoutGroup>(go);
+            TaffyLayoutActions.ApplyQuickLayout(group, layout);
+            return group;
+        }
+
+        internal static GameObject CreateChildRect(Transform parent, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
+            Undo.SetTransformParent(go.transform, parent, "Parent " + name);
+            GameObjectUtility.SetParentAndAlign(go, parent ? parent.gameObject : null);
+            return go;
+        }
+
+        internal static GameObject CreateRect(string name)
         {
             var go = new GameObject(name, typeof(RectTransform));
             Undo.RegisterCreatedObjectUndo(go, "Create " + name);

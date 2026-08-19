@@ -52,6 +52,12 @@ PHASE5_ANDROID_DIR = ROOT / "UnityPackage" / "Plugins" / "Android" / "arm64-v8a"
 PHASE5_ANDROID_PLUGIN = PHASE5_ANDROID_DIR / "libtaffy_ugui.so"
 PHASE5_ANDROID_META = PHASE5_ANDROID_DIR / "libtaffy_ugui.so.meta"
 PHASE5_ANDROID_PROVENANCE = PHASE5_ANDROID_DIR / "taffy_ugui.provenance.json"
+PHASE5_DESKTOP_PLUGINS = {
+    "linux-x86": ROOT / "UnityPackage" / "Plugins" / "Linux" / "x86" / "libtaffy_ugui.so",
+    "linux-x64": ROOT / "UnityPackage" / "Plugins" / "Linux" / "x86_64" / "libtaffy_ugui.so",
+    "windows-x86": ROOT / "UnityPackage" / "Plugins" / "Windows" / "x86" / "taffy_ugui.dll",
+    "windows-x64": ROOT / "UnityPackage" / "Plugins" / "Windows" / "x86_64" / "taffy_ugui.dll",
+}
 PHASE5_ANDROID_META_TEXT = """fileFormatVersion: 2
 guid: 4e8aa0f9ef154b56a50b8c302f27fe56
 PluginImporter:
@@ -156,11 +162,41 @@ def verify_phase5() -> None:
         raise SystemExit("Packaged payload does not match the Phase 4 index checksum.")
 
     native_suffixes = {".dll", ".dylib", ".so", ".a"}
-    packaged_native = [path for path in (ROOT / "UnityPackage" / "Plugins").rglob("*") if path.is_file() and path.suffix in native_suffixes]
-    if packaged_native != [PHASE5_ANDROID_PLUGIN]:
-        names = [str(path.relative_to(ROOT)) for path in packaged_native]
-        raise SystemExit(f"Unexpected native binaries in Unity package: {names}")
-    print("PHASE 5 ANDROID PAYLOAD VERIFY: PASS")
+    packaged_native = {path for path in (ROOT / "UnityPackage" / "Plugins").rglob("*") if path.is_file() and path.suffix in native_suffixes}
+    expected_native = {PHASE5_ANDROID_PLUGIN, *PHASE5_DESKTOP_PLUGINS.values()}
+    if packaged_native != expected_native:
+        missing_native = sorted(str(path.relative_to(ROOT)) for path in expected_native - packaged_native)
+        unexpected_native = sorted(str(path.relative_to(ROOT)) for path in packaged_native - expected_native)
+        raise SystemExit(
+            "Unity native payload mismatch. "
+            f"Missing={missing_native or 'none'} Unexpected={unexpected_native or 'none'}"
+        )
+
+    file_bin = require("file", "Full package verification requires the local file utility.")
+    expected_descriptions = {
+        "linux-x86": ("elf 32-bit", "80386"),
+        "linux-x64": ("elf 64-bit", "x86-64"),
+        "windows-x86": ("pe32 executable", "80386"),
+        "windows-x64": ("pe32+ executable", "x86-64"),
+    }
+    expected_exports = header_export_contract()
+    for name, artifact in PHASE5_DESKTOP_PLUGINS.items():
+        description = run(file_bin, "-b", str(artifact), capture=True, env=base_env()).strip().lower()
+        if not all(token in description for token in expected_descriptions[name]):
+            raise SystemExit(f"Packaged {name} binary architecture/format mismatch: {description}")
+        if package_version().encode("ascii") not in artifact.read_bytes():
+            raise SystemExit(f"Packaged {name} binary does not embed package version {package_version()}.")
+        if name.startswith("windows"):
+            objdump = require("objdump", "Windows package export verification requires objdump.")
+            symbols = run(objdump, "-p", str(artifact), capture=True, env=base_env())
+        else:
+            nm = require("nm", "Linux package export verification requires nm.")
+            symbols = run(nm, "-D", "--defined-only", str(artifact), capture=True, env=base_env())
+        missing_exports = [symbol for symbol in expected_exports if symbol not in symbols]
+        if missing_exports:
+            raise SystemExit(f"Packaged {name} binary is missing ABI exports: {', '.join(missing_exports)}")
+
+    print("PHASE 5 FULL NATIVE PAYLOAD VERIFY: PASS")
 
 def doctor() -> None:
     print("TaffyUGUI local environment")
@@ -188,8 +224,8 @@ def main() -> int:
     sub.add_parser("verify-msrv", help="Run local Cargo check/test using Rust 1.82.0")
     sub.add_parser("header", help="Regenerate the public ABI header locally with pinned cbindgen")
     sub.add_parser("verify-header", help="Fail if checked-in public header differs from local cbindgen output")
-    sub.add_parser("stage-phase5", help="Stage the verified Android ARM64 native payload into the Unity package")
-    sub.add_parser("verify-phase5", help="Verify the Android-only Unity native payload and provenance")
+    sub.add_parser("stage-phase5", help="Stage Android ARM64 and verify the complete checked-in native package payload")
+    sub.add_parser("verify-phase5", help="Verify the full Unity native payload and Android provenance")
     sub.add_parser("verify-abi-final", help="Run the complete local Phase 3 regression gate for final ABI v1")
     sub.add_parser("verify-abi-rc", help="Compatibility alias for the final ABI v1 verification gate")
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")

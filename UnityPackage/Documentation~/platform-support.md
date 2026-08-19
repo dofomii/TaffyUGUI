@@ -1,29 +1,35 @@
 # Platform Support and Compatibility
 
-## v1.1 support claim
+## v1.1.1 bundled native targets
 
-**Advertised Player target: Android ARM64 only.** Other Player targets are intentionally not advertised in v1.1 even where build definitions or historical experiments exist.
+The package bundles native plugins for **Android ARM64, Windows x86/x64, and Linux x86/x64**. macOS, iOS, and WebGL binaries are not part of this release archive.
 
-## Final compatibility matrix
+## Compatibility and validation matrix
 
-| Environment | Package compile | Edit Mode | Play Mode | Player claim |
+| Environment / binary | Package compile | Edit Mode | Play Mode | Release evidence |
 |---|---:|---:|---:|---|
-| Unity 2021.3.39f1 / Linux Editor | Pass | 140/140 | 9/9 maintained runtime baseline | Editor/package validation only |
-| Unity 2022.3.62f1 / Linux Editor | Pass | 140/140 | 9/9 maintained runtime baseline | Editor/package validation only |
-| Unity 6000.4.3f1 / Linux Editor | Pass | 140/140 | 9/9 | Android ARM64 IL2CPP validated |
-| Android ARM64 / Unity 6 IL2CPP | n/a | n/a | n/a | **Supported**; physical-device smoke passed during Phase 12 and fresh Phase 13 packaging/ELF validation passed |
-| Windows x64 Player | n/a | n/a | n/a | Not advertised |
-| macOS Intel / Apple Silicon Player | n/a | n/a | n/a | Not advertised |
-| iOS ARM64 Player | n/a | n/a | n/a | Not advertised |
-| WebGL Player | n/a | n/a | n/a | Not advertised |
-| Linux Player | n/a | n/a | n/a | Not advertised; Linux is an Editor validation host only |
+| Unity 2021.3.39f1 / Linux Editor | Pass | 140/140 maintained baseline | 9/9 maintained runtime baseline | Editor/package compatibility |
+| Unity 2022.3.62f1 / Linux Editor | Pass | 140/140 maintained baseline | 9/9 maintained runtime baseline | Editor/package compatibility |
+| Unity 6000.4.3f1 / Linux Editor | Pass | 140/140 maintained gate | 9/9 maintained gate | Exact-package gate is rerun for release artifacts |
+| Android ARM64 / Unity 6 IL2CPP | n/a | n/a | n/a | Bundled; physical-device smoke exists and the release binary is 16 KB page compatible |
+| Windows x64 | n/a | n/a | n/a | Bundled; PE x86-64 architecture, ABI exports, and embedded version verified on Linux build host |
+| Windows x86 | n/a | n/a | n/a | Bundled for legacy consumers; PE i386 architecture, ABI exports, and embedded version verified on Linux build host |
+| Linux x64 | n/a | n/a | n/a | Bundled; ELF x86-64 architecture, ABI exports, and embedded version verified locally |
+| Linux x86 | n/a | n/a | n/a | Bundled for legacy consumers; ELF i386 architecture, ABI exports, and embedded version verified locally; modern Unity Linux Players are 64-bit |
+| macOS / iOS / WebGL | n/a | n/a | n/a | Not bundled in 1.1.1 |
 
-The physical Android validation used a real ARM64 device and confirmed successful native loading plus expected Taffy geometry. The release package contains only the Android ARM64 native plugin and its importer is disabled for Editor and all non-Android platforms.
+Windows runtime execution is not available on this Linux release host, so Windows validation is intentionally limited to deterministic cross-build plus binary architecture/export/version inspection. Linux x86 is included because the native library can still be built and consumed by legacy 32-bit hosts, but current Unity Linux Player tooling is 64-bit.
 
 ## Unity 2021 Linux validation note
 
 Unity 2021.3.39f1 required a temporary local `bee_backend --stdin-canary` compatibility workaround on the newer Linux validation host. The Unity installation was restored byte-for-byte afterward. This was an Editor/toolchain-host issue, not a TaffyUGUI source workaround.
 
-## Android binary
+## Native plugin paths
 
-The package carries `Plugins/Android/arm64-v8a/libtaffy_ugui.so`, built against final ABI v1 (`version=1`, `stage=2`) and Taffy 0.13.0. Unity 6 Android validation used IL2CPP. Your project is still responsible for normal Unity Android SDK/NDK/JDK configuration and an ARM64-enabled Player build.
+- `Plugins/Android/arm64-v8a/libtaffy_ugui.so`
+- `Plugins/Windows/x86/taffy_ugui.dll`
+- `Plugins/Windows/x86_64/taffy_ugui.dll`
+- `Plugins/Linux/x86/libtaffy_ugui.so`
+- `Plugins/Linux/x86_64/libtaffy_ugui.so`
+
+All five are built against final ABI v1 (`version=1`, `stage=2`) and Taffy 0.13.0.

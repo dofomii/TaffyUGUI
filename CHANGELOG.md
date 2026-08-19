@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.1] - 2026-08-19
+
+Packaging correction release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.
+
+### Changed
+
+- The UPM payload now ships all requested native desktop binaries alongside Android ARM64: Windows x86/x64 and Linux x86/x64.
+- All five native libraries are rebuilt from the 1.1.1 source so the embedded build version matches the package version; Android ARM64 retains 16 KB page compatibility.
+- Windows x86/x64 are cross-built locally with `cargo-xwin`; Linux x86/x64 are built locally. Linux x86 is retained for legacy consumers even though current Unity Linux Players are 64-bit.
+
+### Validation
+
+- Android ARM64, Windows x86/x64, and Linux x86/x64 binaries are architecture/format checked and expose the complete 31-symbol ABI v1 export set.
+- Windows binaries are not runtime-executed on the Linux release host; their validation is PE architecture/export/version verification.
+- Unity 6000.4.3f1 package-folder validation with the bundled Linux x64 plugin passes 140/140 Edit Mode and 9/9 Play Mode tests.
+
 ## [1.1.0] - 2026-08-19
 
 Developer Experience release. Runtime layout semantics, serialized field/enum contracts, and ABI v1 remain unchanged.

@@ -2,9 +2,9 @@
 
 ## `DllNotFoundException` / native library does not load
 
-v1.1 ships a native plugin for **Android ARM64 only**. The plugin is deliberately disabled in Editor and other Player targets. Build an Android ARM64 Player; do not expect the package native library to run in a Windows/macOS/Linux Player.
+v1.1.1 bundles native plugins for **Android ARM64, Windows x86/x64, and Linux x86/x64**. Unity should select the binary that matches the active Editor/Player platform and architecture. macOS, iOS, and WebGL binaries are not bundled in this release.
 
-The Editor regression hosts use a separate local validation library that is not part of the distributed package.
+If loading fails, confirm the expected file exists under `Plugins/<platform>/<architecture>/`, then inspect Unity's Plugin Importer settings. Windows x86 and Linux x86 are legacy binaries; current Unity desktop Editors are 64-bit.
 
 ## Layout does not move or size children
 

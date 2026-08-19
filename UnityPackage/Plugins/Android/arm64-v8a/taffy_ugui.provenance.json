@@ -10,9 +10,9 @@
   "phase4_index": "dist/native/phase4-index.json",
   "platform": "android",
   "schema": 1,
-  "sha256": "80d518b2442533a62f3cfdbb995f3fa8bb46849d673db974e8aad7b8f2ce3036",
+  "sha256": "769c0851db78520539c99b6aa825a119e32e9243c2b774212e2bc59ec2a4d77e",
   "source_manifest": "dist/native/android/arm64-v8a/manifest.json",
-  "source_revision": "12b2dce3632d1d8b906323497bba8830b255c0d2",
-  "source_tree": "sha256:424974bd52ad19887c6d7bd17001503d25d81827267c8d197c07af5c188b7949",
+  "source_revision": "b9b2c360a9e3339db0014c622b8a33913ea7c1d9+working-tree",
+  "source_tree": "sha256:78f56b3afbe1ed16619d641199fad8997f068f39186655bd082bce6bb4a242f8",
   "taffy_version": "0.13.0"
 }

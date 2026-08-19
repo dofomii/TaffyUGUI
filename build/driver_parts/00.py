@@ -23,12 +23,58 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "native" / "Cargo.toml"
+WEB_MANIFEST = ROOT / "native" / "web" / "Cargo.toml"
+WEB_TARGET = "wasm32-unknown-unknown"
 HEADER = ROOT / "include" / "taffy_ugui.h"
 CBINDGEN_CONFIG = ROOT / "cbindgen.toml"
 VERSION_RS = ROOT / "native" / "src" / "version.rs"
 PACKAGE_JSON = ROOT / "UnityPackage" / "package.json"
 CARGO_TARGET_DIR = ROOT / ".build" / "cargo-target"
+WEB_CARGO_TARGET_DIR = ROOT / ".build" / "web-cargo-target"
+WEB_INDEPENDENCE_TARGET_DIR = ROOT / ".build" / "web-independence-target"
 DIST_NATIVE = ROOT / "dist" / "native"
+WEB_RUSTFLAGS = ("-Ctarget-cpu=mvp", "-Cpanic=abort")
+WEB_SANITIZED_ENV_KEYS = (
+    "RUSTFLAGS",
+    "CARGO_ENCODED_RUSTFLAGS",
+    "CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_LINKER",
+    "CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_LINKER",
+    "CC_wasm32_unknown_emscripten",
+    "CXX_wasm32_unknown_emscripten",
+    "AR_wasm32_unknown_emscripten",
+    "RANLIB_wasm32_unknown_emscripten",
+    "EMSDK",
+    "EM_CONFIG",
+    "EM_CACHE",
+    "EMCC_CFLAGS",
+    "EMMAKEN_CFLAGS",
+    "EMMAKEN_JUST_CONFIGURE",
+    "EM_COMPILER_WRAPPER",
+    "CFLAGS",
+    "CXXFLAGS",
+    "CPPFLAGS",
+    "LDFLAGS",
+    "LIBRARY_PATH",
+    "CPATH",
+    "C_INCLUDE_PATH",
+    "CPLUS_INCLUDE_PATH",
+    "SDKROOT",
+)
+WEB_EXTERNAL_TOOLCHAIN_ENV_KEYS = (
+    "CC",
+    "CXX",
+    "AR",
+    "RANLIB",
+    "CC_wasm32_unknown_unknown",
+    "CXX_wasm32_unknown_unknown",
+    "AR_wasm32_unknown_unknown",
+    "RANLIB_wasm32_unknown_unknown",
+    "CC_WASM32_UNKNOWN_UNKNOWN",
+    "CXX_WASM32_UNKNOWN_UNKNOWN",
+    "AR_WASM32_UNKNOWN_UNKNOWN",
+    "RANLIB_WASM32_UNKNOWN_UNKNOWN",
+)
+
 
 DEV_RUST_VERSION = "1.97.1"
 MSRV = "1.82"

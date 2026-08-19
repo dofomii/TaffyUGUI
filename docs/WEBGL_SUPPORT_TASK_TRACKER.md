@@ -3,8 +3,8 @@
 **Program status:** ACTIVE  
 **Support target:** Unity `2021.3 LTS` through the latest current Unity release  
 **Current latest release at plan verification:** Unity `6000.5.7f1` (2026-08-05)  
-**Current phase:** WEB0 COMPLETE — WEB1 READY  
-**Authoritative next task:** WEB1.1
+**Current phase:** WEB1 ACTIVE
+**Authoritative next task:** WEB1.6
 
 This tracker is the authoritative implementation plan for adding Unity Web/WebGL Player support without changing existing Android/desktop runtime behavior. Complete phases in order. Commit only when the active phase is complete.
 
@@ -113,19 +113,57 @@ The oldest Unity Web module is not installed on this machine yet, so WEB0 does n
 
 # WEB1 — Production generic Wasm native artifact
 
-**Status: READY**
+**Status: ACTIVE**
 
-- [ ] **WEB1.1** Add a Web-only Cargo manifest that reuses `native/src/lib.rs` and emits only `staticlib`.
-- [ ] WEB1.2 Add a reproducible build command/target for `wasm32-unknown-unknown`.
-- [ ] WEB1.3 Pin Web build flags to `-Ctarget-cpu=mvp -Cpanic=abort` unless a stricter compatibility gate proves another setting is needed.
-- [ ] WEB1.4 Ensure the Web build remains independent of Unity/Emscripten headers and libraries.
-- [ ] WEB1.5 Verify the archive contains exactly the expected public `tu_*` ABI surface and no accidental public ABI expansion.
+- [x] **WEB1.1** Add a Web-only Cargo manifest that reuses `native/src/lib.rs` and emits only `staticlib`.
+- [x] WEB1.2 Add a reproducible build command/target for `wasm32-unknown-unknown`.
+- [x] WEB1.3 Pin Web build flags to `-Ctarget-cpu=mvp -Cpanic=abort` unless a stricter compatibility gate proves another setting is needed.
+- [x] WEB1.4 Ensure the Web build remains independent of Unity/Emscripten headers and libraries.
+- [x] WEB1.5 Verify the archive contains exactly the expected public `tu_*` ABI surface and no accidental public ABI expansion. public ABI expansion.
 - [ ] WEB1.6 Add a permanent native/Web link harness based on `include/taffy_ugui.h` covering ABI version, context lifecycle, node creation, layout compute, and layout retrieval.
 - [ ] WEB1.7 Audit Web panic behavior. Because the compatibility build uses `panic=abort`, remove avoidable internal `expect`/panic paths at the Web boundary where practical and document the remaining invariant behavior.
 - [ ] WEB1.8 Decide and test Web handling for `CapThreadLocalContexts` without weakening non-Web behavior.
 - [ ] WEB1.9 Measure release archive size and apply safe size optimizations only if they do not reduce old-linker compatibility.
 - [ ] WEB1.10 Keep all generated/probe artifacts outside tracked source except the intentional staged package artifact.
 
+- [x] WEB1.5 Verify the archive contains exactly the expected public `tu_*` ABI surface and no accidental public ABI expansion.
+
+WEB1.1:
+
+- Added `native/web/Cargo.toml` as an independent nested Cargo workspace so root `--workspace` builds continue to contain only the existing native package.
+- The Web manifest points its library target directly at `../src/lib.rs`, names the library `taffy_ugui`, and requests only `crate-type = ["staticlib"]`.
+- Web package version/edition/MSRV and the exact Taffy dependency/features are aligned with `native/Cargo.toml`; this preserves the build version reported by the ABI.
+- A release `wasm32-unknown-unknown` build succeeded and emitted `libtaffy_ugui.a` with no Web package `cdylib`/`rlib` output.
+- The generated Web lock resolves the same dependency versions as the root native `Cargo.lock`.
+- `cargo check --workspace --locked` still passes for the existing root workspace and builds only `taffy_ugui_native`.
+
+WEB1.2:
+
+- Added the canonical `python3 build/build.py web-native` command. It builds `native/web/Cargo.toml` with `--locked --release --target wasm32-unknown-unknown` into the ignored `.build/web-cargo-target/` tree and fails if the expected archive is missing or empty.
+- Added `wasm32-unknown-unknown` to `rust-toolchain.toml` so fresh project-local Rust provisioning declares the required Web standard-library target instead of depending on a machine-global installation.
+- The command uses the project-local pinned Cargo/Rust toolchain and does not stage anything into the Unity package yet; staging remains WEB2.
+- Two clean canonical builds produced byte-identical `libtaffy_ugui.a` archives: `5,078,638` bytes, SHA-256 `8f6c6dcd722c21833ca788b5c1595e0f1fe4a363d3b7b59bab8f15043c9f58a8`.
+
+WEB1.3:
+
+- Pinned the generic Web build to `-Ctarget-cpu=mvp` and `-Cpanic=abort` through the target-specific Cargo environment used only by `web-native`.
+- The canonical command discards inherited generic `RUSTFLAGS` / `CARGO_ENCODED_RUSTFLAGS` and overwrites any inherited `CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS`, preventing caller-specific flags from weakening the compatibility baseline.
+- A clean build launched with deliberately conflicting inherited flags still succeeded, and Cargo's recorded fingerprint contained exactly `[-Ctarget-cpu=mvp, -Cpanic=abort]` for `taffy_ugui_web`.
+- Restored the existing `DIST_NATIVE` / package build-driver constants after reviewing the cumulative WEB1 diff, and documented the shared-namespace Pyright model for the final build-driver segment so VS Code Problems remains actionable.
+
+WEB1.4:
+
+- Added a shared Web build environment that removes inherited Unity/Emscripten/linker/include/library hooks before invoking Cargo, including Emscripten configuration/cache variables, target linker overrides, C/C++ flags, and native include/library search paths.
+- Added the permanent `python3 build/build.py verify-web-independence` gate. It checks the resolved Cargo graph for any package declaring a native-library `links` dependency, then performs a clean release build with `CC`, `CXX`, `AR`, and `RANLIB` (including wasm target-specific variants) poisoned to nonexistent tools.
+- The independence gate passed from a clean target directory, proving the current Web archive requires only the pinned Rust toolchain and pure-Rust dependency graph; no Unity SDK, Emscripten compiler/archive tool, C/C++ compiler, Unity header, or external native library is needed to produce `libtaffy_ugui.a`.
+- A separate clean canonical `web-native` build also passed while hostile `EMSDK`, `EM_CONFIG`, `EM_CACHE`, Emscripten linker, generic wasm linker, C include, and library-link flags were injected by the caller, proving the canonical path sanitizes those inputs.
+
+
+WEB1.5:
+
+- Added the permanent `python3 build/build.py verify-web-abi-surface` gate. It builds the canonical generic Web archive, inspects globally defined symbols with the pinned Rust `llvm-nm`, and compares the complete `tu_*` set against the checked-in C header contract.
+- The gate fails on any missing export, unexpected `tu_*` export, or duplicate public definition, preventing accidental Web-only ABI drift.
+- Current verification passes with exactly `31` expected `tu_*` exports and no additions or omissions.
 **WEB1 phase gate:** generic archive reproducibly builds from clean source; ABI/link harness passes; non-Web Rust tests and native artifacts remain unchanged.
 
 ---

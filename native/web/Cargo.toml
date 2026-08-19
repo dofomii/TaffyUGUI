@@ -1,0 +1,32 @@
+# Web-only Cargo entry point for the existing TaffyUGUI native source.
+# Keep the package version aligned with ../Cargo.toml because the public ABI
+# reports CARGO_PKG_VERSION through tu_copy_build_version.
+
+[package]
+name = "taffy_ugui_web"
+version = "1.1.2"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+description = "WebAssembly static-library build of the TaffyUGUI native bridge"
+repository = "https://github.com/dofomii/TaffyUGUI"
+publish = false
+
+[lib]
+name = "taffy_ugui"
+path = "../src/lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+taffy = { version = "=0.13.0", default-features = false, features = ["std", "taffy_tree", "flexbox", "grid", "block_layout", "float_layout", "calc", "content_size", "detailed_layout_info"] }
+
+# This manifest is intentionally independent from the repository root workspace.
+# The root native package also emits libtaffy_ugui.a, so making both packages
+# workspace members would create colliding build outputs during --workspace runs.
+[workspace]
+resolver = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

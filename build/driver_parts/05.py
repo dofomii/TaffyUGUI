@@ -1,3 +1,5 @@
+# pyright: reportUndefinedVariable=false
+# Executed after driver parts 00-04 in one shared namespace.
 
 
 def verify_phase4() -> None:
@@ -239,6 +241,127 @@ def doctor() -> None:
     print("  CI fallback: disabled by design")
 
 
+def web_native_env(target_dir: Path, poison_external_toolchain: bool = False) -> dict[str, str]:
+    env = base_env()
+    env["CARGO_TARGET_DIR"] = str(target_dir)
+    for key in WEB_SANITIZED_ENV_KEYS:
+        env.pop(key, None)
+    env["CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS"] = " ".join(WEB_RUSTFLAGS)
+    if poison_external_toolchain:
+        poison = str(ROOT / ".build" / "WEB_EXTERNAL_TOOLCHAIN_MUST_NOT_BE_USED")
+        for key in WEB_EXTERNAL_TOOLCHAIN_ENV_KEYS:
+            env[key] = poison
+    return env
+
+
+def build_web_native(
+    target_dir: Path = WEB_CARGO_TARGET_DIR,
+    poison_external_toolchain: bool = False,
+) -> Path:
+    if not WEB_MANIFEST.is_file():
+        raise SystemExit(f"Web Cargo manifest is missing: {WEB_MANIFEST.relative_to(ROOT)}")
+    ensure_target_installed(WEB_TARGET)
+    cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    env = web_native_env(target_dir, poison_external_toolchain)
+    run(
+        cargo_bin,
+        "build",
+        "--manifest-path",
+        str(WEB_MANIFEST),
+        "--locked",
+        "--release",
+        "--target",
+        WEB_TARGET,
+        env=env,
+    )
+    artifact = target_dir / WEB_TARGET / "release" / "libtaffy_ugui.a"
+    if not artifact.is_file() or artifact.stat().st_size == 0:
+        raise SystemExit(f"Expected Web native archive was not produced: {artifact}")
+    print(f"Built Web native archive: {artifact.relative_to(ROOT)}")
+    return artifact
+
+
+def rust_llvm_nm() -> str:
+    rustc = require("rustc", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    sysroot = Path(run(rustc, "--print", "sysroot", capture=True, env=base_env()).strip())
+    candidates = sorted((sysroot / "lib" / "rustlib").glob("*/bin/llvm-nm*"))
+    for candidate in candidates:
+        if candidate.is_file() and candidate.name in ("llvm-nm", "llvm-nm.exe"):
+            return str(candidate)
+    raise SystemExit(
+        "Rust llvm-nm is missing. Install the pinned llvm-tools-preview component "
+        f"for Rust {DEV_RUST_VERSION}."
+    )
+
+
+def verify_web_abi_surface() -> tuple[str, ...]:
+    artifact = build_web_native()
+    output = run(
+        rust_llvm_nm(),
+        "-g",
+        "--defined-only",
+        "-P",
+        str(artifact),
+        capture=True,
+        env=web_native_env(WEB_CARGO_TARGET_DIR),
+    )
+    symbols: list[str] = []
+    for line in output.splitlines():
+        fields = line.split()
+        if fields and fields[0].startswith("tu_"):
+            symbols.append(fields[0])
+
+    expected = tuple(sorted(header_export_contract()))
+    actual = tuple(sorted(set(symbols)))
+    missing = sorted(set(expected) - set(actual))
+    extra = sorted(set(actual) - set(expected))
+    duplicates = sorted(name for name in actual if symbols.count(name) != 1)
+    if missing or extra or duplicates:
+        raise SystemExit(
+            "Web public ABI surface mismatch. "
+            f"Missing={missing or 'none'} Extra={extra or 'none'} "
+            f"DuplicateDefinitions={duplicates or 'none'}"
+        )
+    print(f"WEB ABI SURFACE VERIFY: PASS — exactly {len(actual)} expected tu_* exports")
+    return actual
+
+
+
+
+def verify_web_independence() -> None:
+    cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    env = web_native_env(WEB_INDEPENDENCE_TARGET_DIR, poison_external_toolchain=True)
+    metadata = json.loads(
+        run(
+            cargo_bin,
+            "metadata",
+            "--manifest-path",
+            str(WEB_MANIFEST),
+            "--locked",
+            "--format-version",
+            "1",
+            capture=True,
+            env=env,
+        )
+    )
+    resolved_ids = {node["id"] for node in metadata.get("resolve", {}).get("nodes", [])}
+    linked_packages = sorted(
+        package["name"]
+        for package in metadata.get("packages", [])
+        if package.get("id") in resolved_ids and package.get("links")
+    )
+    if linked_packages:
+        raise SystemExit(
+            "Generic Web dependency graph declares native-library links: "
+            + ", ".join(linked_packages)
+        )
+
+    shutil.rmtree(WEB_INDEPENDENCE_TARGET_DIR, ignore_errors=True)
+    build_web_native(WEB_INDEPENDENCE_TARGET_DIR, poison_external_toolchain=True)
+    print("WEB NATIVE INDEPENDENCE VERIFY: PASS — no Unity/Emscripten toolchain or native-library dependency")
+
+
+
 def list_targets() -> None:
     for spec in TARGETS.values():
         host = ",".join(spec.host_os) if spec.host_os else "cross-host"
@@ -259,6 +382,9 @@ def main() -> int:
     sub.add_parser("verify-abi-final", help="Run the complete local Phase 3 regression gate for final ABI v1")
     sub.add_parser("verify-abi-rc", help="Compatibility alias for the final ABI v1 verification gate")
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")
+    sub.add_parser("verify-web-abi-surface", help="Verify the Web archive exposes exactly the checked-in public tu_* ABI")
+    sub.add_parser("web-native", help="Build the generic wasm32-unknown-unknown Web static archive")
+    sub.add_parser("verify-web-independence", help="Prove the Web archive builds without Unity/Emscripten or external native libraries")
     sub.add_parser("phase4-status", help="Show local Phase 4 artifact/evidence status")
     sub.add_parser("phase4-host", help="Build all canonical Phase 4 targets assigned to this local OS")
     sub.add_parser("verify-phase4", help="Verify the complete multi-host Phase 4 artifact set and write its local index")
@@ -279,8 +405,11 @@ def main() -> int:
     elif args.command in ("verify-abi-final", "verify-abi-rc"): verify_abi_final()
     elif args.command == "list-targets": list_targets()
     elif args.command == "phase4-status": phase4_status()
+    elif args.command == "verify-web-abi-surface": verify_web_abi_surface()
     elif args.command == "phase4-host": phase4_host()
     elif args.command == "verify-phase4": verify_phase4()
+    elif args.command == "web-native": build_web_native()
+    elif args.command == "verify-web-independence": verify_web_independence()
     elif args.command == "native":
         if args.target == "macos-universal": macos_universal()
         else: build_target(args.target)

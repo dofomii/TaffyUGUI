@@ -206,7 +206,7 @@ namespace TaffyUGUI.Editor
         {
             if (!group || !group.gameObject.scene.IsValid() || !group.gameObject.scene.isLoaded)
                 return;
-            if (seen.Add(group.GetInstanceID()))
+            if (seen.Add(TaffyEditorObjectIdentity.IdentityHash(group)))
                 result.Add(group);
         }
 

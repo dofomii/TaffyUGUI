@@ -2,9 +2,10 @@
 
 **Program status:** ACTIVE  
 **Support target:** Unity `2021.3 LTS` through the latest current Unity release  
-**Current latest release at plan verification:** Unity `6000.5.7f1` (2026-08-05)  
-**Current phase:** WEB2 ACTIVE
-**Authoritative next task:** WEB2.1
+**Current latest release at matrix verification:** Unity `6000.5.8f1` (2026-08-12)
+**Current phase:** WEB5 ACTIVE
+**Authoritative next task:** WEB5.2
+
 
 
 This tracker is the authoritative implementation plan for adding Unity Web/WebGL Player support without changing existing Android/desktop runtime behavior. Complete phases in order. Commit only when the active phase is complete.
@@ -223,52 +224,76 @@ WEB1.10:
 ---
 
 # WEB3 — Permanent Web runtime regression scene/harness
-
-**Status: ACTIVE**B2**
+**Status: COMPLETE**
+**Completed: 2026-08-20**
 
 Create a deterministic Web Player test that exercises the package through normal `TaffyLayoutGroup` / `TaffyLayoutItem` APIs, not only direct native calls.
 
-- [ ] WEB3.1 ABI version/stage/capability handshake.
-- [ ] WEB3.2 Flex row/column layout.
-- [ ] WEB3.3 Grid tracks, placement, gaps, and detailed Grid diagnostics.
-- [ ] WEB3.4 Block/FlowRoot behavior retained where applicable.
-- [ ] WEB3.5 Calc values.
-- [ ] WEB3.6 responsive profiles and forced/automatic profile resolution.
-- [ ] WEB3.7 TextMeshPro intrinsic measurement and width-constrained wrapping.
-- [ ] WEB3.8 uGUI Text/Image/RawImage measurement regressions where supported by the existing package tests.
-- [ ] WEB3.9 bulk style/topology/measurement/layout ABI calls.
-- [ ] WEB3.10 repeated context/node/resource create-destroy cycles.
-- [ ] WEB3.11 nested groups and ScrollRect integration.
-- [ ] WEB3.12 no `DllNotFoundException`, undefined `tu_*`, abort, or native-link error markers.
+- [x] WEB3.1 ABI version/stage/capability handshake.
+  - Added permanent player-compatible `TaffyWebRuntimeRegressionTests` coverage using normal `TaffyLayoutGroup` / `TaffyLayoutItem` APIs. The deterministic `TAFFY_WEB_RUNTIME_ABI_PASS abi=1 stage>=2 taffy=0.13.0 capabilities=required` marker is emitted only after the normal layout initialization path completes native ABI, stage, Taffy-version, and required-capability validation.
+  - Unity `6000.4.3f1` verification passes the focused WEB3.1 Play Mode test and the complete maintained Play Mode suite. The initial Unity `6000.3.9f1` WebGL attempt exposed compatibility issues that were resolved during WEB3 closeout: the canonical Web archive is built with Rust `1.82.0` to avoid newer generic-Wasm target-feature metadata rejected by Unity's older Binaryen; the Web-only allocator delegates to the final Emscripten runtime so Rust allocation shares Unity's linear-memory model; and the managed ABI validator uses the correct 32-bit pointer struct-size table in Web Players while retaining the existing 64-bit validation everywhere else.
+- [x] WEB3.2 Flex row/column layout.
+  - Added deterministic row/column geometry coverage to `TaffyWebRuntimeRegressionTests`. The harness verifies two explicitly sized `TaffyLayoutItem` children in both flex directions and emits `TAFFY_WEB_RUNTIME_FLEX_PASS row=2 column=2`; Unity `6000.4.3f1` passes the focused WEB3 fixture (`2/2`) and the complete maintained Play Mode suite (`11/11`).
+- [x] WEB3.3 Grid tracks, placement, gaps, and detailed Grid diagnostics.
+  - Added a fixed one-row/two-column Grid case with a `10` point horizontal gap and explicit second-column placement. The harness validates resolved `100`/`80`/`110` point tracks, `[0, 10, 0]` column gutters, item diagnostics, and emits `TAFFY_WEB_RUNTIME_GRID_PASS rows=1 columns=2 horizontalGap=10 items=1`.
+- [x] WEB3.4 Block/FlowRoot behavior retained where applicable.
+  - Added normal managed API coverage for Block vertical stacking and FlowRoot left-float plus `Clear.Both`, with deterministic geometry checks and `TAFFY_WEB_RUNTIME_BLOCK_PASS block=stack flowRoot=float-clear`.
+- [x] WEB3.5 Calc values.
+  - Added Calc-backed item width and Grid-track mutation coverage. The harness verifies `70 -> 90` point item recomputation, a mutated `120` point Calc track through detailed diagnostics, and emits `TAFFY_WEB_RUNTIME_CALC_PASS item=90 track=120`. Unity `6000.4.3f1` passes the focused WEB3 fixture (`5/5`) and the complete maintained Play Mode suite (`14/14`).
+- [x] WEB3.6 responsive profiles and forced/automatic profile resolution.
+  - Added narrow/`Column` and wide/`Row` profiles to the permanent runtime harness. It verifies automatic selection at `200` and `400` point widths, `SetRuntimeResponsiveProfile("wide")`, clearing the override back to automatic narrow resolution, geometry changes for both modes, and emits `TAFFY_WEB_RUNTIME_RESPONSIVE_PASS automatic=narrow/wide forced=wide clear=narrow`. Unity `6000.4.3f1` passes the focused fixture (`6/6`) and full maintained Play Mode suite (`15/15`).
+- [x] WEB3.7 TextMeshPro intrinsic measurement and width-constrained wrapping.
+  - Added permanent TMP coverage using `TextMeshProUGUI` through the normal `TaffyLayoutGroup` / `TaffyLayoutItem` path. The regression validates max-content intrinsic width, cached intrinsic height, then fixes the item width to the permanent `128` point measurement sample and verifies Taffy reproduces TMP's width-constrained preferred height. It emits `TAFFY_WEB_RUNTIME_TMP_PASS intrinsic=1 wrapped=1` only after both paths pass. Unity `6000.4.3f1` passes the focused test (`1/1`), the complete WEB3 fixture (`7/7`), and the full maintained Play Mode suite (`16/16`).
+- [x] WEB3.8 uGUI Text/Image/RawImage measurement regressions where supported by the existing package tests.
+  - Added permanent player-compatible uGUI measurement coverage for runtime-mutated `Text`, replaced-element `Image`, and `RawImage` UV-scaled intrinsic sizing. The regression verifies Text width grows after content mutation, a `64 x 32` sprite resolves to `64 x 32`, an `80 x 40` RawImage using a `0.5 x 0.5` UV rect resolves to `40 x 20`, and emits `TAFFY_WEB_RUNTIME_UGUI_MEASURE_PASS text=1 image=64x32 raw=40x20`. Unity `6000.4.3f1` passes the focused test (`1/1`), complete WEB3 fixture (`8/8`), and full maintained Play Mode suite (`17/17`).
+- [x] WEB3.9 bulk style/topology/measurement/layout ABI calls.
+  - Added a permanent Play Mode C-ABI regression that binds the same public bulk exports directly in the test assembly without altering production runtime behavior. It creates a real context/root/two-child tree, bulk-updates two styles, bulk-uploads one topology change and one intrinsic measurement, computes layout, retrieves three layouts through `tu_get_layouts_bulk`, and verifies `40 x 20` plus measured `30 x 12` child geometry. The marker is `TAFFY_WEB_RUNTIME_BULK_ABI_PASS styles=2 topology=1 measurement=1 layouts=3`; Unity `6000.4.3f1` passes the focused test, WEB3 fixture (`9/9`), and full maintained Play Mode suite (`18/18`).
+- [x] WEB3.10 repeated context/node/resource create-destroy cycles.
+  - Added 32 deterministic cycles that create/destroy a native context, create/remove a node, and create/remove a Calc resource through the real public ABI. The marker is `TAFFY_WEB_RUNTIME_LIFECYCLE_PASS cycles=32 context=1 node=1 resource=1`; Unity `6000.4.3f1` passes the focused test, WEB3 fixture (`10/10`), and full maintained Play Mode suite (`19/19`).
+- [x] WEB3.11 nested groups and ScrollRect integration.
+  - Added normal managed-API regression coverage for a nested Column group resolving to `90 x 35` from its child and for vertical `ScrollRect` content remaining `100` points tall with one `70` point child then expanding to `140` after a second runtime child without a rebuild loop. The marker is `TAFFY_WEB_RUNTIME_NESTED_SCROLL_PASS nested=90x35 scroll=140`; Unity `6000.4.3f1` passes the focused test, WEB3 fixture (`11/11`), and full maintained Play Mode suite (`20/20`).
+- [x] WEB3.12 no `DllNotFoundException`, undefined `tu_*`, abort, or native-link error markers.
+  - Unity `6000.3.9f1` built and executed the complete `TaffyWebRuntimeRegressionTests` fixture in Chromium through the WebGL Player/Test Runner transport: **11/11 passed**. All 11 deterministic `TAFFY_WEB_RUNTIME_*` markers were present, including TMP intrinsic/wrapped measurement after the disposable test host imported the maintained TMP Settings/font resources. Browser Player XML/log scanning found zero `DllNotFoundException`, `EntryPointNotFoundException`, undefined-symbol/`tu_*`, Wasm `RuntimeError`, abort, native-link, or streaming-compile failure markers.
+  - Final Editor regression on Unity `6000.4.3f1` passed **20/20** Play Mode tests. Native closeout remained green with rustfmt, Clippy `-D warnings`, **37/37** Rust unit tests, **9/9** native verification tests, release build, cbindgen header drift, and final ABI-v1 verification.
+  - Canonical Web closeout gates all pass from the staged package artifact: exact **31** `tu_*` exports, deterministic Web package match/importer isolation, Unity Emscripten public-header link/execute, panic-boundary validation, native wrong-thread preservation, source cleanliness, Unity/Emscripten-independent Rust build, and size review. Current archive: `4,200,052` bytes (`4.0055 MiB`), SHA-256 `49dc545b6a3ada0b8652480931c47dc7e43bb10587470d11178f10b0592cda38`.
 
-**WEB3 phase gate:** runtime marker reports a deterministic pass in an actual browser Player.
+**WEB3 phase gate: PASS** — the permanent regression reports deterministic success in an actual Chromium WebGL Player, and the browser/native-link error scan is clean.
 
 ---
 
 # WEB4 — Unity 2021.3 minimum-version gate
 
-**Status: BLOCKED BY WEB3**
+**Status: COMPLETE — 2026-08-20**
 
-This is the highest-risk compatibility gate and must pass before the package advertises Unity 2021.3 Web support.
+This minimum-version gate passed on Unity `2021.3.39f1` with the package's normal/default single-thread WebGL path.
 
-- [ ] WEB4.1 Install WebGL Build Support for `2021.3.39f1` (or the accepted minimum patch used by package validation).
-- [ ] WEB4.2 Record the exact bundled Emscripten version from `emscripten-version.txt`.
-- [ ] WEB4.3 Link the generic archive with the Unity 2021.3 Web toolchain before running a full Unity build.
-- [ ] WEB4.4 Build a Development WebGL Player.
-- [ ] WEB4.5 Run the WEB3 regression in a supported desktop browser.
-- [ ] WEB4.6 Build a non-Development/release WebGL Player.
-- [ ] WEB4.7 Verify TMP measurement and responsive layout in-browser.
-- [ ] WEB4.8 Record build size, startup memory, and any Unity-2021-specific workaround.
+- [x] WEB4.1 Install WebGL Build Support for `2021.3.39f1` (or the accepted minimum patch used by package validation).
+  - Installed the exact `2021.3.39f1` WebGL module from that Editor's Unity Hub module manifest and verified the complete `PlaybackEngines/WebGLSupport` payload.
+- [x] WEB4.2 Record the exact bundled Emscripten version from `emscripten-version.txt`.
+  - Unity `2021.3.39f1` reports bundled Emscripten `2.0.19`.
+- [x] WEB4.3 Link the generic archive with the Unity 2021.3 Web toolchain before running a full Unity build.
+  - `verify-web-link-harness` links and executes the canonical Rust `wasm32-unknown-unknown` archive with Unity 2021.3 Emscripten `2.0.19`; the fallback Emscripten-target architecture is not required.
+- [x] WEB4.4 Build a Development WebGL Player.
+  - PASS after correcting a real minimum-version importer compatibility issue: Unity 2021.3 treated the previous PluginImporter `serializedVersion: 3` map-form metadata as WebGL-disabled and omitted the `.a` from the Player link. The checked-in archive metadata and deterministic staging contract now use Unity 2021.3's own canonical `serializedVersion: 2` list-form WebGL entry. The Development Player then completed the final Emscripten link with no undefined `tu_*` symbols. Unity `6000.3.9f1` also passes the permanent Web archive importer tests `2/2` with this metadata.
+- [x] WEB4.5 Run the WEB3 regression in a supported desktop browser.
+  - Chromium executed the Unity 2021.3 Development Player and the permanent `TaffyWebRuntimeRegressionTests` fixture passed **11/11** in Test Framework XML with zero failed/skipped tests.
+- [x] WEB4.6 Build a non-Development/release WebGL Player.
+  - PASS with `options.Development = False`; Unity's Emscripten/Binaryen release path completed through `wasm-opt -O3`, and Chromium emitted all **11/11** deterministic `TAFFY_WEB_RUNTIME_*` PASS markers. Test Framework `1.1.33` does not return release-player results through its Development-Player remote transport, so release evidence is the successful Player build plus all 11 browser runtime markers rather than a second XML file.
+- [x] WEB4.7 Verify TMP measurement and responsive layout in-browser.
+  - Both Development and non-Development Players emitted `TAFFY_WEB_RUNTIME_RESPONSIVE_PASS automatic=narrow/wide forced=wide clear=narrow` and `TAFFY_WEB_RUNTIME_TMP_PASS intrinsic=1 wrapped=1`; legacy uGUI measurement also emitted `TAFFY_WEB_RUNTIME_UGUI_MEASURE_PASS text=1 image=64x32 raw=40x20`.
+- [x] WEB4.8 Record build size, startup memory, and any Unity-2021-specific workaround.
+  - Canonical staged archive: `4,200,052` bytes (`4.0055 MiB`), SHA-256 `49dc545b6a3ada0b8652480931c47dc7e43bb10587470d11178f10b0592cda38`. The served non-Development test Player was `37,865,533` bytes across 11 files; its compressed core payload (`data.gz + framework.js.gz + wasm.gz + loader.js`) was `6,317,268` bytes. Emscripten startup linear memory is `32 MiB` (`INITIAL_MEMORY=33554432`) with `ALLOW_MEMORY_GROWTH=1`.
+  - Validation-host-only Unity 2021/Linux accommodations were kept out of package source: batch runs explicitly selected `-buildTarget WebGL`; a temporary wrapper removed Unity 2021.3's host-stalling `bee_backend --stdin-canary` argument and was restored byte-for-byte afterward (SHA-256 `8561ed19e6d35e1e947b450dd528867e7c43c9fe43b5cce9086b58d3cad4fa67`); Test Framework `1.1.33` ignored newer WebGL browser-setting keys so Chromium was launched explicitly; and an ignored `.build/` `ITestPlayerBuildModifier` cleared the framework's forced Development flag for the release regression. None changes runtime/native behavior or ships in the package.None of these changes runtime/native behavior or ships in the package.
 
-If WEB4.3 rejects the generic object archive because of LLVM/Wasm object-version compatibility, execute the fallback decision in the locked architecture section before changing the public API.
+The generic object archive is accepted by the minimum-version toolchain, so the fallback decision is not activated.
 
-**WEB4 phase gate:** Unity 2021.3 Development and release Web players both run the permanent regression successfully.
+**WEB4 phase gate: PASS** — Unity `2021.3.39f1` Development and non-Development WebGL Players both build and run the complete permanent 11-test Web regression successfully.
 
 ---
 
 # WEB5 — Cross-version Unity Web matrix
 
-**Status: BLOCKED BY WEB4**
+**Status: COMPLETE**
 
 Required release gates should cover meaningful Unity/Emscripten generations, not every patch.
 
@@ -276,24 +301,37 @@ Required release gates should cover meaningful Unity/Emscripten generations, not
 |---|---|---|
 | Minimum | `2021.3.39f1` | package minimum; Emscripten 2.0 family |
 | LTS generation | `2022.3.62f1` or maintained 2022.3 gate | Emscripten 3.1.8 family |
-| 2023 generation | latest practical `2023.2` patch | Emscripten 3.1.38 family |
-| Unity 6 baseline | maintained `6000.0` LTS patch | Unity 6 Web baseline |
-| Latest LTS | latest supported LTS at release time | long-lived customer target |
-| Latest current | latest current production editor at release time; currently `6000.5.7f1` | forward compatibility gate |
+| 2023 generation | `2023.2.20f1` | final practical 2023.2 patch; Emscripten 3.1.39 family |
+| Unity 6 baseline | `6000.0.81f1` | maintained Unity 6.0 LTS baseline |
+| Latest LTS | `6000.3.22f1` | latest supported LTS patch at matrix verification |
+| Latest current | `6000.5.8f1` | latest current production editor at matrix verification |
 
-- [ ] WEB5.1 Automate discovery/reporting of Unity's bundled Emscripten version for each gate.
-- [ ] WEB5.2 Run Development Player build + browser regression for each gate.
-- [ ] WEB5.3 Run release Player build for minimum, latest LTS, and latest current gates.
-- [ ] WEB5.4 Verify the same staged generic archive is used across the matrix.
-- [ ] WEB5.5 If a future Unity release breaks archive compatibility, fail validation rather than silently claiming support.
+- [x] WEB5.1 Automate discovery/reporting of Unity's bundled Emscripten version for each gate.
+  - Added `build/build.py web-unity-toolchains`, which discovers installed Unity Hub editors, resolves every gate to the exact pinned release, records `emscripten-version.txt`, reports `ready` / `missing-webgl` / `missing-editor`, writes `.build/evidence/web-unity-toolchains.json`, and supports `--require-complete` to fail closed when a release matrix is incomplete. WEB5 release pins are `2021.3.39f1`, `2022.3.62f1`, `2023.2.20f1`, `6000.0.81f1`, `6000.3.22f1`, and `6000.5.8f1`; an older installed patch no longer silently satisfies a latest-version gate.
+- [x] WEB5.2 Run Development Player build + browser regression for each gate.
+  - `2021.3.39f1` minimum row: PASS from WEB4 — Development Player and Chromium permanent regression `11/11`, Emscripten `2.0.19`.
+  - `2022.3.62f1` row: PASS — WebGL module installed, direct public-header link/execute passes with Emscripten `3.1.8-git`, Development Player build succeeds, and Chromium/Test Framework XML reports **11/11 passed, 0 failed, 0 skipped**. Browser launch must use the `localhost` Player origin for the WebSocket PlayerConnection transport on this Linux validation host.
+  - `2023.2.20f1` row: PASS — WebGL module reports Emscripten `3.1.39-git`; direct public-header link/execute passes; the Development WebGL Test Framework Player exits successfully and XML reports **11/11 passed, 0 failed, 0 skipped** with all permanent runtime markers present.
+  - `6000.0.81f1` Unity 6 baseline row: PASS — WebGL module reports Emscripten `3.1.39-git`; the exact staged archive links/executes successfully; after removing a stale duplicate Linux plugin copy from the ignored validation host, the Development WebGL Player builds successfully and Test Framework XML reports **11/11 passed, 0 failed, 0 skipped** with all permanent runtime markers present.
+  - `6000.3.22f1` latest-LTS row: PASS — WebGL module reports Emscripten `3.1.39-git`; the exact staged archive links/executes successfully; the Development WebGL Player build succeeds and Test Framework XML reports **11/11 passed, 0 failed, 0 skipped** with all permanent runtime markers present.
+  - `6000.5.8f1` latest-current row: PASS — WebGL module reports Emscripten `4.0.20-git`; Unity 6000.5 API-obsolete breaks were handled with version-gated EntityId compatibility; the Development WebGL Player builds successfully and Test Framework XML reports **11/11 passed, 0 failed, 0 skipped** with all permanent runtime markers present and zero undefined symbols.
+- [x] WEB5.3 Run release Player build for minimum, latest LTS, and latest current gates.
+  - `2021.3.39f1` minimum release row: PASS from WEB4 — non-Development WebGL Player built successfully and Chromium emitted all **11/11** permanent runtime PASS markers, including responsive layout and TMP measurement.
+  - `6000.3.22f1` latest-LTS release row: PASS — the release build modifier verified `Development=False`; the non-Development WebGL Player built successfully, and a manual headless Chromium run emitted all **11/11** permanent runtime PASS markers. Browser console evidence is retained under ignored `.build/web5-6000.3.22f1/release-browser.log`.
+  - `6000.5.8f1` latest-current release row: PASS — the release build modifier verified `Development=False`; the non-Development WebGL Player linked successfully with Emscripten `4.0.20-git` and zero undefined symbols, and a manual headless Chromium run emitted all **11/11** permanent runtime PASS markers. Browser console evidence is retained under ignored `.build/web5-6000.5.8f1/release-browser.log`.
+- [x] WEB5.4 Verify the same staged generic archive is used across the matrix.
+  - `build/build.py verify-web-unity-matrix-links` verifies the staged package archive matches the canonical Rust build, then links and executes the exact checked-in `UnityPackage/Plugins/WebGL/libtaffy_ugui.a` against all six WEB5 gates. Every gate passes with the same SHA-256 `49dc545b6a3ada0b8652480931c47dc7e43bb10587470d11178f10b0592cda38`, including latest-current Emscripten `4.0.20-git`; evidence is retained in ignored `.build/evidence/web-unity-matrix-links.json`.
+- [x] WEB5.5 If a future Unity release breaks archive compatibility, fail validation rather than silently claiming support.
+  - `verify-web-unity-matrix-links` fails closed on missing editors, missing/incomplete Web toolchains, link failures, execution failures, or absent harness PASS markers. The complete six-editor matrix now passes, so future gate drift will fail validation rather than silently inheriting support.
 
-**WEB5 phase gate:** all required version rows pass from the same package artifact.
+**WEB5 phase gate: PASS** — all six pinned Unity/Emscripten generations pass Development WebGL runtime regression, minimum/latest-LTS/latest-current pass non-Development browser execution, and every exact gate links and executes the same staged generic archive.
+
 
 ---
 
 # WEB6 — Browser, memory, performance, and release hardening
 
-**Status: BLOCKED BY WEB5**
+**Status: ACTIVE**
 
 - [ ] WEB6.1 Chrome/Chromium current smoke.
 - [ ] WEB6.2 Firefox current smoke.
@@ -354,10 +392,10 @@ Until WEB7 completes, documentation must say that TaffyUGUI's supported Web conf
 | Cargo tries to create Emscripten `cdylib` side module | Avoided | Web-only staticlib manifest |
 | Rust panic/unwind ABI | Avoided for broad compatibility | `panic=abort`; harden avoidable panic paths |
 | Detailed Grid diagnostics | Preserved | Existing `std` Taffy configuration builds on generic Wasm |
-| Unity 2021.3 old wasm linker | Not executed locally yet | WEB4 mandatory link + Player gate |
+| Unity 2021.3 old wasm linker | Passed | Emscripten `2.0.19` direct link/execute plus Development and release Player gates |
 | Web multithreading | Feasible but separate | WEB7; do not advertise early |
 | TMP measurement | Managed-side feature; expected portable | permanent in-browser WEB3/WEB4 test |
-| Artifact size | ~11.6 MB static archive in spike | measure/optimize in WEB1/WEB6; final Wasm dead-strips unused code |
+| Artifact size | Canonical archive `4,200,052` bytes (`4.0055 MiB`) | keep WEB6 package/download-size review; final Player dead-strips unused archive code |
 | Existing Android/native behavior | Must not regress | non-Web regression required at each native phase |
 
 ## External facts verified for this plan

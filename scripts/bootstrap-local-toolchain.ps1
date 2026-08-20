@@ -13,6 +13,7 @@ if (-not (Test-Path (Join-Path $Toolchain "bin/rustup.exe"))) {
 }
 
 rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy
+rustup toolchain install 1.82.0 --profile minimal --target wasm32-unknown-unknown
 rustup override set 1.97.1
 if (-not (Get-Command cbindgen -ErrorAction SilentlyContinue) -or -not ((cbindgen --version) -match "0.29.2")) {
     $PreviousCargoTargetDir = $env:CARGO_TARGET_DIR

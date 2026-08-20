@@ -172,7 +172,7 @@ namespace TaffyUGUI.Editor
             var seen = new HashSet<int>();
             foreach (LayoutGroup source in sources)
             {
-                if (!source || !seen.Add(source.GetInstanceID()))
+                if (!source || !seen.Add(TaffyEditorObjectIdentity.IdentityHash(source)))
                     continue;
                 results.Add(Migrate(source));
             }
@@ -453,7 +453,7 @@ namespace TaffyUGUI.Editor
                 return;
             if (!(group is HorizontalLayoutGroup) && !(group is VerticalLayoutGroup) && !(group is GridLayoutGroup))
                 return;
-            if (seen.Add(group.GetInstanceID()))
+            if (seen.Add(TaffyEditorObjectIdentity.IdentityHash(group)))
                 result.Add(group);
         }
     }

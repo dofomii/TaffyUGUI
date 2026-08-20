@@ -32,6 +32,10 @@ pub(crate) enum NativeError {
     InvalidNumber,
     InvalidValue,
     Capacity,
+    #[cfg_attr(
+        all(target_arch = "wasm32", not(target_feature = "atomics")),
+        allow(dead_code)
+    )]
     WrongThread,
     RegistryBusy,
 }

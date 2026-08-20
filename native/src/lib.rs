@@ -14,6 +14,8 @@ mod grid;
 mod handles;
 mod measurement;
 mod version;
+#[cfg(target_arch = "wasm32")]
+mod web_alloc;
 
 pub mod ffi;
 mod style;

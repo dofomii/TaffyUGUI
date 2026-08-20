@@ -5,6 +5,20 @@ using UnityEngine;
 
 namespace TaffyUGUI.Editor
 {
+    internal static class TaffyEditorObjectIdentity
+    {
+        internal static int IdentityHash(UnityEngine.Object value)
+        {
+            if (!value)
+                return 0;
+#if UNITY_6000_5_OR_NEWER
+            return value.GetEntityId().GetHashCode();
+#else
+            return value.GetInstanceID();
+#endif
+        }
+    }
+
     internal enum TaffyLengthIntent
     {
         Auto = 0,
@@ -264,7 +278,7 @@ namespace TaffyUGUI.Editor
 
         private static string SessionKey(SerializedProperty property)
         {
-            int targetId = property?.serializedObject?.targetObject ? property.serializedObject.targetObject.GetInstanceID() : 0;
+            int targetId = TaffyEditorObjectIdentity.IdentityHash(property?.serializedObject?.targetObject);
             return SessionPrefix + targetId + "." + (property?.propertyPath ?? "unknown");
         }
 

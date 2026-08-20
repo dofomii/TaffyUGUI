@@ -218,7 +218,7 @@ namespace TaffyUGUI.Editor
             if (context == null || context.IsMultiEditing || !component || !snapshot.Available)
                 return;
 
-            string key = SessionPrefix + component.GetInstanceID();
+            string key = SessionPrefix + TaffyEditorObjectIdentity.IdentityHash(component);
             bool expanded = SessionState.GetBool(key, false);
             if (GUILayout.Button(expanded ? "Hide Layout Explanation" : "Explain Layout"))
             {

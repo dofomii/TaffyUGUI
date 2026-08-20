@@ -531,6 +531,10 @@ typedef struct TuLayout {
 extern "C" {
 #endif // __cplusplus
 
+extern void *malloc(uintptr_t size);
+
+extern void free(void *ptr);
+
 uint32_t tu_get_abi_version(void);
 
 uint32_t tu_get_abi_stage(void);

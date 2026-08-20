@@ -236,13 +236,13 @@ namespace TaffyUGUI.Editor
 
         internal static bool IsGroupChecklistDismissed(TaffyLayoutGroup group)
         {
-            return group && SessionState.GetBool(ChecklistKeyPrefix + group.GetInstanceID(), false);
+            return group && SessionState.GetBool(ChecklistKeyPrefix + TaffyEditorObjectIdentity.IdentityHash(group), false);
         }
 
         internal static void DismissGroupChecklist(TaffyLayoutGroup group)
         {
             if (group)
-                SessionState.SetBool(ChecklistKeyPrefix + group.GetInstanceID(), true);
+                SessionState.SetBool(ChecklistKeyPrefix + TaffyEditorObjectIdentity.IdentityHash(group), true);
         }
 
         internal static void ResetForTests()

@@ -80,6 +80,7 @@ WEB_EXTERNAL_TOOLCHAIN_ENV_KEYS = (
 
 
 DEV_RUST_VERSION = "1.97.1"
+WEB_RUST_VERSION = "1.82.0"
 MSRV = "1.82"
 CBINDGEN_VERSION = "0.29.2"
 ABI_RC_VERSION = 1
@@ -89,6 +90,15 @@ ANDROID_NDK_REVISION = "21.3.6528147"  # Unity 2021.3 NDK r21d baseline
 ANDROID_API = 21
 ANDROID_PAGE_SIZE = 16 * 1024
 WEBGL_EMSCRIPTEN_VERSION = "2.0.19"     # Unity 2021.3 Emscripten baseline
+WEB_UNITY_MATRIX_GATES = (
+    ("minimum", "2021.3.39f1"),
+    ("lts-2022", "2022.3.62f1"),
+    ("2023-generation", "2023.2.20f1"),
+    ("unity6-baseline", "6000.0.81f1"),
+    ("latest-lts", "6000.3.22f1"),
+    ("latest-current", "6000.5.8f1"),
+)
+
 
 PUBLIC_ABI_EXPORTS = (
     "tu_calc_create",

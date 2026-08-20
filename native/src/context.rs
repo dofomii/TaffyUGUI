@@ -5,9 +5,12 @@
 //! cannot resolve to unrelated local slots.
 
 use std::cell::RefCell;
+#[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
+#[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
 use std::sync::{Mutex, OnceLock};
+#[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
 use std::thread::ThreadId;
 
 use taffy::prelude::*;
@@ -848,11 +851,13 @@ thread_local! {
     static CONTEXT_REGISTRY: RefCell<ContextRegistry> = RefCell::new(ContextRegistry::default());
 }
 
+#[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
 fn context_owners() -> &'static Mutex<HashMap<u64, ThreadId>> {
     static OWNERS: OnceLock<Mutex<HashMap<u64, ThreadId>>> = OnceLock::new();
     OWNERS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+#[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
 fn validate_context_owner(handle: ContextHandle) -> Result<(), NativeError> {
     let owners = context_owners()
         .lock()
@@ -864,8 +869,21 @@ fn validate_context_owner(handle: ContextHandle) -> Result<(), NativeError> {
     }
 }
 
+// Default Unity Web players are single-threaded. The thread-local registry itself owns all
+// contexts on that path, so avoid std::thread ownership bookkeeping that is not portable across
+// older generic wasm32 standard libraries. Threaded Web builds retain the native owner map and
+// remain a separate WEB7 compatibility gate.
+#[cfg(all(target_arch = "wasm32", not(target_feature = "atomics")))]
+fn validate_context_owner(handle: ContextHandle) -> Result<(), NativeError> {
+    handle
+        .parts()
+        .map(|_| ())
+        .ok_or(NativeError::ContextNotFound)
+}
+
 pub(crate) fn create_registered_context() -> Result<ContextHandle, NativeError> {
     let handle = with_registry_mut(|registry| registry.insert(Context::new()))?;
+    #[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
     context_owners()
         .lock()
         .map_err(|_| NativeError::RegistryBusy)?
@@ -876,13 +894,13 @@ pub(crate) fn create_registered_context() -> Result<ContextHandle, NativeError> 
 pub(crate) fn destroy_registered_context(handle: ContextHandle) -> Result<(), NativeError> {
     validate_context_owner(handle)?;
     with_registry_mut(|registry| registry.remove(handle))?;
+    #[cfg(any(not(target_arch = "wasm32"), target_feature = "atomics"))]
     context_owners()
         .lock()
         .map_err(|_| NativeError::RegistryBusy)?
         .remove(&handle.raw());
     Ok(())
 }
-
 pub(crate) fn with_registered_context_mut<T>(
     handle: ContextHandle,
     operation: impl FnOnce(&mut Context) -> Result<T, NativeError>,

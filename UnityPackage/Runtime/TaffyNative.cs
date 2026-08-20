@@ -421,6 +421,21 @@ namespace TaffyUGUI
         internal static void ValidateManagedLayout()
         {
             RequireSize<Value>(16);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            RequireSize<StringView>(8);
+            RequireSize<GridPlacement>(24);
+            RequireSize<Style>(600);
+            RequireSize<StyleUpdate>(608);
+            RequireSize<ChildrenUpdate>(16);
+            RequireSize<MeasurementSample>(12);
+            RequireSize<Measurement>(40);
+            RequireSize<MeasurementUpdate>(56);
+            RequireSize<CalcSpec>(16);
+            RequireSize<GridTrack>(64);
+            RequireSize<NamedGridLine>(16);
+            RequireSize<GridArea>(24);
+            RequireSize<GridTemplate>(56);
+#else
             RequireSize<StringView>(16);
             RequireSize<GridPlacement>(32);
             RequireSize<Style>(632);
@@ -434,6 +449,8 @@ namespace TaffyUGUI
             RequireSize<NamedGridLine>(24);
             RequireSize<GridArea>(32);
             RequireSize<GridTemplate>(104);
+#endif
+
             RequireSize<GridInfo>(36);
             RequireSize<GridItemInfo>(16);
             RequireSize<Layout>(48);

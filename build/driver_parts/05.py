@@ -116,24 +116,29 @@ WEB_PACKAGE_ARCHIVE_META_TEXT = """fileFormatVersion: 2
 guid: 2c24ac56756d48b0b811909a1cf103ef
 PluginImporter:
   externalObjects: {}
-  serializedVersion: 3
+  serializedVersion: 2
   iconMap: {}
   executionOrder: {}
   defineConstraints: []
   isPreloaded: 0
-  isOverridable: 0
+  isOverridable: 1
   isExplicitlyReferenced: 0
   validateReferences: 1
   platformData:
-    Any:
+  - first:
+      :
+    second:
       enabled: 0
       settings: {}
-    Editor:
+  - first:
+      Editor: Editor
+    second:
       enabled: 0
       settings:
-        CPU: AnyCPU
         DefaultValueInitialized: true
-    WebGL:
+  - first:
+      WebGL: WebGL
+    second:
       enabled: 1
       settings: {}
   userData:
@@ -347,17 +352,51 @@ def web_native_env(target_dir: Path, poison_external_toolchain: bool = False) ->
     return env
 
 
+def require_web_rust_toolchain() -> str:
+    rustup = require("rustup", f"Web builds require rustup with Rust {WEB_RUST_VERSION}.")
+    env = base_env()
+    toolchain = subprocess.run(
+        [rustup, "run", WEB_RUST_VERSION, "rustc", "--version"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if toolchain.returncode != 0 or f"rustc {WEB_RUST_VERSION} " not in toolchain.stdout:
+        raise SystemExit(
+            f"Canonical Web builds require Rust {WEB_RUST_VERSION}. Install it with: "
+            f"rustup toolchain install {WEB_RUST_VERSION} --profile minimal --target {WEB_TARGET}"
+        )
+    targets = subprocess.run(
+        [rustup, "target", "list", "--installed", "--toolchain", WEB_RUST_VERSION],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if targets.returncode != 0 or WEB_TARGET not in targets.stdout.splitlines():
+        raise SystemExit(
+            f"Rust {WEB_RUST_VERSION} is missing target {WEB_TARGET}. Install it with: "
+            f"rustup target add {WEB_TARGET} --toolchain {WEB_RUST_VERSION}"
+        )
+    return rustup
+
+
 def build_web_native(
     target_dir: Path = WEB_CARGO_TARGET_DIR,
     poison_external_toolchain: bool = False,
 ) -> Path:
     if not WEB_MANIFEST.is_file():
         raise SystemExit(f"Web Cargo manifest is missing: {WEB_MANIFEST.relative_to(ROOT)}")
-    ensure_target_installed(WEB_TARGET)
-    cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    rustup = require_web_rust_toolchain()
     env = web_native_env(target_dir, poison_external_toolchain)
     run(
-        cargo_bin,
+        rustup,
+        "run",
+        WEB_RUST_VERSION,
+        "cargo",
         "build",
         "--manifest-path",
         str(WEB_MANIFEST),
@@ -370,8 +409,22 @@ def build_web_native(
     artifact = target_dir / WEB_TARGET / "release" / "libtaffy_ugui.a"
     if not artifact.is_file() or artifact.stat().st_size == 0:
         raise SystemExit(f"Expected Web native archive was not produced: {artifact}")
-    print(f"Built Web native archive: {artifact.relative_to(ROOT)}")
+    forbidden_features = tuple(
+        feature
+        for feature in (b"bulk-memory-opt", b"call-indirect-overlong")
+        if feature in artifact.read_bytes()
+    )
+    if forbidden_features:
+        names = ", ".join(feature.decode("ascii") for feature in forbidden_features)
+        raise SystemExit(
+            "Web archive contains LLVM Wasm target features rejected by older Unity Binaryen: " + names
+        )
+    print(
+        f"Built Web native archive with Rust {WEB_RUST_VERSION}: "
+        f"{artifact.relative_to(ROOT)}"
+    )
     return artifact
+
 
 
 def rust_llvm_nm() -> str:
@@ -425,6 +478,147 @@ def _unity_version_key(value: str) -> tuple[int, ...]:
     return tuple(int(part) for part in re.findall(r"\d+", value))
 
 
+def _unity_hub_editor_roots() -> tuple[Path, ...]:
+    roots = [
+        Path.home() / "Unity" / "Hub" / "Editor",
+        Path("/Applications/Unity/Hub/Editor"),
+    ]
+    for env_name in ("PROGRAMFILES", "PROGRAMFILES(X86)"):
+        if value := os.environ.get(env_name):
+            roots.append(Path(value) / "Unity" / "Hub" / "Editor")
+    if value := os.environ.get("UNITY_HUB_EDITORS_PATH"):
+        roots.insert(0, Path(value).expanduser())
+
+    existing: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        root = root.expanduser()
+        if root in seen:
+            continue
+        seen.add(root)
+        if root.is_dir():
+            existing.append(root)
+    return tuple(existing)
+
+
+def _installed_unity_editors() -> dict[str, Path]:
+    editors: dict[str, Path] = {}
+    for hub_root in _unity_hub_editor_roots():
+        for editor in hub_root.iterdir():
+            if editor.is_dir():
+                editors.setdefault(editor.name, editor)
+    return editors
+
+
+def _unity_web_emscripten_root(editor: Path) -> Path:
+    return editor / "Editor" / "Data" / "PlaybackEngines" / "WebGLSupport" / "BuildTools" / "Emscripten"
+
+
+def _unity_web_toolchain_details(root: Path) -> tuple[Path, Path, Path, str, tuple[Path, ...]]:
+    emcc = root / "emscripten" / "emcc.py"
+    node = root / "node" / ("node.exe" if os.name == "nt" else "node")
+    config = root / ".emscripten"
+    version_file = root / "emscripten" / "emscripten-version.txt"
+    missing = tuple(path for path in (emcc, node, config) if not path.is_file())
+    version = (
+        version_file.read_text(encoding="utf-8").strip().strip('"')
+        if version_file.is_file()
+        else "unknown"
+    )
+    return emcc, node, config, version, missing
+
+
+def _select_unity_editor(editors: dict[str, Path], selector: str) -> tuple[str, Path] | None:
+    matches = [
+        (version, editor)
+        for version, editor in editors.items()
+        if version == selector or version.startswith(selector + ".")
+    ]
+    return max(matches, key=lambda item: _unity_version_key(item[0])) if matches else None
+
+
+def report_web_unity_toolchains(require_complete: bool = False) -> None:
+    editors = _installed_unity_editors()
+    gate_rows: list[dict[str, object]] = []
+
+    print("WEB UNITY TOOLCHAIN MATRIX")
+    print(f"{'gate':20} {'selector':14} {'editor':16} {'emscripten':16} status")
+    print(f"{'-' * 20} {'-' * 14} {'-' * 16} {'-' * 16} {'-' * 16}")
+    for gate, selector in WEB_UNITY_MATRIX_GATES:
+        selected = _select_unity_editor(editors, selector)
+        editor_version: str | None = None
+        editor_root: Path | None = None
+        emscripten_version: str | None = None
+        status = "missing-editor"
+        missing_components: tuple[Path, ...] = ()
+
+        if selected is not None:
+            editor_version, editor_root = selected
+            emscripten_root = _unity_web_emscripten_root(editor_root)
+            if not emscripten_root.is_dir():
+                status = "missing-webgl"
+            else:
+                _, _, _, emscripten_version, missing_components = _unity_web_toolchain_details(emscripten_root)
+                status = "ready" if not missing_components else "incomplete"
+
+        gate_rows.append(
+            {
+                "gate": gate,
+                "selector": selector,
+                "editor": editor_version,
+                "editor_root": str(editor_root) if editor_root is not None else None,
+                "emscripten": emscripten_version,
+                "status": status,
+                "missing_components": [str(path) for path in missing_components],
+            }
+        )
+        print(
+            f"{gate:20} {selector:14} {(editor_version or '-'):16} "
+            f"{(emscripten_version or '-'):16} {status}"
+        )
+
+    installed_rows: list[dict[str, object]] = []
+    for editor_version, editor_root in sorted(editors.items(), key=lambda item: _unity_version_key(item[0])):
+        emscripten_root = _unity_web_emscripten_root(editor_root)
+        emscripten_version: str | None = None
+        status = "no-webgl"
+        missing_components: tuple[Path, ...] = ()
+        if emscripten_root.is_dir():
+            _, _, _, emscripten_version, missing_components = _unity_web_toolchain_details(emscripten_root)
+            status = "ready" if not missing_components else "incomplete"
+        installed_rows.append(
+            {
+                "editor": editor_version,
+                "editor_root": str(editor_root),
+                "emscripten": emscripten_version,
+                "status": status,
+                "missing_components": [str(path) for path in missing_components],
+            }
+        )
+
+    evidence_dir = ROOT / ".build" / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    evidence_path = evidence_dir / "web-unity-toolchains.json"
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "gates": gate_rows,
+                "installed_editors": installed_rows,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"Evidence: {evidence_path.relative_to(ROOT)}")
+
+    incomplete = [row for row in gate_rows if row["status"] != "ready"]
+    if require_complete and incomplete:
+        summary = ", ".join(f"{row['gate']}={row['status']}" for row in incomplete)
+        raise SystemExit("Unity Web toolchain matrix is incomplete: " + summary)
+
+
 def find_unity_web_emscripten() -> tuple[Path, Path, Path, str]:
     override = os.environ.get(WEB_UNITY_EMSCRIPTEN_ROOT_ENV)
     candidates: list[tuple[tuple[int, ...], str, Path]] = []
@@ -433,34 +627,10 @@ def find_unity_web_emscripten() -> tuple[Path, Path, Path, str]:
         root = Path(override).expanduser().resolve()
         candidates.append(((), "override", root))
     else:
-        hub_roots = [
-            Path.home() / "Unity" / "Hub" / "Editor",
-            Path("/Applications/Unity/Hub/Editor"),
-        ]
-        for env_name in ("PROGRAMFILES", "PROGRAMFILES(X86)"):
-            if value := os.environ.get(env_name):
-                hub_roots.append(Path(value) / "Unity" / "Hub" / "Editor")
-        if value := os.environ.get("UNITY_HUB_EDITORS_PATH"):
-            hub_roots.insert(0, Path(value).expanduser())
-
-        seen: set[Path] = set()
-        for hub_root in hub_roots:
-            hub_root = hub_root.expanduser()
-            if hub_root in seen or not hub_root.is_dir():
-                continue
-            seen.add(hub_root)
-            for editor in hub_root.iterdir():
-                emscripten_root = (
-                    editor
-                    / "Editor"
-                    / "Data"
-                    / "PlaybackEngines"
-                    / "WebGLSupport"
-                    / "BuildTools"
-                    / "Emscripten"
-                )
-                if emscripten_root.is_dir():
-                    candidates.append((_unity_version_key(editor.name), editor.name, emscripten_root))
+        for editor_version, editor in _installed_unity_editors().items():
+            emscripten_root = _unity_web_emscripten_root(editor)
+            if emscripten_root.is_dir():
+                candidates.append((_unity_version_key(editor_version), editor_version, emscripten_root))
 
     if not candidates:
         raise SystemExit(
@@ -469,33 +639,39 @@ def find_unity_web_emscripten() -> tuple[Path, Path, Path, str]:
         )
 
     _, label, root = max(candidates, key=lambda item: item[0])
-    emcc = root / "emscripten" / "emcc.py"
-    node = root / "node" / ("node.exe" if os.name == "nt" else "node")
-    config = root / ".emscripten"
-    version_file = root / "emscripten" / "emscripten-version.txt"
-    missing = [path for path in (emcc, node, config) if not path.is_file()]
+    emcc, node, _, version, missing = _unity_web_toolchain_details(root)
     if missing:
         raise SystemExit(
             f"Unity WebGL toolchain '{label}' is incomplete; missing: "
             + ", ".join(str(path) for path in missing)
         )
-    version = version_file.read_text(encoding="utf-8").strip() if version_file.is_file() else "unknown"
     return root, emcc, node, version
 
 
-def verify_web_link_harness() -> None:
+def _verify_web_link_with_toolchain(
+    archive: Path,
+    emscripten_root: Path,
+    output_dir: Path,
+) -> str:
     if not WEB_LINK_HARNESS.is_file():
         raise SystemExit(f"Permanent Web link harness is missing: {WEB_LINK_HARNESS.relative_to(ROOT)}")
+    if not archive.is_file() or archive.stat().st_size == 0:
+        raise SystemExit(f"Web archive is missing or empty: {archive}")
 
-    artifact = build_web_native()
-    emscripten_root, emcc, node, emscripten_version = find_unity_web_emscripten()
+    emcc, node, _, emscripten_version, missing = _unity_web_toolchain_details(emscripten_root)
+    if missing:
+        raise SystemExit(
+            "Unity WebGL toolchain is incomplete; missing: "
+            + ", ".join(str(path) for path in missing)
+        )
+
     env = base_env()
     env["EM_CONFIG"] = str(emscripten_root / ".emscripten")
     env["EM_CACHE"] = str(emscripten_root / "emscripten" / "cache")
 
-    shutil.rmtree(WEB_LINK_HARNESS_DIR, ignore_errors=True)
-    WEB_LINK_HARNESS_DIR.mkdir(parents=True, exist_ok=True)
-    output_js = WEB_LINK_HARNESS_DIR / "taffy_web_link_harness.js"
+    shutil.rmtree(output_dir, ignore_errors=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_js = output_dir / "taffy_web_link_harness.js"
 
     run(
         sys.executable,
@@ -509,7 +685,7 @@ def verify_web_link_harness() -> None:
         f"-DTAFFY_EXPECTED_ABI_VERSION={parse_u32_const('TU_ABI_VERSION')}",
         f"-DTAFFY_EXPECTED_ABI_STAGE={parse_u32_const('TU_ABI_STAGE')}",
         str(WEB_LINK_HARNESS),
-        str(artifact),
+        str(archive),
         "-O0",
         "-sASSERTIONS=1",
         "-sENVIRONMENT=node",
@@ -518,22 +694,122 @@ def verify_web_link_harness() -> None:
         str(output_js),
         env=env,
     )
-    output = run(str(node), str(output_js), capture=True, cwd=WEB_LINK_HARNESS_DIR, env=env)
+    output = run(str(node), str(output_js), capture=True, cwd=output_dir, env=env)
     marker = "TAFFY_WEB_LINK_HARNESS_PASS"
     if marker not in output:
         raise SystemExit(f"Web link harness did not report {marker}. Output: {output.strip() or '<empty>'}")
+    return emscripten_version
+
+
+def verify_web_link_harness() -> None:
+    artifact = build_web_native()
+    emscripten_root, _, _, _ = find_unity_web_emscripten()
+    emscripten_version = _verify_web_link_with_toolchain(artifact, emscripten_root, WEB_LINK_HARNESS_DIR)
     print(
         "WEB LINK HARNESS VERIFY: PASS — public header ABI linked and executed "
         f"with Unity Emscripten {emscripten_version}"
     )
 
 
+def verify_web_unity_matrix_links() -> None:
+    verify_web_package()
+    editors = _installed_unity_editors()
+    archive_sha = hashlib.sha256(WEB_PACKAGE_ARCHIVE.read_bytes()).hexdigest()
+    archive_size = WEB_PACKAGE_ARCHIVE.stat().st_size
+    rows: list[dict[str, object]] = []
+
+    for gate, selector in WEB_UNITY_MATRIX_GATES:
+        selected = _select_unity_editor(editors, selector)
+        if selected is None:
+            rows.append({
+                "gate": gate,
+                "selector": selector,
+                "editor": None,
+                "emscripten": None,
+                "status": "missing-editor",
+            })
+            continue
+
+        editor_version, editor_root = selected
+        emscripten_root = _unity_web_emscripten_root(editor_root)
+        if not emscripten_root.is_dir():
+            rows.append({
+                "gate": gate,
+                "selector": selector,
+                "editor": editor_version,
+                "emscripten": None,
+                "status": "missing-webgl",
+            })
+            continue
+
+        _, _, _, emscripten_version, missing = _unity_web_toolchain_details(emscripten_root)
+        if missing:
+            rows.append({
+                "gate": gate,
+                "selector": selector,
+                "editor": editor_version,
+                "emscripten": emscripten_version,
+                "status": "incomplete",
+                "missing_components": [str(path) for path in missing],
+            })
+            continue
+
+        output_dir = ROOT / ".build" / "web-unity-matrix-links" / selector
+        linked_version = _verify_web_link_with_toolchain(WEB_PACKAGE_ARCHIVE, emscripten_root, output_dir)
+        rows.append({
+            "gate": gate,
+            "selector": selector,
+            "editor": editor_version,
+            "emscripten": linked_version,
+            "status": "pass",
+        })
+        print(
+            f"WEB UNITY MATRIX LINK: PASS — {gate} {editor_version} / "
+            f"Emscripten {linked_version} / archive {archive_sha[:12]}"
+        )
+
+    evidence_dir = ROOT / ".build" / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    evidence_path = evidence_dir / "web-unity-matrix-links.json"
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "archive": str(WEB_PACKAGE_ARCHIVE.relative_to(ROOT)),
+                "archive_sha256": archive_sha,
+                "archive_bytes": archive_size,
+                "rows": rows,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"Evidence: {evidence_path.relative_to(ROOT)}")
+
+    failed = [row for row in rows if row["status"] != "pass"]
+    if failed:
+        summary = ", ".join(f"{row['gate']}={row['status']}" for row in failed)
+        raise SystemExit(
+            "Unity Web matrix link verification is incomplete or incompatible: "
+            + summary
+        )
+
+    print(
+        "WEB UNITY MATRIX LINK VERIFY: PASS — every exact gate linked and executed "
+        f"the same staged archive sha256={archive_sha}"
+    )
+
+
 def verify_web_independence() -> None:
-    cargo_bin = require("cargo", f"Install Rust {DEV_RUST_VERSION}; see docs/LOCAL_DEVELOPMENT.md.")
+    rustup = require_web_rust_toolchain()
     env = web_native_env(WEB_INDEPENDENCE_TARGET_DIR, poison_external_toolchain=True)
     metadata = json.loads(
         run(
-            cargo_bin,
+            rustup,
+            "run",
+            WEB_RUST_VERSION,
+            "cargo",
             "metadata",
             "--manifest-path",
             str(WEB_MANIFEST),
@@ -817,6 +1093,9 @@ def main() -> int:
     sub.add_parser("stage-web-package", help="Build and stage the Web archive under UnityPackage/Plugins/WebGL with deterministic importer metadata")
     sub.add_parser("verify-web-package", help="Verify WEB2 Unity package artifact, importer isolation, __Internal binding, and Git/UPM inclusion")
     sub.add_parser("verify-web-link-harness", help="Link and execute the permanent public-header Web ABI harness with Unity Emscripten")
+    sub.add_parser("verify-web-unity-matrix-links", help="Link and execute the same staged Web archive across every exact WEB5 Unity/Emscripten gate")
+    toolchains = sub.add_parser("web-unity-toolchains", help="Report WEB5 Unity gate editors and exact bundled Emscripten toolchains")
+    toolchains.add_argument("--require-complete", action="store_true", help="Fail when any WEB5 Unity gate editor/WebGL toolchain is unavailable")
     sub.add_parser("verify-web-panic-boundary", help="Audit panic=abort Web boundary invariants and run malformed-input ABI regressions")
     sub.add_parser("verify-web-thread-local-contexts", help="Verify Web thread-local capability semantics without weakening native wrong-thread enforcement")
     sub.add_parser("verify-web-size", help="Measure the canonical Web archive and reject unreviewed size or compatibility-profile drift")
@@ -846,6 +1125,8 @@ def main() -> int:
     elif args.command == "phase4-host": phase4_host()
     elif args.command == "verify-phase4": verify_phase4()
     elif args.command == "verify-web-link-harness": verify_web_link_harness()
+    elif args.command == "verify-web-unity-matrix-links": verify_web_unity_matrix_links()
+    elif args.command == "web-unity-toolchains": report_web_unity_toolchains(args.require_complete)
     elif args.command == "web-native": build_web_native()
     elif args.command == "verify-web-panic-boundary": verify_web_panic_boundary()
     elif args.command == "stage-web-package": stage_web_package()

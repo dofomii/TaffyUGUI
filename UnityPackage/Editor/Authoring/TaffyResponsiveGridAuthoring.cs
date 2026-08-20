@@ -366,7 +366,7 @@ namespace TaffyUGUI.Editor
             if (profile == null)
                 return;
 
-            string key = profile.serializedObject.targetObject.GetInstanceID() + ":" + profile.propertyPath;
+            string key = TaffyEditorObjectIdentity.IdentityHash(profile.serializedObject.targetObject) + ":" + profile.propertyPath;
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -509,7 +509,7 @@ namespace TaffyUGUI.Editor
             DrawTrackList(serializedObject.FindProperty("gridAutoColumns"), "Implicit Columns", true);
             DrawTrackList(serializedObject.FindProperty("gridAutoRows"), "Implicit Rows", true);
 
-            string key = serializedObject.targetObject.GetInstanceID() + ":GridAdvanced";
+            string key = TaffyEditorObjectIdentity.IdentityHash(serializedObject.targetObject) + ":GridAdvanced";
             bool expanded = AdvancedFoldouts.TryGetValue(key, out bool saved) && saved;
             expanded = EditorGUILayout.Foldout(expanded, "Named lines / areas (Advanced)", true);
             AdvancedFoldouts[key] = expanded;
@@ -568,7 +568,7 @@ namespace TaffyUGUI.Editor
             if (tracks == null)
                 return;
 
-            string key = tracks.serializedObject.targetObject.GetInstanceID() + ":" + tracks.propertyPath;
+            string key = TaffyEditorObjectIdentity.IdentityHash(tracks.serializedObject.targetObject) + ":" + tracks.propertyPath;
             bool expanded;
             if (!AdvancedFoldouts.TryGetValue(key, out expanded))
                 expanded = !collapsedByDefault;

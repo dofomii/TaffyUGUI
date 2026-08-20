@@ -127,14 +127,26 @@ namespace TaffyUGUI.Tests
         public void RecipeCreationIsUndoableAsOneWorkflow()
         {
             GameObject root = Create("sidebar-content");
+#if UNITY_6000_5_OR_NEWER
+            EntityId rootId = root.GetEntityId();
+#else
             int rootId = root.GetInstanceID();
+#endif
             Assert.That(root.transform.childCount, Is.EqualTo(2));
 
             Undo.PerformUndo();
+#if UNITY_6000_5_OR_NEWER
+            Assert.That(EditorUtility.EntityIdToObject(rootId), Is.Null);
+#else
             Assert.That(EditorUtility.InstanceIDToObject(rootId), Is.Null);
+#endif
 
             Undo.PerformRedo();
+#if UNITY_6000_5_OR_NEWER
+            GameObject restored = EditorUtility.EntityIdToObject(rootId) as GameObject;
+#else
             GameObject restored = EditorUtility.InstanceIDToObject(rootId) as GameObject;
+#endif
             Assert.That(restored, Is.Not.Null);
             _owned.Add(restored);
             Assert.That(restored.transform.childCount, Is.EqualTo(2));

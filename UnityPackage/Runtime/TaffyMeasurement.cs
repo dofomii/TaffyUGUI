@@ -476,12 +476,21 @@ namespace TaffyUGUI
             return float.IsNaN(value) || float.IsInfinity(value) ? Unbounded : Mathf.Max(0f, value);
         }
 
+        private static int ObjectId(UnityEngine.Object value)
+        {
+#if UNITY_6000_5_OR_NEWER
+            return value.GetEntityId().GetHashCode();
+#else
+            return value.GetInstanceID();
+#endif
+        }
+
         private static int HashTmp(TMP_Text text, float widthHint)
         {
             int hash = 17;
             AddHash(ref hash, text.text);
-            AddHash(ref hash, text.font ? text.font.GetInstanceID() : 0);
-            AddHash(ref hash, text.fontSharedMaterial ? text.fontSharedMaterial.GetInstanceID() : 0);
+            AddHash(ref hash, text.font ? ObjectId(text.font) : 0);
+            AddHash(ref hash, text.fontSharedMaterial ? ObjectId(text.fontSharedMaterial) : 0);
             AddHash(ref hash, text.fontSize);
             AddHash(ref hash, (int)text.fontStyle);
             AddHash(ref hash, text.characterSpacing);
@@ -502,7 +511,7 @@ namespace TaffyUGUI
         {
             int hash = 17;
             AddHash(ref hash, text.text);
-            AddHash(ref hash, text.font ? text.font.GetInstanceID() : 0);
+            AddHash(ref hash, text.font ? ObjectId(text.font) : 0);
             AddHash(ref hash, text.fontSize);
             AddHash(ref hash, (int)text.fontStyle);
             AddHash(ref hash, text.lineSpacing);
@@ -520,7 +529,7 @@ namespace TaffyUGUI
         private static int HashImage(Image image)
         {
             int hash = 17;
-            AddHash(ref hash, image.sprite ? image.sprite.GetInstanceID() : 0);
+            AddHash(ref hash, image.sprite ? ObjectId(image.sprite) : 0);
             AddHash(ref hash, (int)image.type);
             AddHash(ref hash, image.preserveAspect ? 1 : 0);
             AddHash(ref hash, image.pixelsPerUnitMultiplier);
@@ -530,7 +539,7 @@ namespace TaffyUGUI
         private static int HashRawImage(RawImage image)
         {
             int hash = 17;
-            AddHash(ref hash, image.texture ? image.texture.GetInstanceID() : 0);
+            AddHash(ref hash, image.texture ? ObjectId(image.texture) : 0);
             AddHash(ref hash, image.uvRect.x);
             AddHash(ref hash, image.uvRect.y);
             AddHash(ref hash, image.uvRect.width);
@@ -543,7 +552,7 @@ namespace TaffyUGUI
             float widthHint)
         {
             int hash = 17;
-            AddHash(ref hash, behaviour.GetInstanceID());
+            AddHash(ref hash, ObjectId(behaviour));
             AddHash(ref hash, provider.MeasurementVersion);
             AddHash(ref hash, QuantizedWidth(widthHint));
             return hash;

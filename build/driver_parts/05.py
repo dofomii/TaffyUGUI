@@ -53,6 +53,10 @@ def verify_phase4() -> None:
 PHASE5_ANDROID_DIR = ROOT / "UnityPackage" / "Plugins" / "Android" / "arm64-v8a"
 PHASE5_ANDROID_PLUGIN = PHASE5_ANDROID_DIR / "libtaffy_ugui.so"
 PHASE5_ANDROID_META = PHASE5_ANDROID_DIR / "libtaffy_ugui.so.meta"
+WEB_PACKAGE_DIR = ROOT / "UnityPackage" / "Plugins" / "WebGL"
+WEB_PACKAGE_ARCHIVE = WEB_PACKAGE_DIR / "libtaffy_ugui.a"
+WEB_PACKAGE_ARCHIVE_META = WEB_PACKAGE_DIR / "libtaffy_ugui.a.meta"
+WEB_PACKAGE_DIR_META = ROOT / "UnityPackage" / "Plugins" / "WebGL.meta"
 PHASE5_ANDROID_PROVENANCE = PHASE5_ANDROID_DIR / "taffy_ugui.provenance.json"
 PHASE5_DESKTOP_PLUGINS = {
     "linux-x86": ROOT / "UnityPackage" / "Plugins" / "Linux" / "x86" / "libtaffy_ugui.so",
@@ -99,6 +103,45 @@ PluginImporter:
 """
 
 
+WEB_PACKAGE_DIR_META_TEXT = """fileFormatVersion: 2
+guid: 73df503c656a4d0e99fbcff1565d2ec7
+folderAsset: yes
+DefaultImporter:
+  externalObjects: {}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+"""
+WEB_PACKAGE_ARCHIVE_META_TEXT = """fileFormatVersion: 2
+guid: 2c24ac56756d48b0b811909a1cf103ef
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 3
+  iconMap: {}
+  executionOrder: {}
+  defineConstraints: []
+  isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
+  platformData:
+    Any:
+      enabled: 0
+      settings: {}
+    Editor:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
+        DefaultValueInitialized: true
+    WebGL:
+      enabled: 1
+      settings: {}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+"""
+
+
 def require_phase4_index() -> dict[str, object]:
     index_path = DIST_NATIVE / "phase4-index.json"
     if not index_path.exists():
@@ -107,6 +150,7 @@ def require_phase4_index() -> dict[str, object]:
     if index.get("status") != "complete" or set(index.get("targets", {}).keys()) != {"android-arm64"}:
         raise SystemExit("Phase 5 requires the completed Android-only Phase 4 index.")
     return index
+
 
 
 def stage_phase5() -> None:
@@ -230,6 +274,7 @@ def verify_phase5() -> None:
 
     print("PHASE 5 FULL NATIVE PAYLOAD VERIFY: PASS")
 
+
 def doctor() -> None:
     print("TaffyUGUI local environment")
     print(f"  host: {platform.platform()}")
@@ -239,6 +284,54 @@ def doctor() -> None:
     for name in ("git", "python3", "cargo", "rustc", "rustup", "rustfmt", "clippy-driver", "cbindgen", "clang", "clang++", "cmake"):
         print(f"  {name:14} {executable(name) or 'MISSING'}")
     print("  CI fallback: disabled by design")
+
+
+def stage_web_package() -> None:
+    artifact = build_web_native()
+    WEB_PACKAGE_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(artifact, WEB_PACKAGE_ARCHIVE)
+    WEB_PACKAGE_DIR_META.write_text(WEB_PACKAGE_DIR_META_TEXT, encoding="utf-8")
+    WEB_PACKAGE_ARCHIVE_META.write_text(WEB_PACKAGE_ARCHIVE_META_TEXT, encoding="utf-8")
+    verify_web_package(rebuild=False)
+    print("\nWEB2 PACKAGE PAYLOAD: STAGED — UnityPackage/Plugins/WebGL")
+
+
+def verify_web_package(rebuild: bool = True) -> None:
+    required = (WEB_PACKAGE_DIR_META, WEB_PACKAGE_ARCHIVE, WEB_PACKAGE_ARCHIVE_META)
+    missing = [str(path.relative_to(ROOT)) for path in required if not path.is_file()]
+    if missing:
+        raise SystemExit(f"WEB2 package payload is incomplete: {', '.join(missing)}")
+    if WEB_PACKAGE_DIR_META.read_text(encoding="utf-8") != WEB_PACKAGE_DIR_META_TEXT:
+        raise SystemExit("WEB2 WebGL folder .meta drifted from the deterministic checked-in importer contract.")
+    if WEB_PACKAGE_ARCHIVE_META.read_text(encoding="utf-8") != WEB_PACKAGE_ARCHIVE_META_TEXT:
+        raise SystemExit("WEB2 Web archive .meta drifted from the deterministic checked-in importer contract.")
+    if WEB_PACKAGE_ARCHIVE.stat().st_size == 0:
+        raise SystemExit("WEB2 packaged Web archive is empty.")
+
+    source = build_web_native() if rebuild else WEB_CARGO_TARGET_DIR / WEB_TARGET / "release" / "libtaffy_ugui.a"
+    source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
+    packaged_sha = hashlib.sha256(WEB_PACKAGE_ARCHIVE.read_bytes()).hexdigest()
+    if source_sha != packaged_sha:
+        raise SystemExit("WEB2 packaged archive does not match the canonical clean Web build artifact.")
+
+    native_text = (ROOT / "UnityPackage" / "Runtime" / "TaffyNative.cs").read_text(encoding="utf-8")
+    web_internal_contract = '#if (UNITY_IOS || UNITY_WEBGL) && !UNITY_EDITOR\n        internal const string Library = "__Internal";'
+    if web_internal_contract not in native_text:
+        raise SystemExit("WEB2 requires TaffyNative.Library to remain __Internal for WebGL Player builds only.")
+    if 'UNITY_WEBGL' not in native_text or 'internal const string Library = "taffy_ugui";' not in native_text:
+        raise SystemExit("WEB2 TaffyNative library-selection contract is incomplete.")
+
+    for path in required:
+        ignored = subprocess.run(
+            [require("git"), "check-ignore", "-q", str(path.relative_to(ROOT))],
+            cwd=ROOT,
+            env=base_env(),
+            check=False,
+        ).returncode == 0
+        if ignored:
+            raise SystemExit(f"WEB2 package file is ignored and would be omitted from Git/UPM packaging: {path.relative_to(ROOT)}")
+
+    print("WEB2 package verification: PASS — archive present, WebGL-only importer deterministic, Editor disabled, __Internal retained")
 
 
 def web_native_env(target_dir: Path, poison_external_toolchain: bool = False) -> dict[str, str]:
@@ -721,6 +814,8 @@ def main() -> int:
     sub.add_parser("list-targets", help="List Phase 4 native target definitions")
     sub.add_parser("verify-web-abi-surface", help="Verify the Web archive exposes exactly the checked-in public tu_* ABI")
     sub.add_parser("web-native", help="Build the generic wasm32-unknown-unknown Web static archive")
+    sub.add_parser("stage-web-package", help="Build and stage the Web archive under UnityPackage/Plugins/WebGL with deterministic importer metadata")
+    sub.add_parser("verify-web-package", help="Verify WEB2 Unity package artifact, importer isolation, __Internal binding, and Git/UPM inclusion")
     sub.add_parser("verify-web-link-harness", help="Link and execute the permanent public-header Web ABI harness with Unity Emscripten")
     sub.add_parser("verify-web-panic-boundary", help="Audit panic=abort Web boundary invariants and run malformed-input ABI regressions")
     sub.add_parser("verify-web-thread-local-contexts", help="Verify Web thread-local capability semantics without weakening native wrong-thread enforcement")
@@ -753,6 +848,8 @@ def main() -> int:
     elif args.command == "verify-web-link-harness": verify_web_link_harness()
     elif args.command == "web-native": build_web_native()
     elif args.command == "verify-web-panic-boundary": verify_web_panic_boundary()
+    elif args.command == "stage-web-package": stage_web_package()
+    elif args.command == "verify-web-package": verify_web_package()
     elif args.command == "verify-web-thread-local-contexts": verify_web_thread_local_contexts()
     elif args.command == "verify-web-size": verify_web_size()
     elif args.command == "verify-web-source-cleanliness": verify_web_source_cleanliness()

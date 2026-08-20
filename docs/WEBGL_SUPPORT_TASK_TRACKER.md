@@ -209,22 +209,22 @@ WEB1.10:
 
 # WEB2 — Unity package integration
 
-**Status: ACTIVE**
+**Status: COMPLETE**
 
-- [ ] WEB2.1 Stage `libtaffy_ugui.a` under `UnityPackage/Plugins/WebGL/`.
-- [ ] WEB2.2 Add deterministic `.meta` importer settings: Web/WebGL enabled, Editor and all non-Web targets disabled.
-- [ ] WEB2.3 Verify Unity does not attempt to load the Web archive in Editor Play Mode.
-- [ ] WEB2.4 Verify `TaffyNative.Library == "__Internal"` remains the Web Player path and no separate DLL name is introduced.
-- [ ] WEB2.5 Add package tests that validate importer configuration and artifact presence.
-- [ ] WEB2.6 Verify UPM/Git package packaging includes the `.a` and its `.meta`.
+- [x] WEB2.1 Stage `libtaffy_ugui.a` under `UnityPackage/Plugins/WebGL/`.
+- [x] WEB2.2 Add deterministic `.meta` importer settings: Web/WebGL enabled, Editor and all non-Web targets disabled.
+- [x] WEB2.3 Verify Unity does not attempt to load the Web archive in Editor Play Mode. Unity `6000.4.3f1` local-UPM verification passed: the dedicated importer suite is **2/2**, the full Edit Mode suite is **142/142**, and the actual Play Mode suite is **9/9** with the Web archive installed. The Play Mode Editor log contains zero `libtaffy_ugui.a`, `Plugins/WebGL`, `DllNotFoundException`, native-load failure, undefined-symbol, or `EntryPointNotFoundException` markers..
+- [x] WEB2.4 Verify `TaffyNative.Library == "__Internal"` remains the Web Player path and no separate DLL name is introduced.
+- [x] WEB2.5 Add package tests that validate importer configuration and artifact presence.
+- [x] WEB2.6 Verify UPM/Git package packaging includes the `.a` and its `.meta` (both are non-ignored and present in the Git index).
 
-**WEB2 phase gate:** package imports cleanly and the Web artifact is included only in Web Player builds.
+**WEB2 phase gate: PASS** — package imports cleanly; the Web archive is WebGL-only, excluded from Editor Play Mode and all non-Web targets, retained by Git/UPM packaging, and uses the existing `__Internal` Web Player binding.ds.
 
 ---
 
 # WEB3 — Permanent Web runtime regression scene/harness
 
-**Status: BLOCKED BY WEB2**
+**Status: ACTIVE**B2**
 
 Create a deterministic Web Player test that exercises the package through normal `TaffyLayoutGroup` / `TaffyLayoutItem` APIs, not only direct native calls.
 
